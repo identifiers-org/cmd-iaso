@@ -2,15 +2,6 @@
 # Author: Manuel Bernal Llinares <mbdebian@gmail.com>
 
 # Environment
-# Google Chrome Driver
-version_latest_chrome_driver = 2.42
-url_base_chrome_driver = http://chromedriver.storage.googleapis.com/
-binary_linux_chromedriver = chromedriver_linux64.zip
-binary_mac_chromedriver = chromedriver_mac64.zip
-binary_windows_chromedriver = chromedriver_win32.zip
-url_download_linux_chromedriver = $(url_base_chrome_driver)$(version_latest_chrome_driver)/$(binary_linux_chromedriver)
-url_download_mac_chromedriver = $(url_base_chrome_driver)$(version_latest_chrome_driver)/$(binary_mac_chromedriver)
-url_download_windows_chromedriver = $(url_base_chrome_driver)$(version_latest_chrome_driver)/$(binary_windows_chromedriver)
 # Development support
 container_name = identifiersorg/cmd-iaso
 docker_compose_development_file = docker-compose-development.yml
@@ -30,15 +21,25 @@ deploy: clean container_production_push
 
 development_env_up: chromedriver
 	@echo "<===|DEVOPS|===> [ENVIRONMENT] Bringing development environment UP"
+	@docker-compose -f $(docker_compose_development_file) up -d
+	@# TODO Clean this way of referencing the target name in future iterations
+	@rm -f development_env_down
+	@touch development_env_up
 
 development_env_down:
 	@echo "<===|DEVOPS|===> [ENVIRONMENT] Bringing development environment DOWN"
+	@docker-compose -f $(docker_compose_development_file) down
+	@# TODO Clean this way of referencing the target name in future iterations
+	@rm -f development_env_up
+	@touch development_env_down
 
 development_run_tests: development_env_up
 	@echo "<===|DEVOPS|===> [TESTS] Running Unit Tests"
+	# TODO
 
 app_structure:
 	@echo "<===|DEVOPS|===> [PACKAGE] Application"
+	# TODO
 
 container_production_build: app_structure
 	@echo "<===|DEVOPS|===> [BUILD] Production container $(container_name):$(tag_version)"
@@ -60,4 +61,4 @@ clean_tmp:
 	@echo "<===|DEVOPS|===> [HOUSEKEEPING] Removing temporary folder"
 	@rm -rf tmp
 
-.PHONY: all clean development_run_tests app_structure container_production_build container_production_push deploy release sync_project_version set_next_development_version clean_tmp clean_bin chromedriver
+.PHONY: all clean development_run_tests app_structure container_production_build container_production_push deploy release clean_tmp clean_bin
