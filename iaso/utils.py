@@ -34,7 +34,7 @@ def echo_json(json_vals, has_next=False, indent=0, force_indent=False):
         for i, val in enumerate(json_vals):
             echo_json(val, (i + 1) < len(json_vals), indent + 1, True)
 
-        click.echo("{indent}]".format(indent=("  " * indent)))
+        click.echo("{indent}]".format(indent=("  " * indent)), nl=False)
     elif isinstance(json_vals, str):
         click.echo(
             click.style('"{value}"'.format(value=json_vals), fg="yellow"), nl=False

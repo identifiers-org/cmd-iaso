@@ -32,6 +32,7 @@ def ctx_registry(ctx):
 
 
 @click.group()
+@click.version_option(version="0.0.1")
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
@@ -64,13 +65,6 @@ def curate(ctx, datamine):
     Reads the mined information on providers from the DATAMINE JSON file path.
     """
     ctx.obj["datamine"] = Datamine(datamine)
-
-    click.echo(
-        f"The data loaded from {datamine} was collected in the following environment:"
-    )
-    echo_json(ctx.obj["datamine"].environment)
-
-    click.echo(click.style("Starting curation process ...", fg="yellow"))
 
 
 @curate.command()
@@ -127,4 +121,9 @@ async def connect(ctx, address):
 
 
 if __name__ == "__main__":
-    cli()
+    cli(prog_name="cmd-iaso")
+
+# TODO: reorganise such that you can combine three components freely
+# - URL viewer (terminal vs go to in browser)
+# - navigation (terminal prompt vs browser buttons)
+# - information (terminal vs info button + overlay)
