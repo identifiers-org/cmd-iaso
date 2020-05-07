@@ -3,6 +3,7 @@ import requests
 
 import asyncio
 import click
+import sys
 
 from .interact import CurationController, CurationNavigator, CurationFormatter
 
@@ -79,7 +80,7 @@ class PyppeteerLauncher:
         if self.address == "launch":
             click.echo(click.style("Launching the Chrome browser ...", fg="yellow"))
 
-            browser = await pyppeteer.launch()
+            browser = await pyppeteer.launch(headless=False)
 
             wsEndpoint = browser.wsEndpoint
         else:
@@ -97,7 +98,14 @@ class PyppeteerLauncher:
             # defaultViewport=None,
         )
 
-        self.page = await browser.newPage()
+        if self.address == "launch":
+            pages = await browser.pages()
+
+            if len(pages) > 0:
+                self.page = pages[-1]
+
+        if self.page is None:
+            self.page = await browser.newPage()
 
     def warp(self, Creator):
         async def create(*args, **kwargs):
@@ -455,7 +463,10 @@ class PyppeteerNavigator(CurationNavigator):
 
         try:
             try:
-                loop = asyncio.get_running_loop()
+                if sys.version_info >= (3, 7):
+                    loop = asyncio.get_running_loop()
+                else:
+                    loop = asyncio.get_event_loop()
             except RuntimeError:  # There is no current event loop
                 loop = None
 
