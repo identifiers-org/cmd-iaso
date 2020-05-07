@@ -1,18 +1,10 @@
-import asyncio
-import bisect
-import json
-import pathlib
-
-from abc import ABC, abstractmethod
-from asyncio import Future
-from collections import namedtuple, Counter
-
-import click
 import pyppeteer
+import requests
 
-from requests.status_codes import _codes as status_codes
+import asyncio
+import click
 
-from .utils import echo_json
+from .interact import CurationController, CurationNavigator, CurationFormatter
 
 
 def patch_pyppeteer():
@@ -48,86 +40,78 @@ def patch_pyppeteer():
 patch_pyppeteer()
 
 
-class CurationController(ABC):
-    @staticmethod
-    def create(Controller, *args, **kwargs):
-        ctrl = Controller(*args, **kwargs)
+class PyppeteerLauncher:
+    def __init__(self, address):
+        self.address = address
+        self.page = None
 
-        super(type(ctrl), ctrl).__init__()
+    async def __aenter__(self):
+        return self
 
-        return ctrl
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        if self.page is None:
+            return
 
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    async def connect(self):
-        pass
-
-    @abstractmethod
-    async def navigate(self, url):
-        pass
-
-    @abstractmethod
-    async def prompt(self):
-        pass
-
-    @abstractmethod
-    async def disconnect(self):
-        pass
-
-    def create_formatter(self, Formatter, *args, **kwargs):
-        return CurationFormatter.create(Formatter, *args, **kwargs)
-
-
-class TerminalController(CurationController):
-    CHOICES = {"fw": +1, "bw": -1, "end": None}
-
-    async def connect(self):
-        pass
-
-    async def navigate(self, url):
-        pass
-
-    async def prompt(self):
-        direction = click.prompt(
-            "Continue curation", type=click.Choice(TerminalController.CHOICES.keys())
+        click.echo(
+            click.style("Disconnecting from the Chrome browser ...", fg="yellow")
         )
 
-        return TerminalController.CHOICES[direction]
+        try:
+            await self.page.close()
+        except:
+            pass
 
-    async def disconnect(self):
-        pass
+        if self.address == "launch":
+            try:
+                await self.page.browser.close()
+            except:
+                pass
+        else:
+            try:
+                await self.page.browser.disconnect()
+            except:
+                pass
 
+    async def connect(self):
+        if self.page is not None:
+            return
 
-import requests
+        if self.address == "launch":
+            click.echo(click.style("Launching the Chrome browser ...", fg="yellow"))
+
+            browser = await pyppeteer.launch()
+
+            wsEndpoint = browser.wsEndpoint
+        else:
+            click.echo(click.style("Contacting the Chrome browser ...", fg="yellow"))
+
+            with requests.get(f"http://{self.address}/json/version") as r:
+                token = r.json()["webSocketDebuggerUrl"].split("/")[-1]
+
+            wsEndpoint = f"ws://{self.address}/devtools/browser/{token}"
+
+        click.echo(click.style("Connecting to the Chrome browser ...", fg="yellow"))
+
+        browser = await pyppeteer.connect(
+            browserWSEndpoint=wsEndpoint,
+            # defaultViewport=None,
+        )
+
+        self.page = await browser.newPage()
+
+    def warp(self, Creator):
+        async def create(*args, **kwargs):
+            await self.connect()
+
+            return Creator(self.page, *args, **kwargs)
+
+        return create
 
 
 class PyppeteerController(CurationController):
-    def Launch(*args, **kwargs):
-        async def launcher():
-            browser = await pyppeteer.launch()
-
-            return browser.wsEndpoint
-
-        return PyppeteerController(launcher, True, *args, **kwargs)
-
-    def Connect(address):
-        async def connecter():
-            with requests.get(f"http://{address}/json/version") as r:
-                token = r.json()["webSocketDebuggerUrl"].split("/")[-1]
-
-                return f"ws://{address}/devtools/browser/{token}"
-
-        def launch(*args, **kwargs):
-            return PyppeteerController(connecter, False, *args, **kwargs)
-
-        return launch
-
-    def __init__(self, initiator, closeondisconnect):
-        self.initiator = initiator
+    def __init__(self, page):
+        self.page = page
         self.prompt_future = None
-        self.closeondisconnect = closeondisconnect
         self.redirectPath = None
 
     async def connect(self):
@@ -414,89 +398,108 @@ class PyppeteerController(CurationController):
             except:
                 pass
 
-    def create_formatter(self, Formatter, *args, **kwargs):
-        if Formatter == PyppeteerFormatter:
-            kwargs["page"] = self.page
 
-        return super().create_formatter(Formatter, *args, **kwargs)
+class PyppeteerNavigator(CurationNavigator):
+    def __init__(self, page):
+        self.page = page
 
+    async def __aenter__(self):
+        # Inject a breakpoint right before the React Router redirects
 
-class CurationFormatter(ABC):
-    @staticmethod
-    def create(Formatter, *args, **kwargs):
-        fmt = Formatter(*args, **kwargs)
-
-        super(type(fmt), fmt).__init__()
-
-        return fmt
-
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def format_json(self, title, content):
-        pass
-
-    @abstractmethod
-    async def output(self, url, resource, namespace, position, total):
-        pass
-
-
-class TerminalFormatter(CurationFormatter):
-    def __init__(self):
-        self.buffer = []
-
-    def format_json(self, title, content):
-        self.buffer.append((title, content))
-
-    async def output(self, url, resource, namespace, position, total):
-        ctx = click.get_current_context()
-
-        click.echo(
-            " {} / {} ".format(position + 1, total).center(
-                80 if ctx.max_content_width is None else ctx.max_content_width, "="
-            )
+        # Use the Chrome Developer Tools Sources tab to find the location
+        # - Go to the https://registry.identifiers.org/ subdomain
+        # - Set a breakpoint at /node_modules/react-router-dom/es/Link.js line 52
+        # - Click on either the 'Registry' or 'Browse the registry' button
+        # - Find the location at the top of the callstack in the local scope
+        #   in the handleBreakpoint context
+        await self.page._client.send(
+            "Debugger.setBreakpointByUrl",
+            {
+                "lineNumber": 194,
+                "url": "https://registry.identifiers.org/src.9524714e.js",
+                "columnNumber": 1543,
+            },
         )
+        await self.page._client.send("Debugger.enable", {})
+        await self.page._client.send("Debugger.setBreakpointsActive", {"active": True})
 
-        click.echo(
-            "{}{}{}".format(
-                click.style("Curation required for resource provider ", fg="yellow"),
-                click.style(resource.name, fg="yellow", bold=True),
-                click.style(":", fg="yellow"),
+        self.page._client.on("Debugger.paused", self.handleBreakpoint)
+
+        return self
+
+    async def hackRedirectConnection(self, callFrameId):
+        if self.redirectPath is not None:
+            # Use the Chrome Developer Tools Sources tab to find the variable name
+            # - Go to the https://registry.identifiers.org/ subdomain
+            # - Set a breakpoint at /node_modules/react-router-dom/es/Link.js line 52
+            # - Click on either the 'Registry' or 'Browse the registry' button
+            # - Click on the link at the bottom right (source mapped from LINK)
+            # - Pretty print the file (bottom left curly brackets)
+            # - Extract the name of the parameter to replace(p) and push(p)
+            await self.page._client.send(
+                "Debugger.setVariableValue",
+                {
+                    "scopeNumber": 0,
+                    "variableName": "a",
+                    "newValue": {"value": self.redirectPath},
+                    "callFrameId": callFrameId,
+                },
             )
-        )
-        click.echo("  {}".format(click.style(url, fg="bright_blue", underline=True,)))
 
-        click.echo("The following issues were observed:")
+            self.redirectPath = None
 
-        for title, content in self.buffer:
-            click.echo("- {}: ".format(click.style(title, underline=True)), nl=False)
+        await self.page._client.send("Debugger.resume", {})
 
-            echo_json(content, indent=1)
+    def handleBreakpoint(self, context):
+        callFrameId = context["callFrames"][0]["callFrameId"]
 
-        click.echo(
-            " {} / {} ".format(position + 1, total).center(
-                80 if ctx.max_content_width is None else ctx.max_content_width, "="
-            )
-        )
+        try:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:  # There is no current event loop
+                loop = None
 
-        self.buffer.clear()
+            if loop and loop.is_running():
+                loop.create_task(self.hackRedirectConnection(callFrameId))
+            else:
+                asyncio.run(self.hackRedirectConnection(callFrameId))
+        except:
+            pass
+
+    async def navigate(self, url):
+        if self.page.url.startswith(
+            "https://registry.identifiers.org"
+        ) and url.startswith("https://registry.identifiers.org"):
+            # Attempt to hijack SPA redirects for smoother redirection
+            try:
+                self.redirectPath = url[32:].replace("registry", "registri")
+
+                await self.page.click("[href='/registry']")
+
+                self.redirectPath = url[32:]
+
+                await self.page.click("[href='/registry']")
+
+                await self.page.mouse.move(0, 0)
+
+                return
+            except:
+                pass
+
+        await self.page.goto(url)
 
 
 class PyppeteerFormatter(CurationFormatter):
-    def __init__(self, page=None):
+    def __init__(self, page):
         self.page = page
         self.buffer = []
         self.url = ""
         self.cache = ""
 
-        # TODO: Rewrite so that page can never be None
-        if self.page is not None:
+        async def onnavigate(frame):
+            await self.refresh()
 
-            async def onnavigate(frame):
-                await self.refresh()
-
-            self.page.on("framenavigated", onnavigate)
+        self.page.on("framenavigated", onnavigate)
 
     def format_json(self, title, content):
         self.buffer.append((title, content))
@@ -561,7 +564,7 @@ class PyppeteerFormatter(CurationFormatter):
         await self.refresh()
 
     async def refresh(self):
-        if self.page is not None and self.page.url == self.url:
+        if self.page.url == self.url:
             try:
                 await self.page.waitForSelector("#iaso-overlay")
 
@@ -580,190 +583,3 @@ class PyppeteerFormatter(CurationFormatter):
             except:  # Exception as err:
                 pass
                 # print("PyppeteerFormatter.refresh Error:", err)
-
-
-class CurationError(ABC):
-    @staticmethod
-    @abstractmethod
-    def check_and_create(provider):
-        pass
-
-    @abstractmethod
-    def format(self, formatter):
-        pass
-
-
-class HTTPStatusError(CurationError):
-    @staticmethod
-    def check_and_create(provider):
-        status_codes = Counter(
-            [
-                ping.redirects[-1].status
-                for ping in provider.pings
-                if len(ping.redirects) > 0
-            ]
-        )
-
-        if len(status_codes) == 0:
-            return True
-
-        status_code, frequency = status_codes.most_common(1)[0]
-
-        # TODO: redirects should also not be allowed here
-        if status_code < 400:
-            return True
-
-        return HTTPStatusError(status_code)
-
-    def __init__(self, status_code):
-        self.status_code = status_code
-
-    def format(self, formatter):
-        formatter.format_json(
-            "Status code",
-            "{} ({})".format(
-                self.status_code,
-                ", ".join(
-                    code.replace("_", " ")
-                    for code in status_codes[self.status_code]
-                    if "\\" not in code
-                ),
-            ),
-        )
-        formatter.format_json(
-            "Test JSON Data",
-            {
-                "hello": [1, 2, 3, 4],
-                "bye": [4, 3, 2, 1],
-                "there": {
-                    "a": 1,
-                    "b": 2,
-                    "c": ["hello", None],
-                    "there": {"a": 1, "b": 2, "c": ["hello", None]},
-                },
-            },
-        )
-
-
-CurationEntry = namedtuple(
-    "CurationEntry", ("entry", "validations", "position", "total")
-)
-
-
-def curation_entries(entries, validators):
-    wrap = len(entries)
-    index = 0
-
-    indices = []
-    non_indices = set()
-
-    while True:
-        direction = yield
-
-        if direction != +1 and direction != -1:
-            yield None
-
-            continue
-
-        start_index = index
-
-        if len(indices) > 0:
-            index = (index + direction) % wrap
-
-        while True:
-            validations = []
-
-            for validator in validators:
-                validation = validator(entries[index])
-
-                if validation == False:
-                    validations.clear()
-
-                    break
-
-                if validation == True:
-                    continue
-
-                if isinstance(validation, list):
-                    validations.extend(validation)
-                else:
-                    validations.append(validation)
-
-            if len(validations) > 0:
-                break
-
-            non_indices.add(index)
-
-            index = (index + direction) % wrap
-
-            if index == start_index and len(indices) == 0:
-                yield None
-
-                continue
-
-        pos = bisect.bisect_left(indices, index, 0, len(indices))
-
-        if pos >= len(indices) or indices[pos] != index:
-            indices.insert(pos, index)
-
-        yield CurationEntry(
-            entries[index],
-            validations,
-            pos,
-            "{}+".format(len(indices))
-            if (len(indices) + len(non_indices)) < wrap
-            else str(wrap),
-        )
-
-
-async def curate(registry, datamine, Controller, Formatter):
-    click.echo("The data loaded was collected in the following environment:")
-    echo_json(datamine.environment)
-
-    provider_namespace = dict()
-
-    for nid, namespace in registry.namespaces.items():
-        for resource in namespace.resources:
-            provider_namespace[resource.id] = namespace
-
-    entries = curation_entries(
-        datamine.providers,
-        [lambda p: p.id in registry.resources, HTTPStatusError.check_and_create],
-    )
-
-    click.echo(click.style("Connecting to the curation controller ...", fg="yellow"))
-
-    controller = CurationController.create(Controller)
-    await controller.connect()
-
-    formatter = controller.create_formatter(Formatter)
-
-    click.echo(click.style("Starting curation process ...", fg="yellow"))
-
-    next(entries)
-    entry = entries.send(+1)
-
-    while entry is not None:
-        for validation in entry.validations:
-            validation.format(formatter)
-
-        namespace = provider_namespace[entry.entry.id]
-        provider = registry.resources[entry.entry.id]
-
-        navigation_url = "https://registry.identifiers.org/registry/{}".format(
-            namespace.prefix
-        )
-
-        await controller.navigate(navigation_url)
-
-        await formatter.output(
-            navigation_url, provider, namespace, entry.position, entry.total
-        )
-
-        next(entries)
-
-        entry = entries.send(await controller.prompt())
-
-    await controller.disconnect()
-
-    click.echo(click.style("No more entries left for curation.", fg="yellow"))

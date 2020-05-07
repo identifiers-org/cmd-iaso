@@ -3,43 +3,54 @@ from json import JSONEncoder
 import click
 
 
-def echo_json(json_vals, has_next=False, indent=0, force_indent=False):
+def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=False):
     # Check for namedtuples and convert them into dicts
     if isinstance(json_vals, tuple) and hasattr(json_vals, "_asdict"):
         json_vals = json_vals._asdict()
 
+    accumulator = []
+
     if force_indent:
-        click.echo("  " * indent, nl=False)
+        accumulator.append("  " * indent)
 
     if isinstance(json_vals, dict):
-        click.echo("{")
+        accumulator.append("{\n")
 
         iters = json_vals.items()
 
         for i, (key, val) in enumerate(iters):
-            click.echo(
+            accumulator.append(
                 click.style(
                     "{indent}{key}: ".format(indent=("  " * (indent + 1)), key=key),
                     fg="red",
-                ),
-                nl=False,
+                )
             )
 
-            echo_json(val, (i + 1) < len(iters), indent + 1, False)
+            accumulator.append(
+                format_json(val, (i + 1) < len(iters), indent + 1, False, True)
+            )
 
-        click.echo("{indent}}}".format(indent=("  " * indent)), nl=False)
+        accumulator.append("{indent}}}".format(indent=("  " * indent)))
     elif isinstance(json_vals, list):
-        click.echo("[")
+        accumulator.append("[\n")
 
         for i, val in enumerate(json_vals):
-            echo_json(val, (i + 1) < len(json_vals), indent + 1, True)
+            accumulator.append(
+                format_json(val, (i + 1) < len(json_vals), indent + 1, True, True)
+            )
 
-        click.echo("{indent}]".format(indent=("  " * indent)), nl=False)
+        accumulator.append("{indent}]".format(indent=("  " * indent)))
     elif isinstance(json_vals, str):
-        click.echo(
-            click.style('"{value}"'.format(value=json_vals), fg="yellow"), nl=False
+        accumulator.append(
+            click.style('"{value}"'.format(value=json_vals), fg="yellow")
         )
     else:
-        click.echo(click.style("{value}".format(value=json_vals), fg="green"), nl=False)
+        accumulator.append(click.style("{value}".format(value=json_vals), fg="green"))
 
-    click.echo("," if has_next else "")
+    if has_next:
+        accumulator.append(",")
+
+    if nl:
+        accumulator.append("\n")
+
+    return "".join(accumulator)
