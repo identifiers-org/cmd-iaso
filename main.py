@@ -1,3 +1,8 @@
+import asyncio
+import ipaddress
+
+from functools import update_wrapper, partial
+
 import click
 
 from iaso import curation
@@ -19,10 +24,6 @@ from iaso.utils import format_json
 from iaso.environment import collect_environment_description
 from iaso.registry import Registry
 from iaso.datamine import Datamine
-
-import asyncio
-import ipaddress
-from functools import update_wrapper
 
 
 def coroutine(f):
@@ -124,7 +125,12 @@ async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
             "terminal": TerminalController,
-            "chrome": launcher.warp(PyppeteerController),
+            "chrome": launcher.warp(
+                partial(
+                    PyppeteerController,
+                    url_regex=(None if navigator == "chrome" else r"^.*$"),
+                )
+            ),
         }[controller]
         Navigator = {
             "terminal": TerminalNavigator,

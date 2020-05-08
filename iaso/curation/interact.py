@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from asyncio import coroutine
+from collections import OrderedDict
 
 from types import CoroutineType
 
@@ -7,11 +8,11 @@ from .generator import CurationDirection
 
 
 class CurationController(ABC):
-    CHOICES = {
-        "fw": CurationDirection.FORWARD,
-        "bw": CurationDirection.BACKWARD,
-        "end": CurationDirection.FINISH,
-    }
+    CHOICES = OrderedDict(
+        fw=CurationDirection.FORWARD,
+        bw=CurationDirection.BACKWARD,
+        end=CurationDirection.FINISH,
+    )
 
     @staticmethod
     async def create(Controller, *args, **kwargs):
