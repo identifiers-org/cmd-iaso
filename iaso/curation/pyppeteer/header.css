@@ -1,4 +1,4 @@
-#iaso-controller {
+#iaso-header {
     display: flex;
     align-items: center;
     position: fixed;
@@ -8,31 +8,38 @@
     pointer-events: none;
 }
 
-#iaso-controller > div {
+#iaso-header > div {
     width: 125px;
     position: absolute;
     left: 20px;
 }
 
-#iaso-controller > div > button {
+#iaso-header > div > button {
     border-radius: 4px;
     background-color: white;
     border: 2px solid #4CAF50;
     color: black;
     padding: 10px 0px;
     text-align: center;
-    display: inline-block;
     font-size: 18px;
-    transition-duration: 0.4s;
     width: 125px;
     pointer-events: auto;
+    cursor: pointer;
 }
 
-#iaso-controller > div > button + button {
+#iaso-header > div > button.hidden {
+    display: none;
+}
+
+#iaso-header > div > button + button {
     margin-top: 20px;
 }
 
-#iaso-controller > div > button:hover {
+#iaso-header > div > button.hidden + button {
+    margin-top: 0;
+}
+
+#iaso-header > div > button:hover {
     background-color: #4CAF50;
     color: white;
 }

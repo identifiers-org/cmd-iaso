@@ -4,6 +4,7 @@ from collections import namedtuple
 
 
 class CurationDirection:
+    RELOAD = 0
     FORWARD = +1
     BACKWARD = -1
     FINISH = None
@@ -27,7 +28,8 @@ def curation_entry_generator(entries, validators):
 
         # If we should finish, we finish
         if (
-            direction != CurationDirection.FORWARD
+            direction != CurationDirection.RELOAD
+            and direction != CurationDirection.FORWARD
             and direction != CurationDirection.BACKWARD
         ):
             yield CurationDirection.FINISH
@@ -35,6 +37,11 @@ def curation_entry_generator(entries, validators):
             continue
 
         start_index = index
+
+        # Reloading before we have found an erroneous entry only works if we can
+        # explore the remaining entries with a non-zero direction
+        if direction == CurationDirection.RELOAD and len(indices) == 0:
+            direction = CurationDirection.FORWARD
 
         # If we have already found an erroneous entry, we can skip to the next index immediately
         if len(indices) > 0:

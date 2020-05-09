@@ -11,12 +11,10 @@ from iaso.curation.terminal import (
     TerminalNavigator,
     TerminalFormatter,
 )
-from iaso.curation.pyppeteer import (
-    PyppeteerLauncher,
-    PyppeteerController,
-    PyppeteerNavigator,
-    PyppeteerFormatter,
-)
+from iaso.curation.pyppeteer import PyppeteerLauncher
+from iaso.curation.pyppeteer.controller import PyppeteerController
+from iaso.curation.pyppeteer.navigator import PyppeteerNavigator
+from iaso.curation.pyppeteer.informant import PyppeteerFormatter
 
 from iaso.click import ValidateMutexCommand, MutexOption, ChromeChoice
 
@@ -138,7 +136,12 @@ async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
         }[navigator]
         Informant = {
             "terminal": TerminalFormatter,
-            "chrome": launcher.warp(PyppeteerFormatter),
+            "chrome": launcher.warp(
+                partial(
+                    PyppeteerFormatter,
+                    url_regex=(None if navigator == "chrome" else r"^.*$"),
+                )
+            ),
         }[informant]
 
         await curation.curate(

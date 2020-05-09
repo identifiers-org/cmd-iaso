@@ -1,0 +1,16 @@
+.disclosure, .syntax, .string, .number, .boolean, .key, .keyword, .object.syntax, .array.syntax, .object.syntax + a, .array.syntax + a {
+    background-color: white;
+    pointer-events: auto;
+}
+
+.string {
+    color: purple;
+}
+
+.number, .boolean, .keyword {
+    color: darkgreen;
+}
+
+.key {
+    color: red;
+}

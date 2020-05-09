@@ -9,6 +9,7 @@ from .generator import CurationDirection
 
 class CurationController(ABC):
     CHOICES = OrderedDict(
+        rl=CurationDirection.RELOAD,
         fw=CurationDirection.FORWARD,
         bw=CurationDirection.BACKWARD,
         end=CurationDirection.FINISH,

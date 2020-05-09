@@ -1,32 +1,28 @@
-function (displayController, FORWARD, BACKWARD, FINISH) {
-    let controller = document.getElementById("iaso-controller");
+function (display_controller, RELOAD, FORWARD, BACKWARD, FINISH) {
+    let header = document.getElementById("iaso-header");
     
-    if (controller !== null) {
-        controller.style.display = displayController ? "flex" : "none";
+    if (header === null) {
+        return;
+    }
+    
+    header = header.firstElementChild;
+    
+    for (const [func, title] of [[RELOAD, "Reload"], [FORWARD, "Forward"], [BACKWARD, "Backward"], [FINISH, "End Session"]]) {
+        let button = document.getElementById(`iaso-controller-${func}`);
         
-        return;
-    }
-    
-    if (!displayController) {
-        return;
-    }
-    
-    controller = document.createElement("div");
-    controller.id = "iaso-controller";
+        if (display_controller) {
+            if (button === null) {
+                button = document.createElement("button");
+                button.id = `iaso-controller-${func}`;
+                button.onclick = () => console.info(`iaso-controller-${func}`);
+                button.innerText = title;
+            }
 
-    controller.innerHTML = `
-        <div>
-            <button onclick="console.info('iaso-${FORWARD}')">
-                Forward
-            </button>
-            <button onclick="console.info('iaso-${BACKWARD}')">
-                Backward
-            </button>
-            <button onclick="console.info('iaso-${FINISH}')">
-                End Session
-            </button>
-        </div>
-    `;
+            button.classList.remove("hidden");
 
-    document.body.insertBefore(controller, document.body.firstElementChild);
+            header.appendChild(button);
+        } else if (button !== null) {
+            button.classList.add("hidden");
+        }
+    }
 }
