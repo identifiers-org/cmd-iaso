@@ -1,9 +1,11 @@
-import pyppeteer
-import requests
-
-import click
+import os
+import signal
 
 from contextlib import suppress
+
+import click
+import pyppeteer
+import requests
 
 
 def patch_pyppeteer():
@@ -44,6 +46,17 @@ class PyppeteerLauncher:
         self.address = address
         self.page = None
 
+        self.closing = False
+
+        click.get_current_context().call_on_close(self.shutdown)
+
+    def shutdown(self):
+        return (
+            click.get_current_context()
+            .obj["loop"]
+            .run_until_complete(self.__aexit__(None, None, None))
+        )
+
     async def __aenter__(self):
         return self
 
@@ -55,15 +68,19 @@ class PyppeteerLauncher:
             click.style("Disconnecting from the Chrome browser ...", fg="yellow")
         )
 
-        with suppress(pyppeteer.errors.PageError):
+        self.closing = True
+
+        with suppress(pyppeteer.errors.PageError, pyppeteer.errors.NetworkError):
             await self.page.close()
 
         if self.address == "launch":
-            with suppress(pyppeteer.errors.BrowserError):
+            with suppress(pyppeteer.errors.BrowserError, pyppeteer.errors.NetworkError):
                 await self.page.browser.close()
         else:
-            with suppress(pyppeteer.errors.BrowserError):
+            with suppress(pyppeteer.errors.BrowserError, pyppeteer.errors.NetworkError):
                 await self.page.browser.disconnect()
+
+        self.page = None
 
     async def connect(self):
         if self.page is not None:
@@ -72,32 +89,65 @@ class PyppeteerLauncher:
         if self.address == "launch":
             click.echo(click.style("Launching the Chrome browser ...", fg="yellow"))
 
-            browser = await pyppeteer.launch(headless=False)
+            try:
+                browser = await pyppeteer.launch(headless=False)
+            except:
+                raise click.ClickException(
+                    click.style(
+                        f"Could not launch a new Chrome browser instance", fg="red"
+                    )
+                )
 
             wsEndpoint = browser.wsEndpoint
         else:
             click.echo(click.style("Contacting the Chrome browser ...", fg="yellow"))
 
-            with requests.get(f"http://{self.address}/json/version") as r:
-                token = r.json()["webSocketDebuggerUrl"].split("/")[-1]
+            try:
+                with requests.get(f"http://{self.address}/json/version") as r:
+                    token = r.json()["webSocketDebuggerUrl"].split("/")[-1]
+            except:
+                raise click.ClickException(
+                    click.style(
+                        f"Could not contact the Chrome browser at {self.address}",
+                        fg="red",
+                    )
+                )
 
             wsEndpoint = f"ws://{self.address}/devtools/browser/{token}"
 
         click.echo(click.style("Connecting to the Chrome browser ...", fg="yellow"))
 
-        browser = await pyppeteer.connect(
-            browserWSEndpoint=wsEndpoint,
-            # defaultViewport=None,
-        )
+        try:
+            browser = await pyppeteer.connect(
+                browserWSEndpoint=wsEndpoint,
+                # defaultViewport=None,
+            )
+        except:
+            raise click.ClickException(
+                click.style(f"Could not connect to the Chrome browser", fg="red")
+            )
 
-        if self.address == "launch":
-            pages = await browser.pages()
+        try:
+            if self.address == "launch":
+                pages = await browser.pages()
 
-            if len(pages) > 0:
-                self.page = pages[-1]
+                if len(pages) > 0:
+                    self.page = pages[-1]
 
-        if self.page is None:
-            self.page = await browser.newPage()
+            if self.page is None:
+                self.page = await browser.newPage()
+        except:
+            raise click.ClickException(
+                click.style(
+                    f"Could not open a new page in the Chrome browser", fg="red"
+                )
+            )
+
+        self.page.on("close", self.onclose)
+
+    def onclose(self):
+        if self.page is not None and not self.closing:
+            os.kill(os.getpid(), signal.SIGINT)
 
     def warp(self, Creator):
         async def create(*args, **kwargs):

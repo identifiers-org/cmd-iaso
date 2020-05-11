@@ -25,16 +25,14 @@ class PyppeteerController(CurationController):
 
     async def __aenter__(self):
         self.page.on("framenavigated", self.onnavigate)
-        self.page.on("close", self.onclose)
         self.page.on("console", self.onconsole)
 
         await self.refresh()
 
         return self
 
-    def onclose(self):
-        if self.prompt_future is not None:
-            self.prompt_future.set_result(CurationDirection.FINISH)
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        self.prompt_future = None
 
     async def onnavigate(self, frame):
         await self.refresh()

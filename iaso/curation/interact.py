@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from asyncio import coroutine
 from collections import OrderedDict
+from threading import Thread
 
 from types import CoroutineType
 

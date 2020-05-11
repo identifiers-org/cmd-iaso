@@ -28,8 +28,9 @@ def coroutine(f):
     f = asyncio.coroutine(f)
 
     def wrapper(*args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(f(*args, **kwargs))
+        ctx = click.get_current_context()
+        ctx.obj["loop"] = asyncio.get_event_loop()
+        return ctx.obj["loop"].run_until_complete(f(*args, **kwargs))
 
     return update_wrapper(wrapper, f)
 
@@ -116,8 +117,9 @@ async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
     at the specified address. The browser will not automatically be closed after
     the curation session has finished.
     
+    \b
     You can launch a new Chrome browser using:
-                                               > chrome --remote-debugging-port=PORT
+    > chrome --remote-debugging-port=PORT
     """
 
     async with PyppeteerLauncher(chrome) as launcher:

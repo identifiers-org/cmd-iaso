@@ -1,6 +1,4 @@
-import asyncio
 import click
-import sys
 
 import pyppeteer
 
@@ -65,18 +63,9 @@ class PyppeteerNavigator(CurationNavigator):
     def onBreakpoint(self, context):
         callFrameId = context["callFrames"][0]["callFrameId"]
 
-        try:
-            if sys.version_info >= (3, 7):
-                loop = asyncio.get_running_loop()
-            else:
-                loop = asyncio.get_event_loop()
-        except RuntimeError:  # There is no current event loop
-            loop = None
-
-        if loop and loop.is_running():
-            loop.create_task(self.hackRedirectConnection(callFrameId))
-        else:
-            asyncio.run(self.hackRedirectConnection(callFrameId))
+        click.get_current_context().obj["loop"].create_task(
+            self.hackRedirectConnection(callFrameId)
+        )
 
     async def navigate(self, url):
         if self.page.url.startswith(
