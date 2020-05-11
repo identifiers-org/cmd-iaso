@@ -36,6 +36,11 @@ def curation_entry_generator(entries, validators):
 
             continue
 
+        if wrap == 0:
+            yield CurationDirection.FINISH
+
+            continue
+
         start_index = index
 
         # Reloading before we have found an erroneous entry only works if we can
@@ -54,13 +59,13 @@ def curation_entry_generator(entries, validators):
                 validation = validator(entries[index])
 
                 # Validation of this entry is impossible -> continue with next index
-                if validation == False:
+                if isinstance(validation, bool) and validation == False:
                     validations.clear()
 
                     break
 
                 # Everything ok
-                if validation == True:
+                if isinstance(validation, bool) and validation == True:
                     continue
 
                 if isinstance(validation, list):
