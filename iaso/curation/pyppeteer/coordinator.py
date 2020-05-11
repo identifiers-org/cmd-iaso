@@ -1,15 +1,17 @@
 import asyncio
 import pathlib
 
+from importlib.resources import read_text
+
 
 class PyppeteerCoordinator:
     lock = asyncio.Lock()
 
-    with open(f"{pathlib.Path(__file__).parent}/style.js", "r") as file:
-        addStyleTagWithIdHelper = file.read()
+    def __read_file(path):
+        return read_text("iaso.curation.pyppeteer", path)
 
-    with open(f"{pathlib.Path(__file__).parent}/script.js", "r") as file:
-        addScriptTagWithIdHelper = file.read()
+    addStyleTagWithIdHelper = __read_file("style.js")
+    addScriptTagWithIdHelper = __read_file("script.js")
 
     def __init__(self, page):
         self.page = page
@@ -23,17 +25,18 @@ class PyppeteerCoordinator:
         await PyppeteerCoordinator.lock.__aexit__(exc_type, exc_value, traceback)
 
     async def addStyleTagWithId(self, path, sid):
-        with open(f"{pathlib.Path(__file__).parent}/{path}", "r") as file:
-            await self.page.evaluate(
-                PyppeteerCoordinator.addStyleTagWithIdHelper, file.read(), sid
-            )
+        await self.page.evaluate(
+            PyppeteerCoordinator.addStyleTagWithIdHelper,
+            PyppeteerCoordinator.__read_file(path),
+            sid,
+        )
 
     async def addScriptTagWithId(self, path, sid):
-        with open(f"{pathlib.Path(__file__).parent}/{path}", "r") as file:
-            await self.page.evaluate(
-                PyppeteerCoordinator.addScriptTagWithIdHelper, file.read(), sid
-            )
+        await self.page.evaluate(
+            PyppeteerCoordinator.addScriptTagWithIdHelper,
+            PyppeteerCoordinator.__read_file(path),
+            sid,
+        )
 
     async def evaluate(self, path, *args):
-        with open(f"{pathlib.Path(__file__).parent}/{path}", "r") as file:
-            await self.page.evaluate(file.read(), *args)
+        await self.page.evaluate(PyppeteerCoordinator.__read_file(path), *args)

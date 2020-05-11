@@ -1,5 +1,3 @@
-import unittest
-
 from iaso.curation.generator import (
     CurationDirection,
     CurationEntry,
@@ -25,14 +23,14 @@ def collectFromGenerator(entries, validators, directions):
     return output
 
 
-class TestCurationEntryGenerator(unittest.TestCase):
+class TestCurationEntryGenerator:
     def test_curation_directions_are_correct(self):
-        self.assertEqual(CurationDirection.RELOAD, 0)
-        self.assertEqual(CurationDirection.FORWARD, +1)
-        self.assertEqual(CurationDirection.BACKWARD, -1)
+        assert CurationDirection.RELOAD == 0
+        assert CurationDirection.FORWARD == +1
+        assert CurationDirection.BACKWARD == -1
 
     def test_curation_finish_direction_is_unique(self):
-        self.assertEqual(
+        assert (
             len(
                 {
                     CurationDirection.RELOAD,
@@ -40,8 +38,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
                     CurationDirection.BACKWARD,
                     CurationDirection.FINISH,
                 }
-            ),
-            4,
+            )
+            == 4
         )
 
     def test_generator_produces_all_items_with_passthrough_validator(self):
@@ -51,15 +49,13 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             range(10),
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_produces_no_entries_from_nothing(self):
-        self.assertEqual(
-            collectFromGenerator(
-                [], [lambda _: None], [CurationDirection.FORWARD] * 10
-            ),
-            [],
+        assert (
+            collectFromGenerator([], [lambda _: None], [CurationDirection.FORWARD] * 10)
+            == []
         )
 
     def test_generator_filters_out_valid_entries(self):
@@ -71,8 +67,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 3],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_filters_out_forbidden_entries(self):
         for entry, expect in zip(
@@ -83,8 +79,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 3],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None, None])
+            assert entry.entry == expect
+            assert entry.validations == [None, None]
 
     def test_generator_returns_error_reporting_validators(self):
         for entry, expect in zip(
@@ -95,8 +91,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 3],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [expect])
+            assert entry.entry == expect
+            assert entry.validations == [expect]
 
     def test_generator_entries_wraps_around(self):
         for entry, expect in zip(
@@ -105,8 +101,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 2, 3, 1, 2, 3],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_backward_direction_produces_reverse_entries(self):
         for entry, expect in zip(
@@ -115,8 +111,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 3, 2, 1, 3, 2],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_reload_produces_same_item(self):
         for entry, expect in zip(
@@ -125,8 +121,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1] * 6,
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_finishes_on_finish_direction(self):
         for entry, expect in zip(
@@ -141,8 +137,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 2],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_finishes_on_unknown_direction(self):
         for entry, expect in zip(
@@ -153,8 +149,8 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [1, 2],
         ):
-            self.assertEqual(entry.entry, expect)
-            self.assertEqual(entry.validations, [None])
+            assert entry.entry == expect
+            assert entry.validations == [None]
 
     def test_generator_position_is_correct_forward(self):
         for entry, expect in zip(
@@ -163,7 +159,7 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [0, 1, 2, 0, 1, 2],
         ):
-            self.assertEqual(entry.position, expect)
+            assert entry.position == expect
 
     def test_generator_position_is_correct_backward_eventually(self):
         for entry, expect in zip(
@@ -172,7 +168,7 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             [0, 1, 1, 0, 2, 1, 0, 2, 1],
         ):
-            self.assertEqual(entry.position, expect)
+            assert entry.position == expect
 
     def test_generator_total_converges_to_valid_entries_amount(self):
         for entry, expect in zip(
@@ -181,4 +177,4 @@ class TestCurationEntryGenerator(unittest.TestCase):
             ),
             ["1+", "2+", "3", "3", "3", "3"],
         ):
-            self.assertEqual(entry.total, expect)
+            assert entry.total == expect

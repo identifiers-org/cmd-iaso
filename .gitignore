@@ -1,2 +1,13 @@
+# Jupyter environment
 **/.ipynb_checkpoints/
+
+# Python bytecode
 **/__pycache__/
+
+# Setuptools folders
+build/
+cmd_iaso.egg-info/
+dist/
+
+# Tox folder
+.tox/

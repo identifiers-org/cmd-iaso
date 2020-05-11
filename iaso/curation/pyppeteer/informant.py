@@ -65,8 +65,7 @@ class PyppeteerFormatter(CurationFormatter):
                 )
 
                 await coordinator.addScriptTagWithId(
-                    "../../../deps/renderjson/renderjson.js",
-                    "iaso-informant-renderjson-script",
+                    "renderjson.js", "iaso-informant-renderjson-script",
                 )
 
                 await coordinator.evaluate(

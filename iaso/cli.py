@@ -5,23 +5,24 @@ from functools import update_wrapper, partial
 
 import click
 
-from iaso import curation
-from iaso.curation.terminal import (
+from . import curation
+
+from .curation.terminal import (
     TerminalController,
     TerminalNavigator,
     TerminalFormatter,
 )
-from iaso.curation.pyppeteer import PyppeteerLauncher
-from iaso.curation.pyppeteer.controller import PyppeteerController
-from iaso.curation.pyppeteer.navigator import PyppeteerNavigator
-from iaso.curation.pyppeteer.informant import PyppeteerFormatter
+from .curation.pyppeteer import PyppeteerLauncher
+from .curation.pyppeteer.controller import PyppeteerController
+from .curation.pyppeteer.navigator import PyppeteerNavigator
+from .curation.pyppeteer.informant import PyppeteerFormatter
 
-from iaso.click import ValidateMutexCommand, MutexOption, ChromeChoice
+from .click import ValidateMutexCommand, MutexOption, ChromeChoice
 
-from iaso.utils import format_json
-from iaso.environment import collect_environment_description
-from iaso.registry import Registry
-from iaso.datamine import Datamine
+from .utils import format_json
+from .environment import collect_environment_description
+from .registry import Registry
+from .datamine import Datamine
 
 
 def coroutine(f):
@@ -151,5 +152,9 @@ async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
         )
 
 
-if __name__ == "__main__":
+def main():
     cli(prog_name="cmd-iaso")
+
+
+if __name__ == "__main__":
+    main()
