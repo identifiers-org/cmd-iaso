@@ -1,5 +1,4 @@
 import asyncio
-import pathlib
 
 from importlib.resources import read_text
 
