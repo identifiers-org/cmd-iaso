@@ -4,11 +4,12 @@ from ..utils import format_json
 
 from .generator import CurationDirection
 from .interact import CurationController, CurationNavigator, CurationFormatter
+from ..click.aprompt import aprompt
 
 
 class TerminalController(CurationController):
     async def prompt(self):
-        direction = click.prompt(
+        direction = await aprompt(
             "Continue curation",
             type=click.Choice(CurationController.CHOICES.keys()),
             default=next(

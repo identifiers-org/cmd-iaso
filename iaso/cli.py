@@ -17,7 +17,8 @@ from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.navigator import PyppeteerNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
-from .click import ValidateMutexCommand, MutexOption, ChromeChoice
+from .click.mutex import ValidateMutexCommand, MutexOption
+from .click.chrome import ChromeChoice
 
 from .utils import format_json
 from .environment import collect_environment_description

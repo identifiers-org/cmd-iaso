@@ -26,8 +26,8 @@ def Datamine(filepath):
                     message=err.message,
                     path="".join(f"[{repr(attr)}]" for attr in err.absolute_path),
                 ),
+                fg="red",
             ),
-            fg="red",
         )
 
     return json_to_namedtuple(json_file)
