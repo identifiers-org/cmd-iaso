@@ -24,6 +24,6 @@ def collect_environment_description():
         ),
         "memory": "{:.2f}GiB".format(psutil.virtual_memory().free / (2 ** 30)),
         "storage": "{:.2f}GiB".format(
-            psutil.disk_usage(Path().absolute()).free / (2 ** 30)
+            psutil.disk_usage(str(Path().absolute())).free / (2 ** 30)
         ),
     }
