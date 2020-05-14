@@ -12,10 +12,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v1
-    - name: black code formatter
-      uses: lgeiger/black-action@v1.0.1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
       with:
-        args: . --check
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black
+    - name: black code linter
+      run: black . --check
   test:
     runs-on: ${{ matrix.platform }}
     strategy:
