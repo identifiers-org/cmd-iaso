@@ -1,3 +1,0 @@
-- name: black code style
-  uses: lgeiger/black-action@v1.0.1
-
