@@ -1,5 +1,4 @@
 import asyncio
-import ipaddress
 
 from functools import update_wrapper, partial
 
@@ -74,7 +73,9 @@ def registry(ctx):
 
 @cli.command(cls=ValidateMutexCommand)
 @click.pass_context
-@click.argument("datamine", type=click.Path(exists=True, readable=True))
+@click.argument(
+    "datamine", type=click.Path(exists=True, readable=True, allow_dash=True)
+)
 @click.option(
     "--controller",
     prompt=True,
