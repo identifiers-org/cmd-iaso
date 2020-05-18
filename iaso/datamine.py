@@ -1,3 +1,4 @@
+import gzip
 import json
 
 import click
@@ -9,8 +10,19 @@ from .jsondb import json_to_namedtuple
 
 def Datamine(filepath):
     try:
-        with click.open_file(filepath, "r") as file:
-            json_file = json.load(file)
+        if filepath.endswith(".gz"):
+            with click.open_file(filepath, "rb") as file:
+                with gzip.GzipFile(fileobj=file, mode="r") as file:
+                    json_file = json.load(file)
+        else:
+            with click.open_file(filepath, "r") as file:
+                json_file = json.load(file)
+    except Exception as err:
+        print(repr(err))
+
+        raise click.FileError(
+            filepath, hint=click.style(f"Not a valid GZIP file ({err})", fg="red")
+        )
     except json.JSONDecodeError as err:
         raise click.FileError(
             filepath, hint=click.style(f"Not a valid JSON file ({err})", fg="red")
@@ -63,20 +75,30 @@ Datamine.SCHEMA = {
                             "properties": {
                                 "lui": {"type": "string"},
                                 "date": {"type": "string"},
-                                "dns_error": {"type": "boolean"},
                                 "redirects": {
                                     "type": "array",
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "url": {"type": "string"},
-                                            "ip_port": {"type": "string"},
-                                            "response_time": {"type": "number"},
-                                            "status": {"type": "number"},
+                                            "url": {"type": ["string", "null"]},
+                                            "ip_port": {"type": ["string", "null"]},
+                                            "response_time": {
+                                                "type": ["number", "null"]
+                                            },
+                                            "status": {"type": ["number", "null"]},
+                                            "dns_error": {"type": "boolean"},
                                             "ssl_error": {"type": "boolean"},
                                             "invalid_response": {"type": "boolean"},
                                         },
-                                        "required": ["url", "status"],
+                                        "required": [
+                                            "url",
+                                            "ip_port",
+                                            "response_time",
+                                            "status",
+                                            "dns_error",
+                                            "ssl_error",
+                                            "invalid_response",
+                                        ],
                                         "additionalProperties": False,
                                     },
                                 },

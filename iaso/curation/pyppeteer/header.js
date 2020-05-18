@@ -2,6 +2,10 @@ function () {
     let header = document.getElementById("iaso-header");
     
     if (header !== null) {
+        return true;
+    }
+    
+    if (document.body === null) {
         return;
     }
     
@@ -10,5 +14,9 @@ function () {
 
     header.innerHTML = "<div></div>";
 
-    document.body.insertBefore(header, document.body.firstElementChild);
+    if (document.body.childElementCount > 0) {
+        document.body.insertBefore(header, document.body.firstElementChild);
+    } else {
+        document.body.appendChild(header);
+    }
 }

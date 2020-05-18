@@ -1,7 +1,11 @@
 import click
 
 from ..utils import format_json
+
 from .validators.http_status_error import HTTPStatusError
+from .validators.redirect_flag_error import DNSError, SSLError, InvalidResponseError
+from .validators.scheme_redirect_error import SchemeRedirectError
+
 from .interact import CurationController, CurationNavigator, CurationFormatter
 from .generator import curation_entry_generator, CurationDirection
 
@@ -16,9 +20,20 @@ async def curate(registry, datamine, Controller, Navigator, Informant):
         for resource in namespace.resources:
             provider_namespace[resource.id] = namespace
 
+    validators = [
+        DNSError,
+        SSLError,
+        InvalidResponseError,
+        HTTPStatusError,
+        SchemeRedirectError,
+    ]
+
     entries = curation_entry_generator(
         datamine.providers,
-        [lambda p: p.id in registry.resources, HTTPStatusError.check_and_create],
+        [
+            lambda p: p.id in registry.resources,
+            *[validator.check_and_create for validator in validators],
+        ],
     )
 
     click.echo(click.style("Starting the curation process ...", fg="yellow"))

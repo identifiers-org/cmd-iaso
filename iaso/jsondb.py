@@ -110,8 +110,13 @@ def json_to_namedtuple(data, ntname=None):
 
             primary_key = data[next(iter(data))]
 
+            fields = {
+                key: _explore_recurse(key, value, classes)
+                for key, value in data.items()
+            }
+
             item = classes[field](
-                *[_explore_recurse(key, value, classes) for key, value in data.items()]
+                *[fields[fieldname] for fieldname in classes[field]._fields]
             )
 
             return item

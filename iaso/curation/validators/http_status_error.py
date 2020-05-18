@@ -1,6 +1,7 @@
 from collections import Counter
 
-from requests.status_codes import _codes as status_codes
+from requests import codes as status_code_values
+from requests.status_codes import _codes as status_code_names
 
 from ..error import CurationError
 
@@ -21,8 +22,7 @@ class HTTPStatusError(CurationError):
 
         status_code, frequency = status_codes.most_common(1)[0]
 
-        # TODO: redirects should also not be allowed here
-        if status_code < 400:
+        if status_code < status_code_values.multiple_choices:
             return True
 
         return HTTPStatusError(status_code)
@@ -37,21 +37,8 @@ class HTTPStatusError(CurationError):
                 self.status_code,
                 ", ".join(
                     code.replace("_", " ")
-                    for code in status_codes.get(self.status_code, "unknown")
+                    for code in status_code_names.get(self.status_code, "unknown")
                     if "\\" not in code
                 ),
             ),
-        )
-        formatter.format_json(
-            "Test JSON Data",
-            {
-                "hello": [1, 2, 3, 4],
-                "bye": [4, 3, 2, 1],
-                "there": {
-                    "a": 1,
-                    "b": 2,
-                    "c": ["hello", None],
-                    "there": {"a": 1, "b": 2, "c": ["hello", None]},
-                },
-            },
         )
