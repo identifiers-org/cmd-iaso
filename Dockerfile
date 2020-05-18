@@ -1,3 +1,16 @@
+# ============================= DOCKER COMMANDS ============================= #
+#                                                                             #
+# BUILD: docker build --tag cmd-iaso:VERSION .                                #
+#                                                                             #
+# RUN: docker run -a stdin -a stdout -a stderr -it --net=host \               #
+#      cmd-iaso:VERSION                                                       #
+#                                                                             #
+# CURATE: docker run -a stdin -a stdout -a stderr -it --net=host --mount \    #
+#         type=bind,source=FILEPATH,target=/root/upload/FILENAME \            #
+#         cmd-iaso:VERSION curate /root/upload/FILENAME                       #
+#                                                                             #
+# ============================= DOCKER COMMANDS ============================= #
+
 FROM python:3.7-slim-buster
 
 COPY . /app
@@ -12,7 +25,6 @@ RUN apt-get update && \
     apt-get remove -y gcc && \
     apt-get -y autoremove
 
-ENTRYPOINT ["cmd-iaso"]
+RUN pyppeteer-install
 
-# docker build --tag cmd-iaso:0.0.0 .
-# docker run --net=host cmd-iaso:0.0.0 curate datamine.json --controller chrome --navigator terminal --informant terminal --chrome localhost:9222
+ENTRYPOINT ["cmd-iaso"]

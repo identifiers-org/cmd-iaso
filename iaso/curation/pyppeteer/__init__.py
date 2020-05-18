@@ -91,10 +91,11 @@ class PyppeteerLauncher:
 
             try:
                 browser = await pyppeteer.launch(headless=False)
-            except:
+            except Exception as err:
                 raise click.ClickException(
                     click.style(
-                        f"Could not launch a new Chrome browser instance", fg="red"
+                        f"Could not launch a new Chrome browser instance: {err}",
+                        fg="red",
                     )
                 )
 
