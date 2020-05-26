@@ -69,7 +69,7 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
         const overlay_index = document.getElementById("iaso-informant-overlay-index");
         overlay_index.innerText = provider_index;
 
-        function noclick (element) {
+        function noclick (element, show_depth) {
             if (element.onclick === null) {
                 element.onclick = (element.classList.length > 0) ? ((e) => e.stopPropagation()) : hideOverlay;
             }
@@ -78,23 +78,31 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
                 element.style.cursor = "default";
                 element.style.pointerEvents = "auto";
             }
+            
+            if (element.childElementCount > 1 && element.firstElementChild.classList && element.firstElementChild.classList.contains("disclosure")) {
+                show_depth -= 1;
+            }
 
             for (const child of element.children) {
-                noclick(child);
+                noclick(child, show_depth);
+            }
+            
+            if (element.classList.contains("disclosure") && show_depth < 0) {
+                element.click();
             }
         };
 
-        renderjson.set_show_to_level(0);
+        renderjson.set_show_to_level("all");
 
         const overlay_issues = document.getElementById("iaso-informant-overlay-issues");
         overlay_issues.innerHTML = "";
 
-        for (const [title, issue] of provider_issues) {
+        for (const [title, issue, level] of provider_issues) {
             const list = document.createElement('li');
             list.innerHTML = `<span style="text-decoration: underline">${title}: </span>`;
 
             const rendered_json = renderjson(issue);
-            noclick(rendered_json);
+            noclick(rendered_json, level);
 
             list.appendChild(rendered_json);
             overlay_issues.appendChild(list);

@@ -105,8 +105,11 @@ def registry(ctx):
     not_required_if=["controller=terminal", "navigator=terminal", "informant=terminal"],
     default="launch",
 )
+@click.option("--show-redirect-chain", is_flag=True)
 @coroutine
-async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
+async def curate(
+    ctx, datamine, show_redirect_chain, controller, navigator, informant, chrome=None
+):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
     Reads the mined information on providers from the DATAMINE JSON file path.
@@ -150,7 +153,12 @@ async def curate(ctx, datamine, controller, navigator, informant, chrome=None):
         }[informant]
 
         await curation.curate(
-            ctx_registry(ctx), Datamine(datamine), Controller, Navigator, Informant
+            ctx_registry(ctx),
+            Datamine(datamine),
+            Controller,
+            Navigator,
+            Informant,
+            show_redirect_chain,
         )
 
 

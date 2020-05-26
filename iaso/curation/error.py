@@ -4,8 +4,12 @@ from abc import ABC, abstractmethod
 class CurationError(ABC):
     @staticmethod
     @abstractmethod
-    def check_and_create(provider):
+    def check_and_create(get_compact_identifier, provider):
         pass
+
+    @staticmethod
+    def format_lui_link(url, lui):
+        return url.replace(lui, "{$id}") if lui in url else f"<{url}>"
 
     @abstractmethod
     def format(self, formatter):

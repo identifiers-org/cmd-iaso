@@ -5,6 +5,7 @@ import pyppeteer
 from contextlib import suppress
 
 from ..interact import CurationNavigator
+from .coordinator import PyppeteerCoordinator
 
 
 class PyppeteerNavigator(CurationNavigator):
@@ -67,11 +68,13 @@ class PyppeteerNavigator(CurationNavigator):
             self.hackRedirectConnection(callFrameId)
         )
 
-    async def navigate(self, url):
+    async def navigate(self, url, provider_id):
         if self.page.url.startswith(
             "https://registry.identifiers.org"
         ) and url.startswith("https://registry.identifiers.org"):
-            # Attempt to hijack SPA redirects for smoother redirection
+            with suppress(pyppeteer.errors.NetworkError):
+                await self.page.click("[href='/registry']")
+
             self.redirectPath = url[32:].replace("registry", "registri")
 
             with suppress(pyppeteer.errors.NetworkError):
@@ -84,7 +87,16 @@ class PyppeteerNavigator(CurationNavigator):
 
             with suppress(pyppeteer.errors.NetworkError):
                 await self.page.mouse.move(0, 0)
+        else:
+            await self.page.goto(url)
 
-            return
+        # Enter edit mode for the current provider information
+        async with PyppeteerCoordinator(self.page) as coordinator:
+            with suppress(
+                pyppeteer.errors.ElementHandleError, pyppeteer.errors.TimeoutError
+            ):
+                xpath = f'//td[text()="{provider_id}"]'
 
-        await self.page.goto(url)
+                await self.page.waitForXPath(xpath, timeout=1000)
+
+                await coordinator.evaluate("edit.js", xpath)

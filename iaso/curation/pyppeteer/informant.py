@@ -32,8 +32,8 @@ class PyppeteerFormatter(CurationFormatter):
     async def onnavigate(self, frame):
         await self.refresh(False)
 
-    def format_json(self, title, content):
-        self.buffer.append((title, content))
+    def format_json(self, title, content, level):
+        self.buffer.append((title, content, level))
 
     async def output(self, url, resource, namespace, position, total):
         if "{$url}" in self.url_regex_pattern:

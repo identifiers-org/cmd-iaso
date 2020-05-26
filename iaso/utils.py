@@ -5,6 +5,7 @@ from json import JSONEncoder
 import click
 
 LINK_PATTERN = re.compile(r"<(.+?)>")
+NAMED_LINK_PATTERN = re.compile(r"\[(.+?)\]\((.+?)\)")
 
 
 def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=False):
@@ -35,7 +36,7 @@ def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=Fals
             )
 
         accumulator.append("{indent}}}".format(indent=("  " * indent)))
-    elif isinstance(json_vals, list):
+    elif isinstance(json_vals, list) or isinstance(json_vals, tuple):
         accumulator.append("[\n")
 
         for i, val in enumerate(json_vals):
@@ -46,10 +47,15 @@ def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=Fals
         accumulator.append("{indent}]".format(indent=("  " * indent)))
     elif isinstance(json_vals, str):
         for i, text in enumerate(LINK_PATTERN.split(json_vals)):
-            if (i % 2) == 1:
-                accumulator.append(click.style(text, fg="bright_blue", underline=True))
+            if i % 2 == 0:
+                for i, text in enumerate(NAMED_LINK_PATTERN.split(text)):
+                    if i % 3 == 0:
+                        accumulator.append(click.style(text, fg="yellow"))
+                    elif i % 3 == 1:
+                        # Named links cannot be copy-pasted, so they are formatted as normal text
+                        accumulator.append(click.style(text, fg="yellow"))
             else:
-                accumulator.append(click.style(text, fg="yellow"))
+                accumulator.append(click.style(text, fg="bright_blue", underline=True))
     else:
         accumulator.append(click.style("{value}".format(value=json_vals), fg="green"))
 

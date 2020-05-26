@@ -23,7 +23,7 @@ class TerminalController(CurationController):
 
 
 class TerminalNavigator(CurationNavigator):
-    async def navigate(self, url):
+    async def navigate(self, url, provider_id):
         ctx = click.get_current_context()
 
         center_str = "_" * len(url)
@@ -39,8 +39,8 @@ class TerminalFormatter(CurationFormatter):
     def __init__(self):
         self.buffer = []
 
-    def format_json(self, title, content):
-        self.buffer.append((title, content))
+    def format_json(self, title, content, level):
+        self.buffer.append((title, content, level))
 
     async def output(self, url, resource, namespace, position, total):
         ctx = click.get_current_context()
@@ -61,7 +61,7 @@ class TerminalFormatter(CurationFormatter):
 
         click.echo("The following issues were observed:")
 
-        for title, content in self.buffer:
+        for title, content, level in self.buffer:
             click.echo("- {}: ".format(click.style(title, underline=True)), nl=False)
 
             click.echo(format_json(content, indent=1))

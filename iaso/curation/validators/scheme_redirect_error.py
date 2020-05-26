@@ -1,6 +1,7 @@
 from urllib.parse import urlparse
 
 from ..error import CurationError
+from .collector import ErrorExampleCollector
 
 
 def strip_scheme(url):
@@ -11,24 +12,25 @@ def strip_scheme(url):
 
 class SchemeRedirectError(CurationError):
     @staticmethod
-    def check_and_create(provider):
-        urls = set()
+    def check_and_create(get_compact_identifier, provider):
+        collector = ErrorExampleCollector("Schema-Only Redirect")
 
         for ping in provider.pings:
-            for (rfrom, to) in zip(ping.redirects[:-1], ping.redirects[1:]):
-                if strip_scheme(rfrom.url) == strip_scheme(to.url):
-                    urls.add((rfrom.url, to.url))
+            for (redirect_from, redirect_to) in zip(
+                ping.redirects[:-1], ping.redirects[1:]
+            ):
+                collector.add(
+                    f"{SchemeRedirectError.format_lui_link(redirect_from.url, ping.lui)} => {SchemeRedirectError.format_lui_link(redirect_to.url, ping.lui)}",
+                    get_compact_identifier(ping.lui, provider.id),
+                )
 
-        if len(urls) == 0:
+        if len(collector) == 0:
             return True
 
-        return SchemeRedirectError(urls)
+        return SchemeRedirectError(collector.result())
 
-    def __init__(self, urls):
-        self.urls = urls
+    def __init__(self, redirects):
+        self.redirects = redirects
 
     def format(self, formatter):
-        formatter.format_json(
-            "Scheme Redirect",
-            [f"<{url_from}> => <{url_to}>" for url_from, url_to in self.urls],
-        )
+        formatter.format_json("Scheme-Only Redirect", self.redirects, 2)

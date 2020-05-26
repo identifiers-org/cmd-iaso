@@ -69,7 +69,9 @@ var module, window, define, renderjson=(function() {
             let txt = Array.prototype.shift.call(arguments);
             
             if (classname == "link") {
-                spans.push(append(link(txt), text(txt)));
+                let href = Array.prototype.shift.call(arguments);
+                
+                spans.push(append(link(href), text(txt)));
             } else {
                 spans.push(append(span(classname), text(txt)));
             }
@@ -144,11 +146,29 @@ var module, window, define, renderjson=(function() {
 
         if (typeof(json) != "object" || [Number, String, Boolean, Date].indexOf(json.constructor) >= 0) { // Strings, numbers and bools
             if (typeof(json) == "string") {
-                let groups = json.split(/<(.+?)>/g);
+                let linkgroups = json.split(/<(.+?)>/g);
                 let arguments = [null, my_indent];
-                for (let [key, value] of Object.entries(groups)) {
-                    arguments.push((key % 2 == 1) ? "link" : "string");
-                    arguments.push(value);
+                
+                for (let [key, value] of Object.entries(linkgroups)) {
+                    if (key % 2 == 0) {
+                        let namedlinkgroups = value.split(/\[(.+?)\]\((.+?)\)/g);
+                        
+                        for (let [key, value] of Object.entries(namedlinkgroups)) {
+                            if (key % 3 == 0) {
+                                arguments.push("string");
+                                arguments.push(value);
+                            } else if (key % 3 == 1) {
+                                arguments.push("link");
+                                arguments.push(value);
+                            } else {
+                                arguments.push(value);
+                            }
+                        }
+                    } else {
+                        arguments.push("link");
+                        arguments.push(value);
+                        arguments.push(value);
+                    }
                 }
                 return themetext(...arguments);
             }

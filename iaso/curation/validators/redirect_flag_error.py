@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from ..error import CurationError
+from .collector import ErrorExampleCollector
 
 
 class RedirectFlagError(CurationError, ABC):
@@ -10,21 +11,32 @@ class RedirectFlagError(CurationError, ABC):
         pass
 
     @staticmethod
-    def check_and_create(Subclass, provider):
-        urls = set()
+    @abstractmethod
+    def get_error_name():
+        pass
+
+    @staticmethod
+    def check_and_create(get_compact_identifier, Subclass, provider):
+        collector = ErrorExampleCollector(Subclass.get_error_name())
 
         for ping in provider.pings:
             for redirect in ping.redirects:
                 if Subclass.get_flag_from_redirect(redirect) is True:
-                    urls.add(redirect.url)
+                    collector.add(
+                        RedirectFlagError.format_lui_link(redirect.url, ping.lui),
+                        get_compact_identifier(ping.lui, provider.id),
+                    )
 
-        if len(urls) == 0:
+        if len(collector) == 0:
             return True
 
-        return Subclass([f"<{url}>" for url in urls])
+        return Subclass(collector.result())
 
     def __init__(self, urls):
         self.urls = urls
+
+    def format(self, formatter):
+        formatter.format_json(type(self).get_error_name(), self.urls, 2)
 
 
 class DNSError(RedirectFlagError):
@@ -33,11 +45,14 @@ class DNSError(RedirectFlagError):
         return redirect.dns_error
 
     @staticmethod
-    def check_and_create(provider):
-        return super(DNSError, DNSError).check_and_create(DNSError, provider)
+    def get_error_name():
+        return "DNS Error"
 
-    def format(self, formatter):
-        formatter.format_json("DNS Error", self.urls)
+    @staticmethod
+    def check_and_create(get_compact_identifier, provider):
+        return super(DNSError, DNSError).check_and_create(
+            get_compact_identifier, DNSError, provider
+        )
 
 
 class SSLError(RedirectFlagError):
@@ -46,11 +61,14 @@ class SSLError(RedirectFlagError):
         return redirect.ssl_error
 
     @staticmethod
-    def check_and_create(provider):
-        return super(SSLError, SSLError).check_and_create(SSLError, provider)
+    def get_error_name():
+        return "SSL Error"
 
-    def format(self, formatter):
-        formatter.format_json("SSL Error", self.urls)
+    @staticmethod
+    def check_and_create(get_compact_identifier, provider):
+        return super(SSLError, SSLError).check_and_create(
+            get_compact_identifier, SSLError, provider
+        )
 
 
 class InvalidResponseError(RedirectFlagError):
@@ -59,10 +77,11 @@ class InvalidResponseError(RedirectFlagError):
         return redirect.invalid_response
 
     @staticmethod
-    def check_and_create(provider):
-        return super(InvalidResponseError, InvalidResponseError).check_and_create(
-            InvalidResponseError, provider
-        )
+    def get_error_name():
+        return "Invalid Response"
 
-    def format(self, formatter):
-        formatter.format_json("Invalid Response", self.urls)
+    @staticmethod
+    def check_and_create(get_compact_identifier, provider):
+        return super(InvalidResponseError, InvalidResponseError).check_and_create(
+            get_compact_identifier, InvalidResponseError, provider
+        )
