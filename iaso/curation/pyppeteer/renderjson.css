@@ -1,4 +1,4 @@
-.disclosure, .syntax, .string, .number, .boolean, .key, .keyword, .object.syntax, .array.syntax, .object.syntax + a, .array.syntax + a {
+.disclosure, .syntax, .string, .link, .number, .boolean, .key, .keyword, .object.syntax, .array.syntax, .object.syntax + a, .array.syntax + a {
     background-color: white;
     pointer-events: auto;
 }
@@ -13,4 +13,8 @@
 
 .key {
     color: red;
+}
+
+.syntax {
+    color: black;
 }

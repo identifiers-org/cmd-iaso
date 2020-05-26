@@ -1,6 +1,10 @@
+import re
+
 from json import JSONEncoder
 
 import click
+
+LINK_PATTERN = re.compile(r"<(.+?)>")
 
 
 def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=False):
@@ -41,9 +45,11 @@ def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=Fals
 
         accumulator.append("{indent}]".format(indent=("  " * indent)))
     elif isinstance(json_vals, str):
-        accumulator.append(
-            click.style('"{value}"'.format(value=json_vals), fg="yellow")
-        )
+        for i, text in enumerate(LINK_PATTERN.split(json_vals)):
+            if (i % 2) == 1:
+                accumulator.append(click.style(text, fg="bright_blue", underline=True))
+            else:
+                accumulator.append(click.style(text, fg="yellow"))
     else:
         accumulator.append(click.style("{value}".format(value=json_vals), fg="green"))
 

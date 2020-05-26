@@ -84,7 +84,7 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
             }
         };
 
-        renderjson.set_show_to_level("all");
+        renderjson.set_show_to_level(0);
 
         const overlay_issues = document.getElementById("iaso-informant-overlay-issues");
         overlay_issues.innerHTML = "";

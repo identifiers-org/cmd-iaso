@@ -31,7 +31,7 @@ class TerminalNavigator(CurationNavigator):
         click.echo(
             ">>> {} <<<".format(center_str)
             .center(80 if ctx.max_content_width is None else ctx.max_content_width)
-            .replace(center_str, click.style(url, fg="bright_blue", underline=True,))
+            .replace(center_str, click.style(url, fg="bright_blue", underline=True))
         )
 
 

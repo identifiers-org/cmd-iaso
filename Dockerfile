@@ -2,12 +2,17 @@
 #                                                                             #
 # BUILD: docker build --tag cmd-iaso:VERSION .                                #
 #                                                                             #
-# RUN: docker run -a stdin -a stdout -a stderr -it --net=host \               #
-#      cmd-iaso:VERSION                                                       #
+# RUN: docker run -it --net=host cmd-iaso:VERSION                             #
 #                                                                             #
-# CURATE: docker run -a stdin -a stdout -a stderr -it --net=host --mount \    #
+# CURATE: docker run -it --net=host --mount \                                 #
 #         type=bind,source=FILEPATH,target=/root/upload/FILENAME \            #
 #         cmd-iaso:VERSION curate /root/upload/FILENAME                       #
+#                                                                             #
+# START: docker start cmd-iaso:VERSION                                        #
+#                                                                             #
+# TODO : docker exec COMMAND (TODO check net and mount arg)                   #
+#                                                                             #
+# STOP: docker stop cmd-iaso:VERSION                                          #
 #                                                                             #
 # ============================= DOCKER COMMANDS ============================= #
 

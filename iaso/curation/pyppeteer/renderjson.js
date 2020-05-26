@@ -64,9 +64,16 @@
 var module, window, define, renderjson=(function() {
     var themetext = function(/* [class, text]+ */) {
         var spans = [];
-        while (arguments.length)
-            spans.push(append(span(Array.prototype.shift.call(arguments)),
-                              text(Array.prototype.shift.call(arguments))));
+        while (arguments.length) {
+            let classname = Array.prototype.shift.call(arguments);
+            let txt = Array.prototype.shift.call(arguments);
+            
+            if (classname == "link") {
+                spans.push(append(link(txt), text(txt)));
+            } else {
+                spans.push(append(span(classname), text(txt)));
+            }
+        }
         return spans;
     };
     var append = function(/* el, ... */) {
@@ -90,6 +97,11 @@ var module, window, define, renderjson=(function() {
     var span = function(classname) { var s = document.createElement("span");
                                      if (classname) s.className = classname;
                                      return s; };
+    var link = function(href) { var a = document.createElement("a");
+                                a.className = "link";
+                                a.target = "_blank";
+                                if (href) a.href = href;
+                                return a; };
     var A = function A(txt, classname, callback) { var a = document.createElement("a");
                                                    if (classname) a.className = classname;
                                                    a.appendChild(text(txt));
@@ -130,8 +142,18 @@ var module, window, define, renderjson=(function() {
                 return append(span("string"), themetext(null, my_indent, "string", JSON.stringify(json)));
             });
 
-        if (typeof(json) != "object" || [Number, String, Boolean, Date].indexOf(json.constructor) >= 0) // Strings, numbers and bools
+        if (typeof(json) != "object" || [Number, String, Boolean, Date].indexOf(json.constructor) >= 0) { // Strings, numbers and bools
+            if (typeof(json) == "string") {
+                let groups = json.split(/<(.+?)>/g);
+                let arguments = [null, my_indent];
+                for (let [key, value] of Object.entries(groups)) {
+                    arguments.push((key % 2 == 1) ? "link" : "string");
+                    arguments.push(value);
+                }
+                return themetext(...arguments);
+            }
             return themetext(null, my_indent, typeof(json), JSON.stringify(json));
+        }
 
         if (json.constructor == Array) {
             if (json.length == 0) return themetext(null, my_indent, "array syntax", "[]");
@@ -161,7 +183,7 @@ var module, window, define, renderjson=(function() {
             for (var i in keys) {
                 var k = keys[i];
                 if (!(k in json)) continue;
-                append(os, themetext(null, indent+"    ", "key", '"'+k+'"', "object syntax", ': '),
+                append(os, themetext(null, indent+"    ", "key", k, "object syntax", ': '),
                        _renderjson(options.replacer.call(json, k, json[k]), indent+"    ", true, show_level-1, options),
                        k != last ? themetext("syntax", ",") : [],
                        text("\n"));

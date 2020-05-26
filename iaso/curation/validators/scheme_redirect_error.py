@@ -22,13 +22,13 @@ class SchemeRedirectError(CurationError):
         if len(urls) == 0:
             return True
 
-        return [SchemeRedirectError(*url) for url in urls]
+        return SchemeRedirectError(urls)
 
-    def __init__(self, url_from, url_to):
-        self.url_from = url_from
-        self.url_to = url_to
+    def __init__(self, urls):
+        self.urls = urls
 
     def format(self, formatter):
         formatter.format_json(
-            "Scheme Redirect", "{} => {}".format(self.url_from, self.url_to),
+            "Scheme Redirect",
+            [f"<{url_from}> => <{url_to}>" for url_from, url_to in self.urls],
         )

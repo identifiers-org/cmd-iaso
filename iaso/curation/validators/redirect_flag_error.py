@@ -21,10 +21,10 @@ class RedirectFlagError(CurationError, ABC):
         if len(urls) == 0:
             return True
 
-        return [Subclass(url) for url in urls]
+        return Subclass([f"<{url}>" for url in urls])
 
-    def __init__(self, url):
-        self.url = url
+    def __init__(self, urls):
+        self.urls = urls
 
 
 class DNSError(RedirectFlagError):
@@ -37,7 +37,7 @@ class DNSError(RedirectFlagError):
         return super(DNSError, DNSError).check_and_create(DNSError, provider)
 
     def format(self, formatter):
-        formatter.format_json("DNS Error", self.url)
+        formatter.format_json("DNS Error", self.urls)
 
 
 class SSLError(RedirectFlagError):
@@ -50,7 +50,7 @@ class SSLError(RedirectFlagError):
         return super(SSLError, SSLError).check_and_create(SSLError, provider)
 
     def format(self, formatter):
-        formatter.format_json("SSL Error", self.url)
+        formatter.format_json("SSL Error", self.urls)
 
 
 class InvalidResponseError(RedirectFlagError):
@@ -65,4 +65,4 @@ class InvalidResponseError(RedirectFlagError):
         )
 
     def format(self, formatter):
-        formatter.format_json("Invalid Response", self.url)
+        formatter.format_json("Invalid Response", self.urls)
