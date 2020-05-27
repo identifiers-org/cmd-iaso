@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from functools import update_wrapper, partial
 from pathlib import Path
@@ -21,6 +22,9 @@ from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.navigator import PyppeteerNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
+from .scraping.proxy3 import serve as serve_proxy
+from .scraping import generate_scraping_jobs, scrape_resources
+
 from .click.validators import (
     load_registered_validators,
     validate_validators,
@@ -33,6 +37,8 @@ from .utils import format_json
 from .environment import collect_environment_description
 from .registry import Registry
 from .datamine import Datamine
+from .namespace_ids import NamespaceIds
+from .scraping.jobs import ScrapingJobs
 
 
 def coroutine(f):
@@ -86,7 +92,8 @@ def registry(ctx):
 @cli.command(cls=ValidateMutexCommand)
 @click.pass_context
 @click.argument(
-    "datamine", type=click.Path(exists=True, readable=True, allow_dash=True)
+    "datamine",
+    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
 )
 @click.option(
     "--controller",
@@ -195,6 +202,89 @@ async def curate(
             Informant,
             validators,
         )
+
+
+@cli.command()
+@click.pass_context
+@click.option("--port", default=8080, show_envvar=True)
+@click.option("--timeout", default=10, show_envvar=True)
+def proxy3(ctx, port, timeout):
+    serve_proxy(port, timeout)
+
+
+@cli.command()
+@click.pass_context
+@click.argument("jobs", type=click.Path(writable=True, dir_okay=False, allow_dash=True))
+@click.option(
+    "--valid", type=click.IntRange(min=0), default=50, show_envvar=True,
+)
+@click.option(
+    "--random", type=click.IntRange(min=0), default=50, show_envvar=True,
+)
+@click.option(
+    "--valid-namespace-ids",
+    prompt=True,
+    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
+    cls=MutexOption,
+    not_required_if=["valid=0"],
+    show_envvar=True,
+)
+def jobs(ctx, jobs, valid, random, valid_namespace_ids):
+    with click.open_file(jobs, "w") as file:
+        json.dump(
+            generate_scraping_jobs(
+                ctx_registry(ctx),
+                valid,
+                random,
+                NamespaceIds(valid_namespace_ids)
+                if valid_namespace_ids is not None
+                else None,
+            ),
+            file,
+        )
+
+
+import socket
+
+
+@cli.command()
+@click.pass_context
+@click.argument(
+    "jobs", type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True)
+)
+@click.argument(
+    "dump", type=click.Path(exists=True, readable=True, writable=True, file_okay=False)
+)
+@click.option(
+    "--proxy", type=ChromeChoice(), default="launch", show_envvar=True,
+)
+@click.option(
+    "--workers", type=click.IntRange(min=1), default=32, show_envvar=True,
+)
+@click.option(
+    "--timeout", type=click.IntRange(min=5), default=30, show_envvar=True,
+)
+@coroutine
+async def scrape(ctx, jobs, dump, proxy, workers, timeout):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    if proxy == "launch":
+        proxy = None
+    else:
+        try:
+            ip_address, _, port = proxy.rpartition(":")
+
+            s.connect((ip_address, int(port)))
+            s.settimeout(timeout)
+            s.shutdown(socket.SHUT_RDWR)
+        except:
+            raise click.UsageError(
+                f"network error: could not connect to proxy at {proxy}."
+            )
+        finally:
+            s.close()
+
+    await scrape_resources(ScrapingJobs(jobs), dump, proxy, workers, timeout)
 
 
 def main():

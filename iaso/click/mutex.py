@@ -26,7 +26,7 @@ class ValidateMutexCommand(click.Command):
                 exlusivity.append(f"--{mutex_opt_name}")
 
             if (mutex_opt_name not in params or params[mutex_opt_name] is None) or (
-                ("=" in mutex_opt) and (params[mutex_opt_name] != mutext_opt_val)
+                ("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val)
             ):
                 return True
 
