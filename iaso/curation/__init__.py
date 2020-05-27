@@ -13,9 +13,7 @@ from .generator import curation_entry_generator, CurationDirection
 import click
 
 
-async def curate(
-    registry, datamine, Controller, Navigator, Informant, show_redirect_chain
-):
+async def curate(registry, datamine, Controller, Navigator, Informant, validators):
     click.echo("The data loaded was collected in the following environment:")
     click.echo(format_json(datamine.environment))
 
@@ -31,27 +29,34 @@ async def curate(
 
         return f"{provider_namespace[pid].prefix}:{lui}"
 
-    validators = [
-        DNSError,
-        SSLError,
-        InvalidResponseError,
-        HTTPStatusError,
-        SchemeRedirectError,
-    ]
-
-    if show_redirect_chain:
-        validators.insert(0, RedirectChain)
-
     entries = curation_entry_generator(
         datamine.providers,
         [
             lambda p: p.id in registry.resources,
             *[
                 partial(validator.check_and_create, get_compact_identifier)
-                for validator in validators
+                for validator in validators.values()
             ],
         ],
     )
+
+    validator_names = list(validators.keys())
+
+    if len(validator_names) == 0:
+        click.echo(click.style("No validators were loaded.", fg="red"))
+    elif len(validator_names) == 1:
+        click.echo(
+            click.style(f"The {validator_names[0]} validator was loaded.", fg="yellow")
+        )
+    else:
+        click.echo(
+            click.style(
+                "The {} and {} validators were loaded.".format(
+                    ", ".join(validator_names[:-1]), validator_names[-1]
+                ),
+                fg="yellow",
+            )
+        )
 
     click.echo(click.style("Starting the curation process ...", fg="yellow"))
 

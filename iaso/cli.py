@@ -16,6 +16,11 @@ from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.navigator import PyppeteerNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
+from .click.validators import (
+    load_registered_validators,
+    validate_validators,
+    list_validators,
+)
 from .click.mutex import ValidateMutexCommand, MutexOption
 from .click.chrome import ChromeChoice
 
@@ -51,6 +56,8 @@ def ctx_registry(ctx):
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
+
+    load_registered_validators(ctx)
 
 
 @cli.command()
@@ -105,10 +112,24 @@ def registry(ctx):
     not_required_if=["controller=terminal", "navigator=terminal", "informant=terminal"],
     default="launch",
 )
-@click.option("--show-redirect-chain", is_flag=True)
+@click.option(
+    "--validate",
+    "-v",
+    "validators",
+    multiple=True,
+    callback=validate_validators,
+    default=["dns-error", "invalid-response", "http-status-error"],
+)
+@click.option(
+    "--list-validators",
+    is_flag=True,
+    callback=list_validators,
+    expose_value=False,
+    is_eager=True,
+)
 @coroutine
 async def curate(
-    ctx, datamine, show_redirect_chain, controller, navigator, informant, chrome=None
+    ctx, datamine, validators, controller, navigator, informant, chrome=None
 ):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
@@ -126,6 +147,9 @@ async def curate(
     \b
     You can launch a new Chrome browser using:
     > chrome --remote-debugging-port=PORT
+    
+    -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
+    You can list the registered (not yet validated) validator modules using --list-validators.
     """
 
     async with PyppeteerLauncher(chrome) as launcher:
@@ -158,7 +182,7 @@ async def curate(
             Controller,
             Navigator,
             Informant,
-            show_redirect_chain,
+            validators,
         )
 
 
