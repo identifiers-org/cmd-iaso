@@ -23,6 +23,7 @@ setup(
         "psutil==5.7.0",
         "py-cpuinfo==5.0.0",
         "pyppeteer==0.0.25",
+        "python-dotenv==0.13.0",
         "requests==2.23.0",
     ],
     author="Moritz Langenstein",

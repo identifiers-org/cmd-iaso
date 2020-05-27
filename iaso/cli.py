@@ -1,8 +1,13 @@
 import asyncio
 
 from functools import update_wrapper, partial
+from pathlib import Path
 
 import click
+
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=(Path(".") / ".env"))
 
 from . import curation
 
@@ -89,6 +94,7 @@ def registry(ctx):
     required=True,
     type=click.Choice(["terminal", "chrome"]),
     default="chrome",
+    show_envvar=True,
 )
 @click.option(
     "--navigator",
@@ -96,6 +102,7 @@ def registry(ctx):
     required=True,
     type=click.Choice(["terminal", "chrome"]),
     default="chrome",
+    show_envvar=True,
 )
 @click.option(
     "--informant",
@@ -103,6 +110,7 @@ def registry(ctx):
     required=True,
     type=click.Choice(["terminal", "chrome"]),
     default="terminal",
+    show_envvar=True,
 )
 @click.option(
     "--chrome",
@@ -111,6 +119,7 @@ def registry(ctx):
     cls=MutexOption,
     not_required_if=["controller=terminal", "navigator=terminal", "informant=terminal"],
     default="launch",
+    show_envvar=True,
 )
 @click.option(
     "--validate",
@@ -119,6 +128,7 @@ def registry(ctx):
     multiple=True,
     callback=validate_validators,
     default=["dns-error", "invalid-response", "http-status-error"],
+    show_envvar=True,
 )
 @click.option(
     "--list-validators",
@@ -149,6 +159,7 @@ async def curate(
     > chrome --remote-debugging-port=PORT
     
     -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
+    
     You can list the registered (not yet validated) validator modules using --list-validators.
     """
 
@@ -187,7 +198,7 @@ async def curate(
 
 
 def main():
-    cli(prog_name="cmd-iaso")
+    cli(prog_name="cmd-iaso", auto_envvar_prefix="CMD_IASO")
 
 
 if __name__ == "__main__":

@@ -11,3 +11,6 @@ dist/
 
 # Tox folder
 .tox/
+
+# Environment configuration file
+.env
