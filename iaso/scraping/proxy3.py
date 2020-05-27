@@ -48,7 +48,6 @@ from subprocess import Popen, PIPE
 
 import click
 import urllib3
-import OpenSSL
 
 urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
