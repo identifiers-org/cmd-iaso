@@ -18,6 +18,7 @@ setup(
     package_data={"iaso.curation.pyppeteer": ["*.js", "*.css"]},
     install_requires=[
         "aioconsole==0.1.16",
+        "async-generator==1.10",
         "click==7.1.2",
         "jsonschema==3.2.0",
         "file-magic==0.4.0",
