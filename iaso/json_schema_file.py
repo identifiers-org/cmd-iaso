@@ -8,7 +8,7 @@ from jsonschema import validate
 from .jsondb import json_to_namedtuple
 
 
-def JsonSchemaFile(filepath, schemaname, schema):
+def JsonSchemaFile(filepath, schemaname, schema, namedtuple=True):
     try:
         if filepath.endswith(".gz"):
             with click.open_file(filepath, "rb") as file:
@@ -43,4 +43,4 @@ def JsonSchemaFile(filepath, schemaname, schema):
             ),
         )
 
-    return json_to_namedtuple(json_file)
+    return json_to_namedtuple(json_file) if namedtuple else json_file

@@ -2,7 +2,7 @@ import asyncio
 import base64
 import gzip
 import json
-import magic
+import puremagic
 import multiprocessing as mp
 import os
 import random
@@ -101,6 +101,51 @@ import re
 
 FTP_STATUS_PATTERN = re.compile(r"([1-6][0-9][0-9])")
 
+import chardet
+
+
+def _confidence(matches, ext=None):
+    """ Rough confidence based on string length and file extension"""
+    results = []
+    for match in matches:
+        con = (
+            0.8
+            if len(match.extension) >= 8
+            else float("0.{0}".format(len(match.extension)))
+        )
+        if ext == match.extension:
+            con = 0.9
+        results.append(
+            puremagic.main.PureMagicWithConfidence(confidence=con, **match._asdict())
+        )
+    return sorted(results, key=lambda x: x.confidence, reverse=True)
+
+
+puremagic.main._confidence = _confidence
+
+
+def get_mime_type(content, url):
+    return puremagic.from_string(
+        content, mime=True, filename=os.path.basename(urlparse(url).path)
+    )
+
+
+def get_encoding(content):
+    return chardet.detect(content)["encoding"] or "binary"
+
+
+def decode_content(content, mime_type, encoding):
+    if encoding == "binary":
+        return "data:{};base64,{}".format(
+            mime_type, base64.b64encode(content).decode("utf-8")
+        )
+    else:
+        return content.decode(encoding)
+
+
+def get_content_type(mime_type, encoding):
+    return f"{mime_type}; charset={encoding}"
+
 
 async def scrape_ftp_resource(url, timeout):
     request_date = datetime.now(timezone.utc).replace(microsecond=0, tzinfo=None)
@@ -112,8 +157,6 @@ async def scrape_ftp_resource(url, timeout):
             content = r.read()
 
             response_time = time.perf_counter() - request_time
-
-            detected = magic.detect_from_content(content)
 
             redirects = [
                 {
@@ -127,14 +170,11 @@ async def scrape_ftp_resource(url, timeout):
                 }
             ]
 
-            if detected.encoding == "binary":
-                content = "data:{};base64,{}".format(
-                    detected.mime_type, base64.b64encode(content).decode("utf-8")
-                )
-            else:
-                content = content.decode(detected.encoding)
+            mime_type = get_mime_type(content, url)
+            encoding = get_encoding(content)
 
-            content_type = f"{detected.mime_type}; charset={detected.encoding}"
+            content_type = get_content_type(mime_type, encoding)
+            content = decode_content(content, mime_type, encoding)
     except Exception as err:
         match = FTP_STATUS_PATTERN.search(repr(err))
 
@@ -232,6 +272,7 @@ async def navigate_http_resource(
 ):
     response = None
     content = False
+    content_type = None
 
     err_acc = None
 
@@ -283,17 +324,13 @@ async def navigate_http_resource(
                     with open("{}/{}".format(downloadPath, files[0]), "rb") as file:
                         content = file.read()
 
-                        detected = magic.detect_from_content(content)
-
-                        if detected.encoding == "binary":
-                            content = "data:{};base64,{}".format(
-                                detected.mime_type,
-                                base64.b64encode(content).decode("utf-8"),
-                            )
-                        else:
-                            content = content.decode(detected.encoding)
-
                         _url, response = responses.popitem(last=True)
+
+                        mime_type = get_mime_type(content, response.url)
+                        encoding = get_encoding(content)
+
+                        content_type = get_content_type(mime_type, encoding)
+                        content = decode_content(content, mime_type, encoding)
 
                         failures.pop(normaliseURL(response.url), None)
                 else:
@@ -339,7 +376,23 @@ async def navigate_http_resource(
             if r.url not in navigations:
                 navigations[r.url] = r.response
 
-    return (request_date, navigations, content)
+    if content is not None:
+        header_content_type = (
+            list(navigations.values())[-1].headers.get("content-type")
+            if len(navigations) > 0
+            else None
+        )
+
+        if header_content_type is not None:
+            content_type = header_content_type
+
+        if content_type is None:
+            mime_type = get_mime_type(content.encode("utf-8"), pageURL)
+            encoding = "utf-8"
+
+            content_type = get_content_type(mime_type, encoding)
+
+    return (request_date, navigations, content, content_type)
 
 
 async def scrape_http_resource(proxy_address, timeout, url):
@@ -356,7 +409,12 @@ async def scrape_http_resource(proxy_address, timeout, url):
                 ],
             ) as browser:
                 async with new_page(browser) as page:
-                    request_date, navigations, content = await navigate_http_resource(
+                    (
+                        request_date,
+                        navigations,
+                        content,
+                        content_type,
+                    ) = await navigate_http_resource(
                         page,
                         url,
                         timeout,
@@ -381,12 +439,6 @@ async def scrape_http_resource(proxy_address, timeout, url):
         }
         for k, r in navigations.items()
     ]
-
-    content_type = (
-        list(navigations.values())[-1].headers.get("content-type")
-        if len(navigations) > 0
-        else None
-    )
 
     return (request_date, redirects, content, content_type)
 
@@ -465,7 +517,9 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
         processes_timeout = dict()
         cleanup_timeout = dict()
 
-        # TODO: needs to exit even if
+        start_time = time.time()
+        final_timeout = start_time - 1
+
         while len(jobs) > 0 or (
             (len(processes_timeout) > 0 or len(cleanup_timeout) > 0)
             and time.time() < final_timeout
@@ -477,10 +531,10 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
             finished_processes = []
 
             with FileLock("pings.lock"):
-                for process, timeout in processes_timeout.items():
+                for process, ptimeout in processes_timeout.items():
                     if process not in active_processes:
                         pass
-                    elif time.time() > timeout:
+                    elif time.time() > ptimeout:
                         process.kill()
                     else:
                         continue
@@ -520,10 +574,10 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
             finished_processes = []
 
             with FileLock("pings.lock"):
-                for pid, timeout in cleanup_timeout.items():
+                for pid, ptimeout in cleanup_timeout.items():
                     if pid not in active_pids:
                         finished_processes.append(pid)
-                    elif time.time() > timeout:
+                    elif time.time() > ptimeout:
                         try:
                             psutil.Process(pid=pid).kill()
                         except:
@@ -544,13 +598,13 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
                 coordinating_processes
             )
 
-            for process, timeout in processes_timeout.items():
+            for process, ptimeout in processes_timeout.items():
                 if process in active_processes:
                     process.kill()
 
             active_pids = set(psutil.pids())
 
-            for pid, timeout in cleanup_timeout.items():
+            for pid, ptimeout in cleanup_timeout.items():
                 if pid in active_pids:
                     try:
                         psutil.Process(pid=pid).kill()
@@ -584,7 +638,7 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
             ids = list(
                 set(
                     lui
-                    for lui in getattr(namespace_ids, resource["prefix"], [])
+                    for lui in namespace_ids.get(resource["prefix"], [])
                     if lui is not None
                 ).difference(resource["luis"])
             )
@@ -604,7 +658,7 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
             ids = list(
                 set(
                     lui
-                    for lui in getattr(namespace_ids, resource["prefix"], [])
+                    for lui in namespace_ids.get(resource["prefix"], [])
                     if lui is not None
                 ).difference(resource["luis"])
             )

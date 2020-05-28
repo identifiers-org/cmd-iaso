@@ -19,11 +19,12 @@ setup(
     install_requires=[
         "aioconsole==0.1.16",
         "async-generator==1.10",
+        "chardet==3.0.4",
         "click==7.1.2",
         "jsonschema==3.2.0",
-        "file-magic==0.4.0",
         "filelock==3.0.12",
         "psutil==5.7.0",
+        "puremagic==1.8",
         "py-cpuinfo==5.0.0",
         "pyppeteer==0.0.25",
         "python-dotenv==0.13.0",
