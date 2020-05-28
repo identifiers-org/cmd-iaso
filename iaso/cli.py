@@ -160,7 +160,7 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     pass
 
 
-@curate.command()
+@curate.command(cls=ValidateMutex(click.Command))
 @click.pass_context
 @click.argument(
     "datamine",
@@ -188,7 +188,7 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     type=click.Path(exists=False, writable=True, dir_okay=False),
     default="session.gz",
     cls=MutexOption,
-    not_required_if=["discard_session=True"],
+    not_required_if=["discard_session"],
     show_envvar=True,
 )
 @coroutine
@@ -286,7 +286,7 @@ def proxy3(ctx, port, timeout):
     serve_proxy(port, timeout)
 
 
-@cli.command(ValidateMutex(click.Command))
+@cli.command(cls=ValidateMutex(click.Command))
 @click.pass_context
 @click.argument("jobs", type=click.Path(writable=True, dir_okay=False, allow_dash=True))
 @click.option(

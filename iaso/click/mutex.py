@@ -8,23 +8,20 @@ def validate_mutex(params, cmd_name, not_required_if):
         if "=" in mutex_opt:
             mutex_opt_name, mutext_opt_val = mutex_opt.split("=")
 
-            if mutext_opt_val != "True":
-                exlusivity.append(f"--{mutex_opt_name} {mutext_opt_val}")
-            else:
-                exlusivity.append(f"--{mutex_opt_name}")
+            exlusivity.append(f"--{mutex_opt_name.replace('_', '-')} {mutext_opt_val}")
         else:
             mutex_opt_name = mutex_opt
-            exlusivity.append(f"--{mutex_opt_name}")
+            exlusivity.append(f"--{mutex_opt_name.replace('_',  '-')}")
 
-        if (mutex_opt_name not in params or params[mutex_opt_name] is None) or (
+        if (mutex_opt_name not in params or not params[mutex_opt_name]) or (
             ("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val)
         ):
             return True
 
-    if cmd_name in params and params[cmd_name] is not None:
+    if cmd_name in params and params[cmd_name]:
         raise click.UsageError(
-            "illegal usage: '{name}' is mutually exclusive with '{exclusivity}'.".format(
-                name=cmd_name, exclusivity=" ".join(exlusivity)
+            "illegal usage: --{name} is mutually exclusive with {exclusivity}.".format(
+                name=cmd_name.replace("_", "-"), exclusivity=" ".join(exlusivity)
             )
         )
 
@@ -54,7 +51,9 @@ class MutexOption(click.Option):
         kwargs["help"] = (
             kwargs.get("help", "")
             + "Option is mutually exclusive with "
-            + ", ".join(self.not_required_if)
+            + ", ".join(
+                requirement.replace("_", "-") for requirement in self.not_required_if
+            )
             + "."
         ).strip()
 

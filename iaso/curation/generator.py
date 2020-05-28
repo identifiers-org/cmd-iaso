@@ -17,7 +17,10 @@ CurationEntry = namedtuple(
 
 def curation_entry_generator(entries, validators):
     wrap = len(entries)
-    index = (yield) % wrap
+    index = yield
+
+    if wrap > 0:
+        index = index % wrap
 
     indices = []
     non_indices = set()

@@ -8,6 +8,7 @@ from iaso.curation.generator import (
 def collectFromGenerator(entries, validators, directions):
     entries = curation_entry_generator(entries, validators)
     next(entries)
+    entries.send(0)
 
     output = []
 
