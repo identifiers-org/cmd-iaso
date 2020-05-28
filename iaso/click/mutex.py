@@ -1,43 +1,48 @@
 import click
 
 
-class ValidateMutexCommand(click.Command):
-    def make_context(self, *args, **kwargs):
-        ctx = super(ValidateMutexCommand, self).make_context(*args, **kwargs)
+def validate_mutex(params, cmd_name, not_required_if):
+    exlusivity = []
 
-        for param in self.params:
-            if isinstance(param, MutexOption):
-                ValidateMutexCommand.validate_mutex(
-                    ctx.params, param.name, param.not_required_if
-                )
-
-        return ctx
-
-    @staticmethod
-    def validate_mutex(params, cmd_name, not_required_if):
-        exlusivity = []
-
-        for mutex_opt in not_required_if:
+    for mutex_opt in not_required_if:
+        if "=" in mutex_opt:
             mutex_opt_name, mutext_opt_val = mutex_opt.split("=")
 
-            if "=" in mutex_opt:
+            if mutext_opt_val != "True":
                 exlusivity.append(f"--{mutex_opt_name} {mutext_opt_val}")
             else:
                 exlusivity.append(f"--{mutex_opt_name}")
+        else:
+            mutex_opt_name = mutex_opt
+            exlusivity.append(f"--{mutex_opt_name}")
 
-            if (mutex_opt_name not in params or params[mutex_opt_name] is None) or (
-                ("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val)
-            ):
-                return True
+        if (mutex_opt_name not in params or params[mutex_opt_name] is None) or (
+            ("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val)
+        ):
+            return True
 
-        if cmd_name in params and params[cmd_name] is not None:
-            raise click.UsageError(
-                "illegal usage: '{name}' is mutually exclusive with '{exclusivity}'.".format(
-                    name=cmd_name, exclusivity=" ".join(exlusivity)
-                )
+    if cmd_name in params and params[cmd_name] is not None:
+        raise click.UsageError(
+            "illegal usage: '{name}' is mutually exclusive with '{exclusivity}'.".format(
+                name=cmd_name, exclusivity=" ".join(exlusivity)
             )
+        )
 
-        return False
+    return False
+
+
+def ValidateMutex(Class):
+    class ValidateMutexClass(Class):
+        def make_context(self, *args, **kwargs):
+            ctx = super(Class, self).make_context(*args, **kwargs)
+
+            for param in self.params:
+                if isinstance(param, MutexOption):
+                    validate_mutex(ctx.params, param.name, param.not_required_if)
+
+            return ctx
+
+    return ValidateMutexClass
 
 
 class MutexOption(click.Option):
@@ -56,7 +61,7 @@ class MutexOption(click.Option):
         super(MutexOption, self).__init__(*args, **kwargs)
 
     def handle_parse_result(self, ctx, opts, args):
-        if not ValidateMutexCommand.validate_mutex(
+        if not validate_mutex(
             dict(ctx.params, **opts), self.name, self.not_required_if
         ):
             self.prompt = None

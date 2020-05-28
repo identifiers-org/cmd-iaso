@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 from functools import update_wrapper, partial
 from pathlib import Path
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=(Path(".") / ".env"))
 
 from . import curation
+
+from .curation.session import CurationSession
 
 from .curation.terminal import (
     TerminalController,
@@ -30,7 +33,7 @@ from .click.validators import (
     validate_validators,
     list_validators,
 )
-from .click.mutex import ValidateMutexCommand, MutexOption
+from .click.mutex import ValidateMutex, MutexOption
 from .click.chrome import ChromeChoice
 
 from .utils import format_json
@@ -89,12 +92,8 @@ def registry(ctx):
     click.echo(format_json(ctx_registry(ctx)))
 
 
-@cli.command(cls=ValidateMutexCommand)
+@cli.group(cls=ValidateMutex(click.Group))
 @click.pass_context
-@click.argument(
-    "datamine",
-    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
-)
 @click.option(
     "--controller",
     prompt=True,
@@ -129,25 +128,13 @@ def registry(ctx):
     show_envvar=True,
 )
 @click.option(
-    "--validate",
-    "-v",
-    "validators",
-    multiple=True,
-    callback=validate_validators,
-    default=["dns-error", "invalid-response", "http-status-error"],
-    show_envvar=True,
-)
-@click.option(
     "--list-validators",
     is_flag=True,
     callback=list_validators,
     expose_value=False,
     is_eager=True,
 )
-@coroutine
-async def curate(
-    ctx, datamine, validators, controller, navigator, informant, chrome=None
-):
+def curate(ctx, controller, navigator, informant, chrome=None):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
     Reads the mined information on providers from the DATAMINE JSON file path.
@@ -170,6 +157,98 @@ async def curate(
     You can list the registered (not yet validated) validator modules using --list-validators.
     """
 
+    pass
+
+
+@curate.command()
+@click.pass_context
+@click.argument(
+    "datamine",
+    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
+)
+@click.option(
+    "--validate",
+    "-v",
+    "validators",
+    multiple=True,
+    callback=validate_validators,
+    default=["dns-error", "invalid-response", "http-status-error"],
+    show_envvar=True,
+)
+@click.option(
+    "--discard-session",
+    is_flag=True,
+    cls=MutexOption,
+    not_required_if=["session"],
+    show_envvar=True,
+)
+@click.option(
+    "--session",
+    "session_path",
+    type=click.Path(exists=False, writable=True, dir_okay=False),
+    default="session.gz",
+    cls=MutexOption,
+    not_required_if=["discard_session=True"],
+    show_envvar=True,
+)
+@coroutine
+async def start(ctx, datamine, validators, discard_session, session_path):
+    if session_path is not None and os.path.exists(session_path):
+        click.confirm(
+            f"{session_path} already exists. Do you want to overwrite {session_path} with a fresh session?",
+            abort=True,
+        )
+
+    click.echo(
+        click.style(f"Loading the datamine file from {datamine} ...", fg="yellow")
+    )
+
+    await launch_curation(
+        ctx,
+        ctx.parent.params["controller"],
+        ctx.parent.params["navigator"],
+        ctx.parent.params["informant"],
+        ctx.parent.params["chrome"],
+        CurationSession(session_path, Datamine(datamine), validators, 0, set()),
+    )
+
+
+@curate.command()
+@click.pass_context
+@click.argument(
+    "session",
+    type=click.Path(exists=True, readable=True, writable=True, dir_okay=False),
+)
+@coroutine
+async def resume(ctx, session):
+    session_path = session
+
+    click.echo(
+        click.style(
+            f"Loading the curation session from {session_path} ...", fg="yellow"
+        )
+    )
+
+    session = CurationSession.load_from_file(
+        session_path, partial(validate_validators, ctx, None)
+    )
+
+    if len(session.visited) == len(session.datamine.providers):
+        click.echo(click.style("You are working on a completed session.", fg="yellow"))
+
+    await launch_curation(
+        ctx,
+        ctx.parent.params["controller"],
+        ctx.parent.params["navigator"],
+        ctx.parent.params["informant"],
+        ctx.parent.params["chrome"],
+        session,
+    )
+
+
+async def launch_curation(
+    ctx, controller, navigator, informant, chrome, session,
+):
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
             "terminal": TerminalController,
@@ -195,12 +274,7 @@ async def curate(
         }[informant]
 
         await curation.curate(
-            ctx_registry(ctx),
-            Datamine(datamine),
-            Controller,
-            Navigator,
-            Informant,
-            validators,
+            ctx_registry(ctx), Controller, Navigator, Informant, session,
         )
 
 
@@ -212,7 +286,7 @@ def proxy3(ctx, port, timeout):
     serve_proxy(port, timeout)
 
 
-@cli.command()
+@cli.command(ValidateMutex(click.Command))
 @click.pass_context
 @click.argument("jobs", type=click.Path(writable=True, dir_okay=False, allow_dash=True))
 @click.option(

@@ -13,9 +13,15 @@ from .generator import curation_entry_generator, CurationDirection
 import click
 
 
-async def curate(registry, datamine, Controller, Navigator, Informant, validators):
-    click.echo("The data loaded was collected in the following environment:")
-    click.echo(format_json(datamine.environment))
+async def curate(
+    registry, Controller, Navigator, Informant, session,
+):
+    click.echo(
+        click.style(
+            "The data loaded was collected in the following environment:", fg="yellow"
+        )
+    )
+    click.echo(format_json(session.datamine.environment))
 
     provider_namespace = dict()
 
@@ -30,17 +36,20 @@ async def curate(registry, datamine, Controller, Navigator, Informant, validator
         return f"{provider_namespace[pid].prefix}:{lui}"
 
     entries = curation_entry_generator(
-        datamine.providers,
+        session.datamine.providers,
         [
             lambda p: p.id in registry.resources,
             *[
                 partial(validator.check_and_create, get_compact_identifier)
-                for validator in validators.values()
+                for validator in session.validators.values()
             ],
         ],
     )
 
-    validator_names = list(validators.keys())
+    next(entries)
+    entries.send(session.position)
+
+    validator_names = list(session.validators.keys())
 
     if len(validator_names) == 0:
         click.echo(click.style("No validators were loaded.", fg="red"))
@@ -60,7 +69,6 @@ async def curate(registry, datamine, Controller, Navigator, Informant, validator
 
     click.echo(click.style("Starting the curation process ...", fg="yellow"))
 
-    next(entries)
     entry = entries.send(CurationDirection.FORWARD)
 
     if entry == CurationDirection.FINISH:
@@ -76,6 +84,8 @@ async def curate(registry, datamine, Controller, Navigator, Informant, validator
             Informant
         ) as informant:
             while entry != CurationDirection.FINISH:
+                session.update(entry.index, entry.visited)
+
                 for validation in entry.validations:
                     validation.format(informant)
 

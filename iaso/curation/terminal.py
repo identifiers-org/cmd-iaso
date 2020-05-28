@@ -1,3 +1,5 @@
+import io
+
 import click
 
 from ..utils import format_json
@@ -45,31 +47,45 @@ class TerminalFormatter(CurationFormatter):
     async def output(self, url, resource, namespace, position, total):
         ctx = click.get_current_context()
 
-        click.echo(
+        output = []
+
+        output.append(
             " {} / {} ".format(position + 1, total).center(
                 80 if ctx.max_content_width is None else ctx.max_content_width, "="
             )
         )
 
-        click.echo(
-            "{}{}{}".format(
+        output.append(
+            "\n{}{}{}\n".format(
                 click.style("Curation required for resource provider ", fg="yellow"),
                 click.style(resource.name, fg="yellow", bold=True),
                 click.style(":", fg="yellow"),
             )
         )
 
-        click.echo("The following issues were observed:")
+        output.append("The following issues were observed:\n")
 
         for title, content, level in self.buffer:
-            click.echo("- {}: ".format(click.style(title, underline=True)), nl=False)
+            output.append("- {}: ".format(click.style(title, underline=True)))
+            output.append(format_json(content, indent=1))
+            output.append("\n")
 
-            click.echo(format_json(content, indent=1))
-
-        click.echo(
+        output.append(
             " {} / {} ".format(position + 1, total).center(
                 80 if ctx.max_content_width is None else ctx.max_content_width, "="
             )
         )
+
+        output = "".join(output)
+
+        try:
+            click.echo(output)
+        except io.BlockingIOError:
+            click.echo_via_pager(output)
+            click.echo(
+                "{}... Switching to pager ...".format(
+                    click.style(" \b", fg="black", underline=True)
+                )
+            )
 
         self.buffer.clear()

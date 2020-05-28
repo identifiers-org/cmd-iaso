@@ -11,13 +11,13 @@ class CurationDirection:
 
 
 CurationEntry = namedtuple(
-    "CurationEntry", ("entry", "validations", "position", "total")
+    "CurationEntry", ("entry", "validations", "position", "total", "index", "visited")
 )
 
 
 def curation_entry_generator(entries, validators):
     wrap = len(entries)
-    index = 0
+    index = (yield) % wrap
 
     indices = []
     non_indices = set()
@@ -102,4 +102,6 @@ def curation_entry_generator(entries, validators):
             "{}+".format(len(indices))
             if (len(indices) + len(non_indices)) < wrap
             else str(len(indices)),
+            index,
+            non_indices.union(indices),
         )

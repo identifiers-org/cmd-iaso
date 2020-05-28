@@ -124,3 +124,16 @@ def json_to_namedtuple(data, ntname=None):
         return data
 
     return _explore_recurse("JSONNT" if ntname is None else ntname, data, classes)
+
+
+def namedtuple_to_dict(obj):
+    if isinstance(obj, tuple) and hasattr(obj, "_asdict"):
+        obj = obj._asdict()
+
+    if isinstance(obj, dict):
+        return {key: namedtuple_to_dict(value) for key, value in obj.items()}
+
+    if isinstance(obj, list) or isinstance(obj, tuple):
+        return [namedtuple_to_dict(value) for value in obj]
+
+    return obj
