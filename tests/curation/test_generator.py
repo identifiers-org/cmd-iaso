@@ -5,10 +5,10 @@ from iaso.curation.generator import (
 )
 
 
-def collectFromGenerator(entries, validators, directions):
+def collectFromGenerator(entries, validators, directions, initial=0):
     entries = curation_entry_generator(entries, validators)
     next(entries)
-    entries.send(0)
+    entries.send(initial)
 
     output = []
 
@@ -179,3 +179,39 @@ class TestCurationEntryGenerator:
             ["1+", "2+", "3", "3", "3", "3"],
         ):
             assert entry.total == expect
+
+    def test_generator_can_start_from_arbitrary_position(self):
+        for entry, expect in zip(
+            collectFromGenerator(
+                [1, 2, 3, 4, 5], [lambda _: None], [CurationDirection.FORWARD] * 3, 2
+            ),
+            [3, 4, 5],
+        ):
+            assert entry.entry == expect
+
+    def test_generator_out_of_bounds_start_position_wraps_around(self):
+        for entry, expect in zip(
+            collectFromGenerator(
+                [1, 2, 3], [lambda _: None], [CurationDirection.FORWARD], 7
+            ),
+            [2],
+        ):
+            assert entry.entry == expect
+
+    def test_generator_entry_index_returns_internal_index(self):
+        for entry, expect in zip(
+            collectFromGenerator(
+                [1, 2, 3], [lambda _: None], [CurationDirection.FORWARD] * 5, 1
+            ),
+            [1, 2, 0, 1, 2],
+        ):
+            assert entry.index == expect
+
+    def test_generator_entry_visited_converges_to_full_indices_set(self):
+        for entry, expect in zip(
+            collectFromGenerator(
+                [1, 2, 3], [lambda _: None], [CurationDirection.FORWARD] * 5, 1
+            ),
+            [set([1]), set([1, 2]), set([0, 1, 2]), set([0, 1, 2]), set([0, 1, 2])],
+        ):
+            assert entry.visited == expect

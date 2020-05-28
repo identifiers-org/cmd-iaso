@@ -66,7 +66,7 @@ def ctx_registry(ctx):
 
 
 @click.group()
-@click.version_option(version="0.0.1")
+@click.version_option(version="0.0.0")
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
@@ -137,24 +137,32 @@ def registry(ctx):
 def curate(ctx, controller, navigator, informant, chrome=None):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
-    Reads the mined information on providers from the DATAMINE JSON file path.
+    
+    \b
+    You can start a new session using:
+    > cmd-iaso curate [...] start [...]
+    You can resume aan existing session using:
+    > cmd-iaso curate [...] resume [...]
     
     The --chrome option must be provided iff at least one component uses Chrome.
     
     --chrome launch launches a new Chrome browser instance and closes it automatically
     after the curation session has finished.
     
-    --chrome IPv4:PORT / --chrome IPv6:PORT connects to a running Chrome browser
-    at the specified address. The browser will not automatically be closed after
-    the curation session has finished.
+    --chrome IPv4:PORT / --chrome IPv6:PORT / --chrome localhost:PORT connects to a
+    running Chrome browser at the specified address. The browser will not automatically
+    be closed after the curation session has finished.
     
     \b
     You can launch a new Chrome browser using:
     > chrome --remote-debugging-port=PORT
     
-    -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
-    
     You can list the registered (not yet validated) validator modules using --list-validators.
+    
+    \b
+    For more information on starting or resuming a curation session, use:
+    > cmd-iaso curate start --help
+    > cmd-iaso curate resume --help
     """
 
     pass
@@ -193,6 +201,26 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 )
 @coroutine
 async def start(ctx, datamine, validators, discard_session, session_path):
+    """
+    Starts a new session for the interactive curation process.
+    Reads the scraped information on providers from the DATAMINE file path.
+    
+    \b
+    -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
+    You can list the registered (not yet validated) validator modules using:
+    > cmd-iaso curate --list-validators.
+    
+    \b
+    --session SESSION stores the session information at the SESSION path.
+    If this option is not provided, session.gz will be used by default.
+    To disable storing the new session altogther, use:
+    > cmd-iaso curate [...] start [...] --discard-session [...]
+    
+    \b
+    For more information on the interactive curation process, use:
+    > cmd-iaso curate --help
+    """
+
     if session_path is not None and os.path.exists(session_path):
         click.confirm(
             f"{session_path} already exists. Do you want to overwrite {session_path} with a fresh session?",
@@ -221,6 +249,15 @@ async def start(ctx, datamine, validators, discard_session, session_path):
 )
 @coroutine
 async def resume(ctx, session):
+    """
+    Resumes an existing curation session for the interactive curation process.
+    Reads the session information the SESSION file path.
+    
+    \b
+    For more information on the interactive curation process, use:
+    > cmd-iaso curate --help
+    """
+
     session_path = session
 
     click.echo(
@@ -283,6 +320,17 @@ async def launch_curation(
 @click.option("--port", default=8080, show_envvar=True)
 @click.option("--timeout", default=10, show_envvar=True)
 def proxy3(ctx, port, timeout):
+    """
+    Launches a new instance of the HTTPS intercepting data scraping proxy.
+    
+    --port specifies the port to run the proxy on.
+    
+    --timeout specifies the timeout in seconds the proxy will use when
+    requesting resources from the Internet.
+    
+    As this proxy generates a new self-signed SSL certificate to intercept
+    HTTPS requests, you might get security warnings when you use this proxy.
+    """
     serve_proxy(port, timeout)
 
 
@@ -304,6 +352,20 @@ def proxy3(ctx, port, timeout):
     show_envvar=True,
 )
 def jobs(ctx, jobs, valid, random, valid_namespace_ids):
+    """
+    Generates the jobs for the data scraping subcommand and stores them at the
+    JOBS file path.
+    
+    --valid specifies the number of valid LUIs from VALID_NAMESPACE_IDS to use
+    per resource provider.
+    
+    --random specifies the number of LUIs that will be generated randomly per
+    resource provider from its namespace's LUI regex pattern.
+    
+    Iff --valid specifies a positive number, --valid-namespace-ids VALID_NAMESPACE_IDS
+    must specify the file path to a namespace ids file.
+    """
+
     with click.open_file(jobs, "w") as file:
         json.dump(
             generate_scraping_jobs(
@@ -340,6 +402,31 @@ import socket
 )
 @coroutine
 async def scrape(ctx, jobs, dump, proxy, workers, timeout):
+    """
+    Runs the data scraping pipeline to gather information on the jobs
+    defined in the JOBS file and stores them inside the DUMP folder.
+    
+    \b
+    --proxy launch launches a new proxy instance at a free port and closes
+    it automatically after the scraping has finished. It uses the same proxy
+    that can be launched using:
+    > cmd-iaso proxy3 --port FREE_PORT --timeout TIMEOUT / 3
+    
+    --proxy IPv4:PORT / --localhost IPv6:PORT / --proxy localhost:PORT connects
+    to a running proxy instance at the specified address. The proxy will not
+    automatically be closed after the scraping has finished.
+    
+    --workers specifies the number of concurrent processes to launch to work
+    on scraping requests. A value of 1 is equivalent to running the scraping
+    sequentially, while higher values can pipeline the scraping and increase
+    the throughput drastically. It is recommended not to pick a very large value
+    as the proxy might otherwise be overwhelmed and some requests might time out.
+    
+    --timeout specifies the timeout in seconds that will be used to cull
+    unresponsive scraping requests. Setting a larger value allows slower websites
+    to load, especially dynamically loaded websites using JavaScript to provide
+    their content. The timeout is also used to cull left-over processes.
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     if proxy == "launch":
