@@ -2,6 +2,7 @@ import asyncio
 import base64
 import gzip
 import json
+import pickle
 import puremagic
 import multiprocessing as mp
 import os
@@ -448,8 +449,6 @@ from filelock import FileLock
 
 
 async def fetch_resource(proxy_address, timeout, tempdir, rid, lui, url):
-    pings = []
-
     try:
         parsed = urlparse(url)
 
@@ -464,25 +463,20 @@ async def fetch_resource(proxy_address, timeout, tempdir, rid, lui, url):
         else:
             raise Exception(f"Unknown resource scheme {parsed.scheme}")
 
-        pings.append(
-            {
-                "lui": lui,
-                "date": str(request_date),
-                "redirects": redirects,
-                "content": content,
-                "content-type": content_type,
-            }
-        )
+        ping = {
+            "lui": lui,
+            "date": str(request_date),
+            "redirects": redirects,
+            "content": content,
+            "content-type": content_type,
+        }
+
+        with FileLock(tempdir / "pings.lock"):
+            with gzip.open("dump/pings_{}.gz".format(rid), "ab") as file:
+                pickle.dump(ping, file)
+
     except Exception:
         traceback.print_exc(file=sys.stdout)
-
-    with FileLock(tempdir / "pings.lock"):
-        if path.exists("dump/pings_{}.gz".format(rid)):
-            with gzip.open("dump/pings_{}.gz".format(rid), "rt") as file:
-                pings = json.load(file) + pings
-
-        with gzip.open("dump/pings_{}.gz".format(rid), "wt") as file:
-            json.dump(pings, file)
 
 
 import logging
@@ -589,7 +583,7 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
                     if child not in cleanup_timeout:
                         cleanup_timeout[child] = time.time() + timeout * 4
 
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.1)
 
             # Final cleanup of processes
             with FileLock(tempdir / "pings.lock"):
@@ -630,82 +624,94 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
                 "luis": set([namespace.sampleId, resource.sampleId][:num_valid]),
             }
 
-    if num_valid > 0:
-        valid_luis = 0
+    with tqdm(
+        total=((num_valid + num_random) * len(registry.resources)),
+        desc="Generating LUIs",
+    ) as progress:
+        generated_luis = 0
 
-        for rid, resource in resources.items():
-            ids = list(
-                set(
-                    lui
-                    for lui in namespace_ids.get(resource["prefix"], [])
-                    if lui is not None
-                ).difference(resource["luis"])
-            )
-            random.shuffle(ids)
-
-            resource["luis"].update(ids[: (num_valid - len(resource["luis"]))])
-
-            valid_luis += len(resource["luis"])
-
-        remaining_resources = list(resources.values())
-
-        while len(remaining_resources) > 0 and valid_luis < (
-            len(resources) * num_valid
-        ):
-            resource = remaining_resources.pop(0)
-
-            ids = list(
-                set(
-                    lui
-                    for lui in namespace_ids.get(resource["prefix"], [])
-                    if lui is not None
-                ).difference(resource["luis"])
-            )
-
-            if len(ids) == 0:
-                continue
-
-            random.shuffle(ids)
-
-            num_to_add = min(
-                len(ids),
-                (
-                    (len(resources) * num_valid)
-                    - valid_luis
-                    + len(remaining_resources)
-                    - 1
+        if num_valid > 0:
+            for rid, resource in resources.items():
+                ids = list(
+                    set(
+                        lui
+                        for lui in namespace_ids.get(resource["prefix"], [])
+                        if lui is not None
+                    ).difference(resource["luis"])
                 )
-                // len(remaining_resources),
-            )
+                random.shuffle(ids)
 
-            resource["luis"].update(ids[:num_to_add])
+                resource["luis"].update(ids[: (num_valid - len(resource["luis"]))])
 
-            valid_luis += num_to_add
+                generated_luis += len(resource["luis"])
+                progress.update(len(resource["luis"]))
 
-            remaining_resources.append(resource)
+            remaining_resources = list(resources.values())
 
-    if num_random > 0:
-        for rid, resource in resources.items():
-            luis = resource["luis"]
-            start_len = len(luis)
+            while len(remaining_resources) > 0 and generated_luis < (
+                len(resources) * num_valid
+            ):
+                resource = remaining_resources.pop(0)
 
-            pattern = resource["pattern"].replace("\\\\", "\\")
+                ids = list(
+                    set(
+                        lui
+                        for lui in namespace_ids.get(resource["prefix"], [])
+                        if lui is not None
+                    ).difference(resource["luis"])
+                )
 
-            xeg = Xeger(limit=XEGER_LIMIT)
+                if len(ids) == 0:
+                    continue
 
-            while len(luis) < (start_len + num_random):
-                lui = xeg.xeger(pattern)
+                random.shuffle(ids)
 
-                if lui is not None:
-                    luis.add(lui)
+                num_to_add = min(
+                    len(ids),
+                    (
+                        (len(resources) * num_valid)
+                        - generated_luis
+                        + len(remaining_resources)
+                        - 1
+                    )
+                    // len(remaining_resources),
+                )
+
+                resource["luis"].update(ids[:num_to_add])
+
+                generated_luis += num_to_add
+                progress.update(num_to_add)
+
+                remaining_resources.append(resource)
+
+        if num_random > 0:
+            for rid, resource in resources.items():
+                luis = resource["luis"]
+                start_len = len(luis)
+
+                pattern = resource["pattern"].replace("\\\\", "\\")
+
+                xeg = Xeger(limit=XEGER_LIMIT)
+
+                while len(luis) < (start_len + num_random):
+                    lui = xeg.xeger(pattern)
+
+                    if lui is not None:
+                        luis.add(lui)
+
+                        generated_luis += 1
+                        progress.update(1)
 
     jobs = []
 
-    for rid, resource in resources.items():
-        resource["luis"] = list(resource["luis"])
+    with tqdm(total=generated_luis, desc="Generating Jobs") as progress:
+        for rid, resource in resources.items():
+            resource["luis"] = list(resource["luis"])
 
-        for lui in resource["luis"]:
-            jobs.append((rid, lui, resource["url"].replace("{$id}", lui)))
+            for lui in resource["luis"]:
+                jobs.append((rid, lui, resource["url"].replace("{$id}", lui)))
+
+                progress.update(1)
 
     random.shuffle(jobs)
 
