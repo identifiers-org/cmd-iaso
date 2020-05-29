@@ -18,7 +18,7 @@ def generate_datamine_from_dump(dump, datamine_path):
     providers = []
     errors = {}
 
-    for subdir, dirs, files in os.walk("dump"):
+    for subdir, dirs, files in os.walk(dump):
         subdir = Path(subdir)
 
         for filename in tqdm(files, desc="Combining scraping dumps"):

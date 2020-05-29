@@ -25,9 +25,10 @@ from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.navigator import PyppeteerNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
-from .scraping.proxy3 import serve as serve_proxy
-from .scraping import generate_scraping_jobs, scrape_resources
-from .scraping.datamine import generate_datamine_from_dump
+from .scraping.http.proxy3 import serve as serve_proxy
+from .scraping import scrape_resources
+
+from .dump2datamine import generate_datamine_from_dump
 
 from .click.validators import (
     load_registered_validators,
@@ -43,6 +44,7 @@ from .registry import Registry
 from .datamine import Datamine
 from .namespace_ids import NamespaceIds
 from .scraping.jobs import ScrapingJobs
+from .scraping.jobs.generate import generate_scraping_jobs
 
 
 def coroutine(f):
@@ -145,6 +147,10 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     You can resume aan existing session using:
     > cmd-iaso curate [...] resume [...]
     
+    The --controller, --navigator and --informant options define whether each of these
+    components will be run in the terminal or inside Chrome. By default, curate uses
+    --controller chrome --navigator chrome --informant terminal --chrome launch.
+    
     The --chrome option must be provided iff at least one component uses Chrome.
     
     --chrome launch launches a new Chrome browser instance and closes it automatically
@@ -206,8 +212,12 @@ async def start(ctx, datamine, validators, discard_session, session_path):
     Starts a new session for the interactive curation process.
     Reads the scraped information on providers from the DATAMINE file path.
     
-    \b
     -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
+    By default the dns-error, invalid-response and http-status-error validators
+    will be enabled. If this options is provided at least once, only the validators
+    mentioned explicitly in the option will be enabled.
+    
+    \b
     You can list the registered (not yet validated) validator modules using:
     > cmd-iaso curate --list-validators.
     
@@ -327,9 +337,11 @@ def proxy3(ctx, port, timeout):
     Launches a new instance of the HTTPS intercepting data scraping proxy.
     
     --port specifies the port to run the proxy on.
+    By default, port 8080 is used.
     
     --timeout specifies the timeout in seconds the proxy will use when
     requesting resources from the Internet.
+    By default, a timeout of 10 seconds is used.
     
     As this proxy generates a new self-signed SSL certificate to intercept
     HTTPS requests, you might get security warnings when you use this proxy.
@@ -364,9 +376,11 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
     
     --valid specifies the number of valid LUIs from VALID_NAMESPACE_IDS to use
     per resource provider.
+    By default, the command attempts to include 50 valid LUIs per provider.
     
     --random specifies the number of LUIs that will be generated randomly per
     resource provider from its namespace's LUI regex pattern.
+    By default, the command generates 50 random LUIs per provider.
     
     Iff --valid specifies a positive number, --valid-namespace-ids VALID_NAMESPACE_IDS
     must specify the file path to a namespace ids file.
@@ -423,6 +437,7 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
     it automatically after the scraping has finished. It uses the same proxy
     that can be launched using:
     > cmd-iaso proxy3 --port FREE_PORT --timeout TIMEOUT / 3
+    --proxy launch is the default setting.
     
     --proxy IPv4:PORT / --localhost IPv6:PORT / --proxy localhost:PORT connects
     to a running proxy instance at the specified address. The proxy will not
@@ -433,11 +448,13 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
     sequentially, while higher values can pipeline the scraping and increase
     the throughput drastically. It is recommended not to pick a very large value
     as the proxy might otherwise be overwhelmed and some requests might time out.
+    By default, 32 workers are used.
     
     --timeout specifies the timeout in seconds that will be used to cull
     unresponsive scraping requests. Setting a larger value allows slower websites
     to load, especially dynamically loaded websites using JavaScript to provide
     their content. The timeout is also used to cull left-over processes.
+    By default, a timeout of 30 seconds is used.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
