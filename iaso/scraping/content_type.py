@@ -1,4 +1,7 @@
 import base64
+import os
+
+from urllib.parse import urlparse
 
 import chardet
 import puremagic

@@ -13,7 +13,7 @@ def find_free_port():
 
 
 class ProxyLauncher:
-    def __init__(ctx, timeout, proxy_address):
+    def __init__(self, ctx, timeout, proxy_address):
         self.ctx = ctx
         self.timeout = timeout
 
@@ -25,7 +25,7 @@ class ProxyLauncher:
             proxy_port = find_free_port()
 
             self.proxy = self.ctx.Process(
-                target=proxy3.serve, args=(proxy_port, timeout), daemon=True
+                target=proxy3.serve, args=(proxy_port, self.timeout), daemon=True
             )
             self.proxy.start()
 

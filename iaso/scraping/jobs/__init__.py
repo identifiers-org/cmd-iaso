@@ -1,4 +1,4 @@
-from ..json_schema_file import JsonSchemaFile
+from ...json_schema_file import JsonSchemaFile
 
 
 def ScrapingJobs(filepath):

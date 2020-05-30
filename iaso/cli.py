@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import socket
 
 from functools import update_wrapper, partial
 from pathlib import Path
@@ -37,6 +38,7 @@ from .click.validators import (
 )
 from .click.mutex import ValidateMutex, MutexOption
 from .click.chrome import ChromeChoice
+from .click.docker import register_docker, DockerPathExists, wrap_docker
 
 from .utils import format_json
 from .environment import collect_environment_description
@@ -71,6 +73,15 @@ def ctx_registry(ctx):
 @click.group()
 @click.version_option(version="0.0.0")
 @click.pass_context
+@click.option(
+    "--docker",
+    type=click.Path(exists=False),
+    hidden=True,
+    allow_from_autoenv=False,
+    is_eager=True,
+    callback=register_docker,
+    expose_value=False,
+)
 def cli(ctx):
     ctx.ensure_object(dict)
 
@@ -79,6 +90,7 @@ def cli(ctx):
 
 @cli.command()
 @click.pass_context
+@wrap_docker()
 def environment(ctx):
     """
     Pretty-prints a description of the current environment.
@@ -88,6 +100,7 @@ def environment(ctx):
 
 @cli.command()
 @click.pass_context
+@wrap_docker()
 def registry(ctx):
     """
     Pretty-prints the current status of the identifiers.org registry.
@@ -137,6 +150,7 @@ def registry(ctx):
     expose_value=False,
     is_eager=True,
 )
+@wrap_docker(exit=False)
 def curate(ctx, controller, navigator, informant, chrome=None):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
@@ -179,7 +193,9 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 @click.pass_context
 @click.argument(
     "datamine",
-    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
+    ),
 )
 @click.option(
     "--validate",
@@ -206,6 +222,7 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     not_required_if=["discard_session"],
     show_envvar=True,
 )
+@wrap_docker()
 @coroutine
 async def start(ctx, datamine, validators, discard_session, session_path):
     """
@@ -256,8 +273,11 @@ async def start(ctx, datamine, validators, discard_session, session_path):
 @click.pass_context
 @click.argument(
     "session",
-    type=click.Path(exists=True, readable=True, writable=True, dir_okay=False),
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, writable=True, dir_okay=False
+    ),
 )
+@wrap_docker()
 @coroutine
 async def resume(ctx, session):
     """
@@ -332,6 +352,7 @@ async def launch_curation(
 @click.pass_context
 @click.option("--port", default=8080, show_envvar=True)
 @click.option("--timeout", default=10, show_envvar=True)
+@wrap_docker()
 def proxy3(ctx, port, timeout):
     """
     Launches a new instance of the HTTPS intercepting data scraping proxy.
@@ -364,11 +385,14 @@ def proxy3(ctx, port, timeout):
 @click.option(
     "--valid-namespace-ids",
     prompt=True,
-    type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True),
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
+    ),
     cls=MutexOption,
     not_required_if=["valid=0"],
     show_envvar=True,
 )
+@wrap_docker()
 def jobs(ctx, jobs, valid, random, valid_namespace_ids):
     """
     Generates the jobs for the data scraping subcommand and stores them at the
@@ -406,16 +430,19 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
         )
 
 
-import socket
-
-
 @cli.command()
 @click.pass_context
 @click.argument(
-    "jobs", type=click.Path(exists=True, readable=True, dir_okay=False, allow_dash=True)
+    "jobs",
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
+    ),
 )
 @click.argument(
-    "dump", type=click.Path(exists=True, readable=True, writable=True, file_okay=False)
+    "dump",
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, writable=True, file_okay=False
+    ),
 )
 @click.option(
     "--proxy", type=ChromeChoice(), default="launch", show_envvar=True,
@@ -426,6 +453,7 @@ import socket
 @click.option(
     "--timeout", type=click.IntRange(min=5), default=30, show_envvar=True,
 )
+@wrap_docker()
 @coroutine
 async def scrape(ctx, jobs, dump, proxy, workers, timeout):
     """
@@ -479,10 +507,13 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
 
 @cli.command()
 @click.pass_context
-@click.argument("dump", type=click.Path(exists=True, readable=True, file_okay=False))
+@click.argument(
+    "dump", type=click.Path(exists=DockerPathExists(), readable=True, file_okay=False)
+)
 @click.argument(
     "datamine", type=click.Path(exists=False, writable=True, dir_okay=False)
 )
+@wrap_docker()
 def dump2datamine(ctx, dump, datamine):
     """
     Generates the DATAMINE file from the DUMP folder.
@@ -509,23 +540,33 @@ def dump2datamine(ctx, dump, datamine):
                 fg="green",
             )
         )
-    elif len(errors) == 1:
-        click.echo(
-            click.style(
-                f"ERROR: {list(errors.keys())[0]} was erroneous and not included in the DATAMINE.",
-                fg="red",
-            )
-        )
     else:
-        click.echo(
-            click.style(
-                f"ERROR: {len(errors.keys())} files were erroneous and not included in the DATAMINE:",
-                fg="red",
-            )
-        )
+        num_errors = sum(len(errs) for file, errs in errors.items())
 
-        for file in errors.keys():
-            click.echo(f"- {file}")
+        if num_errors == 1:
+            click.echo(
+                click.style(
+                    f"ERROR: There was one erroneous entry in the {list(errors.keys())[0]} file.",
+                    fg="red",
+                )
+            )
+        elif len(errors) == 1:
+            click.echo(
+                click.style(
+                    f"ERROR: There were {num_errors} erroneous entries in the {list(errors.keys())[0]} file.",
+                    fg="red",
+                )
+            )
+        else:
+            click.echo(
+                click.style(
+                    f"ERROR: There were a total of {num_errors} erroneous entries in the following files:",
+                    fg="red",
+                )
+            )
+
+            for file in errors.keys():
+                click.echo(f"- {file}")
 
 
 def main():

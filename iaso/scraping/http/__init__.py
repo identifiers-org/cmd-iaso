@@ -1,6 +1,9 @@
-import pyppeteer
-
 from .pyppeteer import launch_browser, new_page
+from .navigate import navigate_http_resource
+from .request_monitor import setup_page_monitoring
+
+from pyppeteer import errors as pyppeteer_errors
+from requests import codes as status_code_values
 
 
 async def scrape_http_resource(proxy_address, timeout, url):
@@ -30,7 +33,7 @@ async def scrape_http_resource(proxy_address, timeout, url):
                     )
 
                 break
-        except (pyppeteer.errors.NetworkError, pyppeteer.errors.BrowserError):
+        except (pyppeteer_errors.NetworkError, pyppeteer_errors.BrowserError):
             continue
 
     redirects = [
@@ -40,7 +43,7 @@ async def scrape_http_resource(proxy_address, timeout, url):
             "response_time": int(round(float(r.headers["x-response-time"]), 3) * 1000)
             if "x-response-time" in r.headers
             else None,
-            "status": r.status if r.status != requests.codes.no_content else None,
+            "status": r.status if r.status != status_code_values.no_content else None,
             "dns_error": bool(r.headers.get("x-dns-error", False)),
             "ssl_error": bool(r.headers.get("x-ssl-error", False)),
             "invalid_response": bool(r.headers.get("x-invalid-response", False)),

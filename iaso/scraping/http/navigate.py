@@ -1,3 +1,6 @@
+import os
+import time
+
 from datetime import datetime, timezone
 from tempfile import TemporaryDirectory
 
@@ -15,7 +18,7 @@ async def navigate_http_resource(
     redirects,
     finishing,
     failures,
-    prequests,
+    requests,
     navigations,
 ):
     response = None
@@ -65,13 +68,13 @@ async def navigate_http_resource(
             err_acc = err
 
             if str(err).startswith("net::ERR_ABORTED at "):
-                files = listdir(downloadPath)
+                files = os.listdir(downloadPath)
 
                 start_time = time.time()
 
-                while len(files) != 1 and (time.time() - start_time) < 5.0:
+                while len(files) != 1 and (time.time() - start_time) < (timeout / 6):
                     await page.waitFor(500)
-                    files = listdir(downloadPath)
+                    files = os.listdir(downloadPath)
 
                 if len(files) == 1:
                     # The browser has downloaded a file
@@ -125,7 +128,7 @@ async def navigate_http_resource(
 
     pageURL = page.url if page.url != "about:blank" else response.url
 
-    final_request = prequests.get(pageURL, None)
+    final_request = requests.get(pageURL, None)
 
     # Finalise the main redirection chain
     if final_request is not None:

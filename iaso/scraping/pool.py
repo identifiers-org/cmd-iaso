@@ -1,5 +1,6 @@
 import asyncio
 import multiprocessing as mp
+import time
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -12,10 +13,13 @@ from tqdm import tqdm
 from .worker import fetch_resource_worker
 
 
-async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeout):
+async def scrape_resources_pool(
+    ctx, dump, proxy, proxy_address, jobs, workers, timeout
+):
     coordinating_processes = set([proxy]) if proxy is not None else set()
 
     with TemporaryDirectory() as tempdir:
+        dump = Path(dump)
         tempdir = Path(tempdir)
 
         with tqdm(total=len(jobs)) as progress:
@@ -51,7 +55,7 @@ async def scrape_resources_pool(ctx, proxy, proxy_address, jobs, workers, timeou
 
                     process = ctx.Process(
                         target=fetch_resource_worker,
-                        args=(proxy_address, timeout, tempdir, rid, lui, url),
+                        args=(dump, proxy_address, timeout, tempdir, rid, lui, url),
                     )
 
                     processes_timeout[process] = time.time() + timeout * 3

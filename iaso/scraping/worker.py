@@ -1,24 +1,29 @@
 import asyncio
 import gzip
+import logging
 import pickle
 import sys
 import traceback
+import warnings
 
 from urllib.parse import urlparse
 
 from filelock import FileLock
 
 from .http import scrape_http_resource
-from .ftp import scrape_http_resource
+from .ftp import scrape_ftp_resource
 
 
-def fetch_resource_worker(proxy_address, timeout, tempdir, rid, lui, url):
+def fetch_resource_worker(dump, proxy_address, timeout, tempdir, rid, lui, url):
     loop = asyncio.new_event_loop()
 
     try:
-        coro = fetch_resource(proxy_address, timeout, tempdir, rid, lui, url)
+        coro = fetch_resource(dump, proxy_address, timeout, tempdir, rid, lui, url)
 
         asyncio.set_event_loop(loop)
+
+        logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+        warnings.filterwarnings("ignore")
 
         return loop.run_until_complete(coro)
     finally:
@@ -26,7 +31,7 @@ def fetch_resource_worker(proxy_address, timeout, tempdir, rid, lui, url):
         loop.close()
 
 
-async def fetch_resource(proxy_address, timeout, tempdir, rid, lui, url):
+async def fetch_resource(dump, proxy_address, timeout, tempdir, rid, lui, url):
     try:
         parsed = urlparse(url)
 
@@ -50,7 +55,7 @@ async def fetch_resource(proxy_address, timeout, tempdir, rid, lui, url):
         }
 
         with FileLock(tempdir / "pings.lock"):
-            with gzip.open("dump/pings_{}.gz".format(rid), "ab") as file:
+            with gzip.open(dump / f"pings_{rid}.gz", "ab") as file:
                 pickle.dump(ping, file)
 
     except Exception:

@@ -13,7 +13,8 @@ def patch_pyppeteer():
 
     pyppeteer.connection.websockets.client.connect = new_method
 
-    pyppeteer.launcher.DEFAULT_ARGS.remove("--disable-features=site-per-process")
+    if "--disable-features=site-per-process" in pyppeteer.launcher.DEFAULT_ARGS:
+        pyppeteer.launcher.DEFAULT_ARGS.remove("--disable-features=site-per-process")
 
 
 patch_pyppeteer()
