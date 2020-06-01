@@ -1,8 +1,13 @@
 from setuptools import setup, find_packages
 
+from pathlib import Path
+
+with open(Path() / "VERSION") as file:
+    version = file.read().strip()
+
 setup(
     name="cmd-iaso",
-    version="0.0.1",
+    version=version,
     entry_points={
         "console_scripts": ["cmd-iaso = iaso.cli:main"],
         "iaso.plugins": [

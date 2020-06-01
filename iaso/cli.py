@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import pkg_resources
 import socket
 
 from functools import update_wrapper, partial
@@ -71,7 +72,7 @@ def ctx_registry(ctx):
 
 
 @click.group()
-@click.version_option(version="0.0.0")
+@click.version_option(version=pkg_resources.get_distribution("cmd-iaso").version)
 @click.pass_context
 @click.option(
     "--docker",
