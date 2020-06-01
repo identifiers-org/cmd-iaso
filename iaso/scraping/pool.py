@@ -14,7 +14,7 @@ from .worker import fetch_resource_worker
 
 
 async def scrape_resources_pool(
-    ctx, dump, proxy, proxy_address, jobs, workers, timeout
+    ctx, dump, proxy, proxy_address, chrome, jobs, workers, timeout
 ):
     coordinating_processes = set([proxy]) if proxy is not None else set()
 
@@ -55,7 +55,16 @@ async def scrape_resources_pool(
 
                     process = ctx.Process(
                         target=fetch_resource_worker,
-                        args=(dump, proxy_address, timeout, tempdir, rid, lui, url),
+                        args=(
+                            dump,
+                            proxy_address,
+                            chrome,
+                            timeout,
+                            tempdir,
+                            rid,
+                            lui,
+                            url,
+                        ),
                     )
 
                     processes_timeout[process] = time.time() + timeout * 3

@@ -1,3 +1,5 @@
+import os
+
 from .pyppeteer import launch_browser, new_page
 from .navigate import navigate_http_resource
 from .request_monitor import setup_page_monitoring
@@ -6,9 +8,14 @@ from pyppeteer import errors as pyppeteer_errors
 from requests import codes as status_code_values
 
 
-async def scrape_http_resource(proxy_address, timeout, url):
+async def scrape_http_resource(proxy_address, chrome, timeout, url):
     while True:
         try:
+            options = {}
+
+            if chrome is not None:
+                options["executablePath"] = chrome
+
             async with launch_browser(
                 headless=True,
                 ignoreHTTPSErrors=True,
@@ -18,6 +25,7 @@ async def scrape_http_resource(proxy_address, timeout, url):
                     f"--proxy-server={proxy_address}",
                     "--disable-gpu",
                 ],
+                **options,
             ) as browser:
                 async with new_page(browser) as page:
                     (

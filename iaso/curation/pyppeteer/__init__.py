@@ -9,8 +9,6 @@ import requests
 
 
 def patch_pyppeteer():
-    import pyppeteer.connection
-
     original_connect = pyppeteer.connection.websockets.client.connect
 
     def new_connect(*args, **kwargs):
@@ -20,8 +18,6 @@ def patch_pyppeteer():
         return original_connect(*args, **kwargs)
 
     pyppeteer.connection.websockets.client.connect = new_connect
-
-    import pyppeteer.browser
 
     original_create = pyppeteer.browser.Browser.create
 

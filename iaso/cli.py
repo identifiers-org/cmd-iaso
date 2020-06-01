@@ -38,7 +38,12 @@ from .click.validators import (
 )
 from .click.mutex import ValidateMutex, MutexOption
 from .click.chrome import ChromeChoice
-from .click.docker import register_docker, DockerPathExists, wrap_docker
+from .click.docker import (
+    register_docker,
+    DockerPathExists,
+    wrap_docker,
+    docker_chrome_path,
+)
 
 from .utils import format_json
 from .environment import collect_environment_description
@@ -460,6 +465,11 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
     "--proxy", type=ChromeChoice(), default="launch", show_envvar=True,
 )
 @click.option(
+    "--chrome",
+    type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
+    default=docker_chrome_path,
+)
+@click.option(
     "--workers", type=click.IntRange(min=1), default=32, show_envvar=True,
 )
 @click.option(
@@ -467,7 +477,7 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
 )
 @wrap_docker()
 @coroutine
-async def scrape(ctx, jobs, dump, proxy, workers, timeout):
+async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout):
     """
     Runs the data scraping pipeline to gather information on the jobs
     defined in the JOBS file and stores them inside the DUMP folder.
@@ -482,6 +492,9 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
     --proxy IPv4:PORT / --localhost IPv6:PORT / --proxy localhost:PORT connects
     to a running proxy instance at the specified address. The proxy will not
     automatically be closed after the scraping has finished.
+    
+    --chrome specifies the path to the Chrome browser executable.
+    If not specified, the Chromium browser shipped with pyppeteer will be used instead.
     
     --workers specifies the number of concurrent processes to launch to work
     on scraping requests. A value of 1 is equivalent to running the scraping
@@ -521,7 +534,12 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
         json.dump(environment, file)
 
     await scrape_resources(
-        ScrapingJobs(jobs), dump, proxy if proxy != "launch" else None, workers, timeout
+        ScrapingJobs(jobs),
+        dump,
+        proxy if proxy != "launch" else None,
+        chrome,
+        workers,
+        timeout,
     )
 
 

@@ -1,5 +1,6 @@
 FROM python:3.7-slim-buster
 
+# Copy the relevant resources
 COPY ./LICENSE /app/LICENSE
 COPY ./VERSION /app/VERSION
 COPY ./setup.py /app/setup.py
@@ -7,7 +8,9 @@ COPY ./iaso /app/iaso
 
 WORKDIR /app
 
+# Install cmd-iaso
 RUN apt-get update && \
+    apt-get -y upgrade \
     apt-get install -y --no-install-recommends gcc && \
     apt-get install -y --no-install-recommends python3-dev && \
     python3 setup.py install && \
@@ -15,8 +18,18 @@ RUN apt-get update && \
     apt-get remove -y gcc && \
     apt-get -y autoremove
 
-RUN apt-get install dumb-init
+# Install dependencies
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get install -yq curl libgconf-2-4 gnupg2
 
-RUN pyppeteer-install
+# Install Google Chrome
+RUN curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb stable main' >> /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-unstable --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get purge --auto-remove -y curl && \
+    rm -rf /src/*.deb
 
-ENTRYPOINT ["dumb-init", "--", "cmd-iaso"]
+ENTRYPOINT ["cmd-iaso"]

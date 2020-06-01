@@ -29,7 +29,7 @@ def main():
     # Run cmd-iaso with the --docker option to generate the docker run command whilst binding
     #  stdin and stdout (stderr is used to return the command)
     cmd = run_in_subprocess(
-        f"docker run -i --net=host cmd-iaso --docker {Path().resolve()} {' '.join(sys.argv[1:])}",
+        f"docker run -i --net=host --rm --init cmd-iaso --docker {Path().resolve()} {' '.join(sys.argv[1:])}",
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=subprocess.PIPE,

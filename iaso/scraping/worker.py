@@ -14,11 +14,13 @@ from .http import scrape_http_resource
 from .ftp import scrape_ftp_resource
 
 
-def fetch_resource_worker(dump, proxy_address, timeout, tempdir, rid, lui, url):
+def fetch_resource_worker(dump, proxy_address, chrome, timeout, tempdir, rid, lui, url):
     loop = asyncio.new_event_loop()
 
     try:
-        coro = fetch_resource(dump, proxy_address, timeout, tempdir, rid, lui, url)
+        coro = fetch_resource(
+            dump, proxy_address, chrome, timeout, tempdir, rid, lui, url
+        )
 
         asyncio.set_event_loop(loop)
 
@@ -31,13 +33,14 @@ def fetch_resource_worker(dump, proxy_address, timeout, tempdir, rid, lui, url):
         loop.close()
 
 
-async def fetch_resource(dump, proxy_address, timeout, tempdir, rid, lui, url):
+async def fetch_resource(dump, proxy_address, chrome, timeout, tempdir, rid, lui, url):
     try:
         parsed = urlparse(url)
 
         if parsed.scheme == "http" or parsed.scheme == "https":
             request_date, redirects, content, content_type = await asyncio.wait_for(
-                scrape_http_resource(proxy_address, timeout, url), timeout=(timeout * 2)
+                scrape_http_resource(proxy_address, chrome, timeout, url),
+                timeout=(timeout * 2),
             )
         elif parsed.scheme == "ftp":
             request_date, redirects, content, content_type = await asyncio.wait_for(
