@@ -10,7 +10,7 @@ WORKDIR /app
 
 # Install cmd-iaso
 RUN apt-get update && \
-    apt-get -y upgrade \
+    apt-get -y upgrade && \
     apt-get install -y --no-install-recommends gcc && \
     apt-get install -y --no-install-recommends python3-dev && \
     python3 setup.py install && \
