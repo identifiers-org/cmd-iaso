@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import pkg_resources
 import socket
 
 from functools import update_wrapper, partial
@@ -71,8 +70,20 @@ def ctx_registry(ctx):
     return registry
 
 
+def get_version():
+    try:
+        from importlib import metadata
+
+        return metadata.version
+    except ImportError:
+        # Running on pre-3.8 Python
+        import pkg_resources
+
+        return pkg_resources.get_distribution("cmd-iaso").version
+
+
 @click.group()
-@click.version_option(version=pkg_resources.get_distribution("cmd-iaso").version)
+@click.version_option(version=get_version())
 @click.pass_context
 @click.option(
     "--docker",
@@ -487,9 +498,7 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    if proxy == "launch":
-        proxy = None
-    else:
+    if proxy != "launch":
         try:
             ip_address, _, port = proxy.rpartition(":")
 
@@ -503,7 +512,17 @@ async def scrape(ctx, jobs, dump, proxy, workers, timeout):
         finally:
             s.close()
 
-    await scrape_resources(ScrapingJobs(jobs), dump, proxy, workers, timeout)
+    with click.open_file(Path(dump) / "ENVIRONMENT", "w") as file:
+        environment = collect_environment_description()
+        environment[
+            "cmd"
+        ] = f"scrape {jobs} {dump} --proxy {proxy} --workers {workers} --timeout {timeout}"
+
+        json.dump(environment, file)
+
+    await scrape_resources(
+        ScrapingJobs(jobs), dump, proxy if proxy != "launch" else None, workers, timeout
+    )
 
 
 @cli.command()

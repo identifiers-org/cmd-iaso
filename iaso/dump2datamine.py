@@ -5,18 +5,23 @@ import pickle
 import re
 
 from collections import defaultdict
-
 from pathlib import Path
 
-from tqdm import tqdm
+import click
 
-from .environment import collect_environment_description
+from tqdm import tqdm
 
 pattern = r"pings_(\d+)\.gz"
 matcher = re.compile(pattern)
 
 
 def generate_datamine_from_dump(dump, datamine_path):
+    if not os.path.exists(Path(dump) / "ENVIRONMENT"):
+        raise click.UsageError(f"No ENVIRONMENT file could be found in DUMP {dump}.")
+
+    with open(Path(dump) / "ENVIRONMENT", "r") as file:
+        environment = json.load(file)
+
     providers = []
     errors = defaultdict(list)
 
@@ -62,7 +67,7 @@ def generate_datamine_from_dump(dump, datamine_path):
         break
 
     datamine = {
-        "environment": collect_environment_description(),
+        "environment": environment,
         "providers": providers,
     }
 
