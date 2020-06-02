@@ -27,7 +27,7 @@ mkdir my_scraping_session
 ```
 3. **Run the scraping session**, keep in mind that '--proxy launch', '--workers 32' and '--timeout 30' are in the default configuration as well, we're just showing a usage example for them.
 ```
-cmd-iaso scrape <scraping_jobs.json> --proxy launch --workers 32 --timeout 30
+cmd-iaso scrape <scraping_jobs.json> <my_scraping_session> --proxy launch --workers 32 --timeout 30
 ```
 
 # cmd-iaso
