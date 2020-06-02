@@ -10,28 +10,31 @@ XEGER_LIMIT = 10
 def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
     resources = dict()
 
-    # Collect the namespace-specific information like prefix and LUI pattern
-    #  for each resource
-    for nid, namespace in registry.namespaces.items():
-        for resource in namespace.resources:
-            rid = resource.id
-            url = resource.urlPattern
-
-            resources[rid] = {
-                "prefix": namespace.prefix,
-                "pattern": namespace.pattern,
-                "rid": rid,
-                "url": url,
-                "luis": set([namespace.sampleId, resource.sampleId][:num_valid]),
-            }
-
     with tqdm(
         total=((num_valid + num_random) * len(registry.resources)),
         desc="Generating LUIs",
     ) as progress:
         generated_luis = 0
 
-        if num_valid > 0:
+        # Collect the namespace-specific information like prefix and LUI pattern
+        #  for each resource
+        for nid, namespace in registry.namespaces.items():
+            for resource in namespace.resources:
+                rid = resource.id
+                url = resource.urlPattern
+
+                resources[rid] = {
+                    "prefix": namespace.prefix,
+                    "pattern": namespace.pattern,
+                    "rid": rid,
+                    "url": url,
+                    "luis": set([namespace.sampleId, resource.sampleId][:num_valid]),
+                }
+
+                generated_luis += len(resources[rid]["luis"])
+                progress.update(len(resources[rid]["luis"]))
+
+        if num_valid > 1:
             # If we need valid LUIs, first attempt to fill them per resource
             for rid, resource in resources.items():
                 ids = list(
@@ -43,10 +46,12 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
                 )
                 random.shuffle(ids)
 
+                pre_len = len(resource["luis"])
+
                 resource["luis"].update(ids[: (num_valid - len(resource["luis"]))])
 
-                generated_luis += len(resource["luis"])
-                progress.update(len(resource["luis"]))
+                generated_luis += len(resource["luis"]) - pre_len
+                progress.update(len(resource["luis"]) - pre_len)
 
             remaining_resources = list(resources.values())
 

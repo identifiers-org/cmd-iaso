@@ -9,12 +9,21 @@ def validate_mutex(params, cmd_name, not_required_if):
             mutex_opt_name, mutext_opt_val = mutex_opt.split("=")
 
             exlusivity.append(f"--{mutex_opt_name.replace('_', '-')} {mutext_opt_val}")
+        elif "<" in mutex_opt:
+            mutex_opt_name, mutext_opt_val = mutex_opt.split("<")
+
+            exlusivity.append(f"--{mutex_opt_name.replace('_', '-')} {mutext_opt_val}")
         else:
             mutex_opt_name = mutex_opt
             exlusivity.append(f"--{mutex_opt_name.replace('_',  '-')}")
 
-        if (mutex_opt_name not in params or not params[mutex_opt_name]) or (
-            ("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val)
+        if (
+            (mutex_opt_name not in params or not params[mutex_opt_name])
+            or (("=" in mutex_opt) and (str(params[mutex_opt_name]) != mutext_opt_val))
+            or (
+                ("<" in mutex_opt)
+                and (int(params[mutex_opt_name]) >= int(mutext_opt_val))
+            )
         ):
             return True
 

@@ -393,10 +393,10 @@ def proxy3(ctx, port, timeout):
     type=click.Path(exists=False, writable=True, dir_okay=False, allow_dash=True),
 )
 @click.option(
-    "--valid", type=click.IntRange(min=0), default=50, show_envvar=True,
+    "--valid", type=click.IntRange(min=0), default=1, show_envvar=True,
 )
 @click.option(
-    "--random", type=click.IntRange(min=0), default=50, show_envvar=True,
+    "--random", type=click.IntRange(min=0), default=99, show_envvar=True,
 )
 @click.option(
     "--valid-namespace-ids",
@@ -405,7 +405,7 @@ def proxy3(ctx, port, timeout):
         exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
     ),
     cls=MutexOption,
-    not_required_if=["valid=0"],
+    not_required_if=["valid<2"],
     show_envvar=True,
 )
 @wrap_docker()
@@ -422,7 +422,7 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
     resource provider from its namespace's LUI regex pattern.
     By default, the command generates 50 random LUIs per provider.
     
-    Iff --valid specifies a positive number, --valid-namespace-ids VALID_NAMESPACE_IDS
+    Iff --valid VALID is greater than 1, --valid-namespace-ids VALID_NAMESPACE_IDS
     must specify the file path to a namespace ids file.
     """
 
