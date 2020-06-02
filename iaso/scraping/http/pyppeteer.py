@@ -2,6 +2,10 @@ import pyppeteer
 
 from async_generator import asynccontextmanager
 
+from . import patch_pyppeteer
+
+patch_pyppeteer.patch_pyppeteer()
+
 
 def patch_pyppeteer():
     original_connect = pyppeteer.connection.websockets.client.connect
