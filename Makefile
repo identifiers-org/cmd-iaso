@@ -13,6 +13,7 @@ all: deploy
 # Local Installation
 install: dev_environment
 	@echo "<===|DEVOPS|===> [INSTALL] Installing the tool locally"
+	@echo -e "\n\n\n<===|WARNING|===> PLEASE, LOAD SYNTACTIC SUGAR BY RUNNING 'source command-line-extensions.sh' <===\n\n\n"
 
 dev_environment: setup_tool
 	@echo "<===|DEVOPS|===> [ENVIRONMENT] Preparing development environment"
