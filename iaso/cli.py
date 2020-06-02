@@ -232,7 +232,6 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 )
 @click.option(
     "--session",
-    "session_path",
     type=click.Path(exists=False, writable=True, dir_okay=False),
     default="session.gz",
     cls=MutexOption,
@@ -241,7 +240,7 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 )
 @wrap_docker()
 @coroutine
-async def start(ctx, datamine, validators, discard_session, session_path):
+async def start(ctx, datamine, validators, discard_session, session):
     """
     Starts a new session for the interactive curation process.
     Reads the scraped information on providers from the DATAMINE file path.
@@ -266,9 +265,9 @@ async def start(ctx, datamine, validators, discard_session, session_path):
     > cmd-iaso curate --help
     """
 
-    if session_path is not None and os.path.exists(session_path):
+    if session is not None and os.path.exists(session):
         click.confirm(
-            f"{session_path} already exists. Do you want to overwrite {session_path} with a fresh session?",
+            f"{session} already exists. Do you want to overwrite {session} with a fresh session?",
             abort=True,
         )
 
@@ -282,7 +281,7 @@ async def start(ctx, datamine, validators, discard_session, session_path):
         ctx.parent.params["navigator"],
         ctx.parent.params["informant"],
         ctx.parent.params["chrome"],
-        CurationSession(session_path, Datamine(datamine), validators, 0, set()),
+        CurationSession(session, Datamine(datamine), validators, 0, set()),
     )
 
 
