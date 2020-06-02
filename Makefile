@@ -11,9 +11,13 @@ tag_version = $(shell cat VERSION)
 all: deploy
 
 # Local Installation
-install: dev_environment
+install: dev_environment default_dev_configuration
 	@echo "<===|DEVOPS|===> [INSTALL] Installing the tool locally"
 	@echo -e "\n\n\n<===|WARNING|===> PLEASE, LOAD SYNTACTIC SUGAR BY RUNNING 'source command-line-extensions.sh' <===\n\n\n"
+
+default_dev_configuration:
+	@echo "<===|DEVOPS|===> [INSTALL] Preparing default configuration file"
+	@cp config.default .env
 
 dev_environment: setup_tool
 	@echo "<===|DEVOPS|===> [ENVIRONMENT] Preparing development environment"
@@ -80,4 +84,4 @@ clean_tmp:
 	@echo "<===|DEVOPS|===> [HOUSEKEEPING] Removing temporary folder"
 	@rm -rf tmp
 
-.PHONY: all install dev_environment setup_tool clean development_run_tests app_structure container_production_build container_production_push deploy release clean_tmp clean_bin
+.PHONY: all install default_dev_configuration dev_environment setup_tool clean development_run_tests app_structure container_production_build container_production_push deploy release clean_tmp clean_bin

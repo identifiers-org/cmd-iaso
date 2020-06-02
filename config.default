@@ -1,0 +1,26 @@
+# Default configuration
+# --- Scrape ---
+CMD_IASO_SCRAPE_PROXY=launch
+CMD_IASO_SCRAPE_WORKERS=32
+CMD_IASO_SCRAPE_TIMEOUT=30
+
+# --- Curate ---
+CMD_IASO_CURATE_CHROME=launch
+CMD_IASO_CURATE_CONTROLLER=terminal
+CMD_IASO_CURATE_NAVIGATOR=chrome
+CMD_IASO_CURATE_INFORMANT=terminal
+# --- Curate Start
+CMD_IASO_CURATE_START_VALIDATORS='dns-error invalid-response http-status-error'
+# Enable this one if you'd like to discard the session
+#CMD_IASO_CURATE_START_DISCARD_SESSION=true
+CMD_IASO_CURATE_START_SESSION=session.gz
+
+# --- Jobs ---
+CMD_IASO_JOBS_VALID=1
+CMD_IASO_JOBS_RANDOM=99
+# Specify this one if you have data mined this information from the Global Load Balancer
+#CMD_IASO_JOBS_VALID_NAMESPACE_IDS=
+
+# --- Proxy3 ---
+CMD_IASO_PROXY3_PORT=8080
+CMD_IASO_PROXY3_TIMEOUT=10
