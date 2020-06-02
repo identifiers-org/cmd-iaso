@@ -19,11 +19,15 @@ async def scrape_http_resource(proxy_address, chrome, timeout, url):
             async with launch_browser(
                 headless=True,
                 ignoreHTTPSErrors=True,
+                acceptInsecureCerts=True,
                 autoClose=False,
                 args=[
                     "--no-sandbox",
                     f"--proxy-server={proxy_address}",
                     "--disable-gpu",
+                    "--ignore-certificate-errors",
+                    "--ignore-certificate-errors-spki-list",
+                    "--enable-features=NetworkService",
                 ],
                 **options,
             ) as browser:
