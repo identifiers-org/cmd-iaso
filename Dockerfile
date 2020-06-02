@@ -21,7 +21,8 @@ RUN apt-get update && \
 # Install dependencies
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -yq curl libgconf-2-4 gnupg2
+    apt-get install -yq curl libgconf-2-4 gnupg2 && \
+    apt-get -y autoremove
 
 # Install Google Chrome
 RUN curl https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
