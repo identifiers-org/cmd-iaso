@@ -1,9 +1,9 @@
 # cmd-iaso
 
-IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is a command-line tool to help the curators of the identifiers.org registry. Firstly, it provides the functionality to scrape data from the resource providers in the registry. With this information, the curator is walked through an interactive curation system of the discovered issues. The goal of cmd-iaso is to aid the curators in upholding the health and integrity of the identifiers.org registry.
+IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is a command-line tool to help the curators of the [identifiers.org](https://identifiers.org/) registry. Firstly, it provides the functionality to scrape data from the resource providers in the registry. With this information, the curator is walked through an interactive curation system of the discovered issues. The goal of cmd-iaso is to aid the curators in upholding the health and integrity of the [identifiers.org](https://identifiers.org/) registry.
 
 ## Development and Licensing
-`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the identifiers.org registry created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
+`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the [identifiers.org](https://identifiers.org/) registry created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
 
 ## Project structure
 This repository consists of four main parts:
@@ -54,7 +54,7 @@ This command will build the Docker container during the first run. The `cmd-iaso
 ```
 can also be run as
 ```
-> python3 cmd-iaso-docker COMMAND ARGS OPTIONS
+> python3 cmd-iaso-docker.py COMMAND ARGS OPTIONS
 ```
 There are a few small differences in semantics between running `cmd-iaso` and `python3 cmd-iaso-docker`, however. Firstly, all (file) paths mentioned in the arguments must already exist, which also means that in Docker mode, the tool will always complain about overwriting existing files. Secondly, any environment variables visible to `cmd-iaso`, for instance through the `.env` file will not be visible to the containerised tool. Lastly, if you want to use any custom curation validator plugins (see below), you will need to add a new layer to the Docker container to install them inside as well. Otherwise, they will not be found by `python3 cmd-iaso-docker`.
 
@@ -69,16 +69,16 @@ To print a description of your current runtime environment, you can run:
 ```
 
 ### Pretty-printed registry
-To print the current status of the identifiers.org registry, you can use:
+To print the current status of the [identifiers.org](https://identifiers.org/) registry, you can use:
 ```
 > cmd-iaso registry
 ```
 
 ## Data scraping
-Before performing curation of the resource providers in the identifiers.org registry, `cmd-iaso` needs to scrape some data. This section will outline how to configure and run the scraping pipeline.
+Before performing curation of the resource providers in the [identifiers.org](https://identifiers.org/) registry, `cmd-iaso` needs to scrape some data. This section will outline how to configure and run the scraping pipeline.
 
-### [Optional]: Extracting LUIs from the load balancing logs of identifiers.org
-If you want the data scraping to probe valid resource LUIs, you need to provide the tool with a list of them. One way to get some heuristically more likely to be valid LUIs, you can extract them from the load balancing logs of identifiers.org:
+### [Optional]: Extracting LUIs from the load balancing logs of [identifiers.org](https://identifiers.org/)
+If you want the data scraping to probe valid resource LUIs, you need to provide the tool with a list of them. One way to get some heuristically more likely to be valid LUIs, you can extract them from the load balancing logs of [identifiers.org](https://identifiers.org/):
 ```
 > cmd-iaso logs2luis LOGS VALID_NAMESPACE_IDS [--resolution-endpoint RESOLUTION_ENDPOINT]
 ```
@@ -129,12 +129,17 @@ from abc import ABC, abstractmethod
 class CurationError(ABC):
     @staticmethod
     @abstractmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(get_compact_identifier, provider) -> CurationError:
         pass
 
     @abstractmethod
-    def format(self, formatter):
+    def format(self, formatter) -> None:
         pass
+```
+Here `get_compact_identifier` is a function of the signature:
+```python
+def get_compact_identifier(lui: str, provider_id: int) -> str:
+    ...
 ```
 Curation validators must be registered in the `iaso.plugins` module using setuptools entry points. For instance, to register a class `MyValidator` you should write:
 ```python
@@ -167,7 +172,7 @@ To list all validators that are registered with `cmd-iaso`, you can use
 The interactive curation tool is composed of three components which can all run either in the terminal or in the Chrome browser. The selection is independent for each component to allow for maximum customisability. All of the component-options can either be set to `terminal` or to `chrome`.
 
 The **Controller** allows the curator to navigate through the resource providers which have been flagged as problematic. The controller component can be set by the `--controller` option.
-The **Navigator** leads the curator to the provider's corresponding namespace page in the identifiers.org registry. If the navigator is in Chrome mode and the curator is logged in, the navigator will automatically enter edit mode for the relevant resource information. The navigator component can be set by the `--navigator` option.
+The **Navigator** leads the curator to the provider's corresponding namespace page in the [identifiers.org](https://identifiers.org/) registry. If the navigator is in Chrome mode and the curator is logged in, the navigator will automatically enter edit mode for the relevant resource information. The navigator component can be set by the `--navigator` option.
 The **Informant*** formats and presents information about the discovered issues with each resource provider to the curator. The informant component can be set by the `--informant` option.
 
 Iff any of the components are set to `chrome`, the curator must also provide the `--chrome` option to select how the curation pipeline should connect to Chrome. It can either `launch` a new instance or connect to an existing one if its address, e.g. `localhost:9222` is provided. Note that in order to connect to a running Chrome browser, it must have been started with the `--remote-debugging-port=PORT` option, where `PORT` would be `9222` in this case.
