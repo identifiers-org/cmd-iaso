@@ -7,7 +7,9 @@ from requests.status_codes import _codes as status_code_names
 
 class RedirectChain(CurationError):
     @staticmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         collector = ErrorExampleCollector("Redirection Chain")
 
         for ping in provider.pings:

@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 class CurationError(ABC):
     @staticmethod
     @abstractmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         pass
 
     @staticmethod

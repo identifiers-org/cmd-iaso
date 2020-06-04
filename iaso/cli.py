@@ -31,6 +31,8 @@ from .scraping import scrape_resources
 
 from .dump2datamine import generate_datamine_from_dump
 
+from .valid_luis import validate_resolution_endpoint, collect_namespace_ids_from_logs
+
 from .click.validators import (
     load_registered_validators,
     validate_validators,
@@ -224,6 +226,15 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     show_envvar=True,
 )
 @click.option(
+    "--valid-luis-threshold", type=click.IntRange(0, 100), default=0, show_envvar=True,
+)
+@click.option(
+    "--random-luis-threshold",
+    type=click.IntRange(0, 100),
+    default=100,
+    show_envvar=True,
+)
+@click.option(
     "--discard-session",
     is_flag=True,
     cls=MutexOption,
@@ -240,7 +251,15 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 )
 @wrap_docker()
 @coroutine
-async def start(ctx, datamine, validators, discard_session, session):
+async def start(
+    ctx,
+    datamine,
+    validators,
+    valid_luis_threshold,
+    random_luis_threshold,
+    discard_session,
+    session,
+):
     """
     Starts a new session for the interactive curation process.
     Reads the scraped information on providers from the DATAMINE file path.
@@ -253,6 +272,16 @@ async def start(ctx, datamine, validators, discard_session, session):
     \b
     You can list the registered (not yet validated) validator modules using:
     > cmd-iaso curate --list-validators.
+    
+    --valid-luis-threshold specifies the percentage of pings with valid LUIs to a
+    resource which must exhibit an error for it to be reported.
+    By default, all errors to valid LUIs are reported.
+    Each validator can choose whether to abide by this option or not.
+    
+    --random-luis-threshold specifies the percentage of pings with random LUIS to
+    a resource which must exhibit an error for it to be reported.
+    By default, no errors to random LUIs are reported.
+    Each validator can choose whether to abide by this option or not.
     
     \b
     --session SESSION stores the session information at the SESSION path.
@@ -281,7 +310,15 @@ async def start(ctx, datamine, validators, discard_session, session):
         ctx.parent.params["navigator"],
         ctx.parent.params["informant"],
         ctx.parent.params["chrome"],
-        CurationSession(session, Datamine(datamine), validators, 0, set()),
+        CurationSession(
+            session,
+            Datamine(datamine),
+            validators,
+            valid_luis_threshold,
+            random_luis_threshold,
+            0,
+            set(),
+        ),
     )
 
 
@@ -386,6 +423,47 @@ def proxy3(ctx, port, timeout):
     serve_proxy(port, timeout)
 
 
+@cli.command()
+@click.pass_context
+@click.argument(
+    "logs", type=click.Path(exists=DockerPathExists(), readable=True, file_okay=False),
+)
+@click.argument(
+    "valid-namespace-ids", type=click.Path(exists=False, writable=True, dir_okay=False),
+)
+@click.option(
+    "--resolution-endpoint",
+    default="https://resolver.api.identifiers.org/",
+    prompt=True,
+    show_envvar=True,
+)
+def logs2luis(ctx, logs, valid_namespace_ids, resolution_endpoint):
+    """
+    Extracts valid LUIs from the load balancing LOGS folder of identifiers.org
+    and saves them to the VALID_NAMESPACE_IDS file.
+    
+    \b
+    This helper command can be used to generate VALID_NAMESPACE_IDS file required
+    to run:
+    > cmd-iaso jobs --valid VALID
+    with VALID > 1 to include LUIs from the logs
+    
+    --resolution-endpoint specifies the resolution API endpoint of identifiers.org.
+    This option can be used to run a local deployment of the identifiers.org
+    resolution service instead of relying on the public one.
+    """
+
+    if os.path.exists(valid_namespace_ids):
+        click.confirm(
+            f"{valid_namespace_ids} already exists. Do you want to overwrite {valid_namespace_ids} with the newly extracted valid namespace ids?",
+            abort=True,
+        )
+
+    validate_resolution_endpoint(resolution_endpoint)
+
+    collect_namespace_ids_from_logs(logs, resolution_endpoint, valid_namespace_ids)
+
+
 @cli.command(cls=ValidateMutex(click.Command))
 @click.pass_context
 @click.argument(
@@ -401,9 +479,7 @@ def proxy3(ctx, port, timeout):
 @click.option(
     "--valid-namespace-ids",
     prompt=True,
-    type=click.Path(
-        exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
-    ),
+    type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
     cls=MutexOption,
     not_required_if=["valid<2"],
     show_envvar=True,

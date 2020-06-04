@@ -16,7 +16,13 @@ class RedirectFlagError(CurationError, ABC):
         pass
 
     @staticmethod
-    def check_and_create(get_compact_identifier, Subclass, provider):
+    def check_and_create(
+        get_compact_identifier,
+        valid_luis_threshold,
+        random_luis_threshold,
+        Subclass,
+        provider,
+    ):
         collector = ErrorExampleCollector(Subclass.get_error_name())
 
         for ping in provider.pings:
@@ -49,9 +55,15 @@ class DNSError(RedirectFlagError):
         return "DNS Error"
 
     @staticmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         return super(DNSError, DNSError).check_and_create(
-            get_compact_identifier, DNSError, provider
+            get_compact_identifier,
+            valid_luis_threshold,
+            random_luis_threshold,
+            DNSError,
+            provider,
         )
 
 
@@ -65,9 +77,15 @@ class SSLError(RedirectFlagError):
         return "SSL Error"
 
     @staticmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         return super(SSLError, SSLError).check_and_create(
-            get_compact_identifier, SSLError, provider
+            get_compact_identifier,
+            valid_luis_threshold,
+            random_luis_threshold,
+            SSLError,
+            provider,
         )
 
 
@@ -81,7 +99,13 @@ class InvalidResponseError(RedirectFlagError):
         return "Invalid Response"
 
     @staticmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         return super(InvalidResponseError, InvalidResponseError).check_and_create(
-            get_compact_identifier, InvalidResponseError, provider
+            get_compact_identifier,
+            valid_luis_threshold,
+            random_luis_threshold,
+            InvalidResponseError,
+            provider,
         )

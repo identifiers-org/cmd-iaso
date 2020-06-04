@@ -40,7 +40,12 @@ async def curate(
         [
             lambda p: p.id in registry.resources,
             *[
-                partial(validator.check_and_create, get_compact_identifier)
+                partial(
+                    validator.check_and_create,
+                    get_compact_identifier,
+                    session.valid_luis_threshold / 100,
+                    session.random_luis_threshold / 100,
+                )
                 for validator in session.validators.values()
             ],
         ],

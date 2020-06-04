@@ -1,4 +1,7 @@
-# https://github.com/kiwi0fruit/pyppdf/blob/master/pyppdf/patch_pyppeteer/patch_pyppeteer.py (MIT License)
+# Pyppeteer Chromium download path (for MacOS)
+#
+# Published by Peter Zagubisalo under the MIT License:
+# https://github.com/kiwi0fruit/pyppdf/blob/master/pyppdf/patch_pyppeteer/patch_pyppeteer.py
 
 import certifi
 from pyppeteer.chromium_downloader import *

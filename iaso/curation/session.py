@@ -18,10 +18,12 @@ class CurationSession:
                 "items": {"type": "string"},
                 "additionalItems": False,
             },
-            "position": {"type": "number"},
+            "valid_luis_threshold": {"type": "integer", "minimum": 0, "maximum": 100},
+            "random_luis_threshold": {"type": "integer", "minimum": 0, "maximum": 100},
+            "position": {"type": "integer"},
             "visited": {
                 "type": "array",
-                "items": {"type": "number"},
+                "items": {"type": "integer", "minimum": 0},
                 "additionalItems": False,
             },
         },
@@ -36,14 +38,27 @@ class CurationSession:
             filepath,
             session.datamine,
             validate_validators(session.validators),
+            session.valid_luis_threshold,
+            session.random_luis_threshold,
             session.position,
             set(session.visited),
         )
 
-    def __init__(self, filepath, datamine, validators, position, visited):
+    def __init__(
+        self,
+        filepath,
+        datamine,
+        validators,
+        valid_luis_threshold,
+        random_luis_threshold,
+        position,
+        visited,
+    ):
         self.__filepath = filepath
         self.__datamine = datamine
         self.__validators = validators
+        self.__valid_luis_threshold = valid_luis_threshold
+        self.__random_luis_threshold = random_luis_threshold
         self.__position = position
         self.__visited = visited
 
@@ -56,6 +71,14 @@ class CurationSession:
     @property
     def validators(self):
         return self.__validators
+
+    @property
+    def valid_luis_threshold(self):
+        return self.__valid_luis_threshold
+
+    @property
+    def random_luis_threshold(self):
+        return self.__random_luis_threshold
 
     @property
     def position(self):
@@ -83,6 +106,8 @@ class CurationSession:
                     {
                         "datamine": namedtuple_to_dict(self.__datamine),
                         "validators": list(self.__validators.keys()),
+                        "valid_luis_threshold": self.__valid_luis_threshold,
+                        "random_luis_threshold": self.__random_luis_threshold,
                         "position": self.__position,
                         "visited": list(self.__visited),
                     },

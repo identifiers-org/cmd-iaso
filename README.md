@@ -129,7 +129,7 @@ from abc import ABC, abstractmethod
 class CurationError(ABC):
     @staticmethod
     @abstractmethod
-    def check_and_create(get_compact_identifier, provider) -> CurationError:
+    def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> CurationError:
         pass
 
     @abstractmethod
@@ -187,9 +187,9 @@ All of these options have to be provided via the command line or environment var
 ### Starting a new curation session
 Curation is performed in sessions to enable the curator to pause and save their progress. Furthermore, they can then resume the curation later on. While the information on how the curation is run, i.e. whether the components are run in the terminal or the Chrome browser, is session independent, the `DATAMINE` file and selected curation validators are fixed per session. The session also remembers the point at which the curator left off. To start a new session, you can use:
 ```
-> cmd-iaso curate [...] start DATAMINE {-v VALIDATOR} [--session SESSION]
+> cmd-iaso curate [...] start DATAMINE {-v VALIDATOR} [--valid-luis-threshold VALID_LUIS_THRESHOLD] [--random-luis-threshold RANDOM_LUIS_THRESHOLD] [--session SESSION]
 ```
-This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled.
+This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than $$50%$$ of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
 
 The `[...]` between `curate` and `start` refer to the `terminal` vs `chrome` component options discussed above.
 

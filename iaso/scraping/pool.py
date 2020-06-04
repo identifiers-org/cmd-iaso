@@ -51,7 +51,7 @@ async def scrape_resources_pool(
                         finished_processes.append(process)
 
                 for _ in range(min(workers - len(active_processes), len(jobs))):
-                    rid, lui, url = jobs.pop()
+                    rid, lui, random, url = jobs.pop()
 
                     process = ctx.Process(
                         target=fetch_resource_worker,
@@ -63,6 +63,7 @@ async def scrape_resources_pool(
                             tempdir,
                             rid,
                             lui,
+                            random,
                             url,
                         ),
                     )

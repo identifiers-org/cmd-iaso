@@ -12,7 +12,9 @@ def strip_scheme(url):
 
 class SchemeRedirectError(CurationError):
     @staticmethod
-    def check_and_create(get_compact_identifier, provider):
+    def check_and_create(
+        get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
+    ):
         collector = ErrorExampleCollector("Schema-Only Redirect")
 
         for ping in provider.pings:

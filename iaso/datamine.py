@@ -29,13 +29,14 @@ Datamine.SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "number"},
+                    "id": {"type": "integer", "minimum": 0},
                     "pings": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
                                 "lui": {"type": "string"},
+                                "random": {"type": "boolean"},
                                 "date": {"type": "string"},
                                 "redirects": {
                                     "type": "array",
@@ -45,9 +46,9 @@ Datamine.SCHEMA = {
                                             "url": {"type": ["string", "null"]},
                                             "ip_port": {"type": ["string", "null"]},
                                             "response_time": {
-                                                "type": ["number", "null"]
+                                                "type": ["integer", "null"]
                                             },
-                                            "status": {"type": ["number", "null"]},
+                                            "status": {"type": ["integer", "null"]},
                                             "dns_error": {"type": "boolean"},
                                             "ssl_error": {"type": "boolean"},
                                             "invalid_response": {"type": "boolean"},

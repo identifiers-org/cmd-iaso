@@ -16,10 +16,20 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
     ) as progress:
         generated_luis = 0
 
+        valid_namespace_luis = dict()
+
         # Collect the namespace-specific information like prefix and LUI pattern
         #  for each resource
         for nid, namespace in registry.namespaces.items():
+            if namespace.deprecated is True:
+                continue
+
+            valid_namespace_luis[namespace.prefix] = set([namespace.sampleId])
+
             for resource in namespace.resources:
+                if resource.deprecated is True:
+                    continue
+
                 rid = resource.id
                 url = resource.urlPattern
 
@@ -31,8 +41,16 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
                     "luis": set([namespace.sampleId, resource.sampleId][:num_valid]),
                 }
 
+                valid_namespace_luis[namespace.prefix].add(resource.sampleId)
+
                 generated_luis += len(resources[rid]["luis"])
                 progress.update(len(resources[rid]["luis"]))
+
+        if namespace_ids is not None:
+            for namespace, luis in namespace_ids.items():
+                valid_namespace_luis[namespace] = valid_namespace_luis.get(
+                    namespace, set()
+                ).union(luis)
 
         if num_valid > 1:
             # If we need valid LUIs, first attempt to fill them per resource
@@ -132,8 +150,17 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
         for rid, resource in resources.items():
             resource["luis"] = list(resource["luis"])
 
+            valid_luis = valid_namespace_luis[resource["prefix"]]
+
             for lui in resource["luis"]:
-                jobs.append((rid, lui, resource["url"].replace("{$id}", lui)))
+                jobs.append(
+                    (
+                        rid,
+                        lui,
+                        lui not in valid_luis,
+                        resource["url"].replace("{$id}", lui),
+                    )
+                )
 
                 progress.update(1)
 
