@@ -3,7 +3,7 @@
 IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is a command-line tool to help the curators of the [identifiers.org](https://identifiers.org/) registry. Firstly, it provides the functionality to scrape data from the resource providers in the registry. With this information, the curator is walked through an interactive curation system of the discovered issues. The goal of cmd-iaso is to aid the curators in upholding the health and integrity of the [identifiers.org](https://identifiers.org/) registry.
 
 ## Development and Licensing
-`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the [identifiers.org](https://identifiers.org/) registry created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
+`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the [identifiers.org](https://identifiers.org/) [registry](https://registry.identifiers.org) created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
 
 ## Project structure
 This repository consists of four main parts:
@@ -172,8 +172,10 @@ To list all validators that are registered with `cmd-iaso`, you can use
 The interactive curation tool is composed of three components which can all run either in the terminal or in the Chrome browser. The selection is independent for each component to allow for maximum customisability. All of the component-options can either be set to `terminal` or to `chrome`.
 
 The **Controller** allows the curator to navigate through the resource providers which have been flagged as problematic. The controller component can be set by the `--controller` option.
+
 The **Navigator** leads the curator to the provider's corresponding namespace page in the [identifiers.org](https://identifiers.org/) registry. If the navigator is in Chrome mode and the curator is logged in, the navigator will automatically enter edit mode for the relevant resource information. The navigator component can be set by the `--navigator` option.
-The **Informant*** formats and presents information about the discovered issues with each resource provider to the curator. The informant component can be set by the `--informant` option.
+
+The **Informant** formats and presents information about the discovered issues with each resource provider to the curator. The informant component can be set by the `--informant` option.
 
 Iff any of the components are set to `chrome`, the curator must also provide the `--chrome` option to select how the curation pipeline should connect to Chrome. It can either `launch` a new instance or connect to an existing one if its address, e.g. `localhost:9222` is provided. Note that in order to connect to a running Chrome browser, it must have been started with the `--remote-debugging-port=PORT` option, where `PORT` would be `9222` in this case.
 
@@ -189,9 +191,13 @@ Curation is performed in sessions to enable the curator to pause and save their 
 ```
 This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled.
 
+The `[...]` between `curate` and `start` refer to the `terminal` vs `chrome` component options discussed above.
+
 ### Resuming an existing session
 An existing session at the `SESSION` file path can be resumed using:
 ```
 > cmd-iaso curate [...] resume SESSION
 ```
+The `[...]` between `curate` and `resume` refer to the `terminal` vs `chrome` component options discussed above.
+
 This command will also warn the curator if they have already completed curation on this session.
