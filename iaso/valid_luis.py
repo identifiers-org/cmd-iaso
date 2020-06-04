@@ -22,7 +22,7 @@ class JSONSetEncoder(JSONEncoder):
 def validate_resolution_endpoint(resolution_endpoint):
     try:
         with requests.get(
-            urljoin(resolution_endpoint, "healthApi/liveness_check")
+            urljoin(resolution_endpoint, "/healthApi/liveness_check")
         ) as r:
             if r.status_code == requests.codes.ok:
                 return
@@ -69,7 +69,7 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
     for c, compact_id in tqdm(
         enumerate(compact_ids), desc="Validating compact identifiers"
     ):
-        with requests.get(urljoin(resolver, compact_id)) as r:
+        with requests.get(urljoin(resolver, f"/{compact_id}")) as r:
             try:
                 response = r.json()
 
@@ -88,7 +88,11 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
                     compact_identifier["localId"]
                 )
             except Exception as e:
-                print("Error at {line}: {error}".format(line=line.strip(), error=e))
+                print(
+                    "Error at {url}: {error}".format(
+                        url=urljoin(resolver, f"/{compact_id}"), error=e
+                    )
+                )
 
         if ((c + 1) % 1000) == 0:
             with gzip.open(output, "wt") as file:
