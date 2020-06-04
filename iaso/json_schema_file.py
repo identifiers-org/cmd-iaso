@@ -1,3 +1,4 @@
+import io
 import gzip
 import json
 
@@ -9,20 +10,36 @@ from .jsondb import json_to_namedtuple
 
 
 def JsonSchemaFile(filepath, schemaname, schema, namedtuple=True):
-    try:
-        if filepath.endswith(".gz"):
-            with click.open_file(filepath, "rb") as file:
-                with gzip.GzipFile(fileobj=file, mode="r") as file:
-                    json_file = json.load(file)
-        else:
-            with click.open_file(filepath, "r") as file:
-                json_file = json.load(file)
-    except Exception as err:
-        print(repr(err))
+    with click.open_file(filepath, "rb") as file:
+        content = file.read()
 
-        raise click.FileError(
-            filepath, hint=click.style(f"Not a valid GZIP file ({err})", fg="red")
-        )
+    try:
+        try:
+            binary_file = io.BytesIO(content)
+
+            gzip_file = False
+
+            with gzip.GzipFile(fileobj=binary_file, mode="r") as file:
+                # Force gzip to start decompressing
+                file.peek(1)
+
+                gzip_file = True
+
+                json_file = json.load(file)
+        except json.JSONDecodeError as err:
+            raise err
+        except Exception as err:
+            # If gzip_file is False, the file is not a GZIP file so we should
+            #  try reading it as a normal text file
+            if gzip_file:
+                raise click.FileError(
+                    filepath,
+                    hint=click.style(f"Not a valid GZIP file ({err})", fg="red"),
+                )
+
+            text_file = io.StringIO(content.decode("utf-8"))
+
+            json_file = json.load(text_file)
     except json.JSONDecodeError as err:
         raise click.FileError(
             filepath, hint=click.style(f"Not a valid JSON file ({err})", fg="red")
