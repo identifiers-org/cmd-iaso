@@ -3,7 +3,7 @@
 IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is a command-line tool to help the curators of the identifiers.org registry. Firstly, it provides the functionality to scrape data from the resource providers in the registry. With this information, the curator is walked through an interactive curation system of the discovered issues. The goal of cmd-iaso is to aid the curators in upholding the health and integrity of the identifiers.org registry.
 
 ## Development and Licensing
-`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the identifiers.org registry created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
+`cmd-iaso` was developed by [Moritz Langenstein](https://github.com/MoritzLangenstein) under the supervision of [Manuel Bernal Llinares](https://github.com/mbdebian) for the identifiers.org [registry](https://registry.identifiers.org) created by the [European Bioinformatics Institute](https://www.ebi.ac.uk/). The project is published under the MIT License.
 
 ## Project structure
 This repository consists of four main parts:
