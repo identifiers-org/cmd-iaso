@@ -58,6 +58,12 @@ can also be run as
 ```
 There are a few small differences in semantics between running `cmd-iaso` and `python3 cmd-iaso-docker`, however. Firstly, all (file) paths mentioned in the arguments must already exist, which also means that in Docker mode, the tool will always complain about overwriting existing files. Secondly, any environment variables visible to `cmd-iaso`, for instance through the `.env` file will not be visible to the containerised tool. Lastly, if you want to use any custom curation validator plugins (see below), you will need to add a new layer to the Docker container to install them inside as well. Otherwise, they will not be found by `python3 cmd-iaso-docker`.
 
+It is also possible to manually run the `docker run` commands yourself using:
+```
+> docker run -it --init identifiersorg/cmd-iaso COMMAND ARGS OPTIONS
+```
+Please beware that while you will have more control over the Docker container using this approach, we can provide no guarantees that the commands will run as expected.
+
 ## Configuration
 `cmd-iaso` comes with many commands and options. While this document will outline their functionality, you can always provide the `--help` option to any command to read a description of the command and its available options. Most options have default values, while some always require a user-provided value. All options can be provided either via the command-line or via environment variables. `cmd-iaso` also supports reading a `.env` file to get the values of the environment variables. Note that providing command-line options will always overwrite environment variables. A default configuration is provided in `config.default` which is automatically copied to `.env` by `make install`. Please refer to the `--help` pages to find out about the names of the supported environment variables.
 

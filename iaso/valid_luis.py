@@ -90,7 +90,7 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
             except Exception as e:
                 print(
                     "Error at {url}: {error}".format(
-                        url=urljoin(resolver, f"/{compact_id}"), error=e
+                        url=urljoin(resolver, f"/{compact_id}"), error=repr(e)
                     )
                 )
 
