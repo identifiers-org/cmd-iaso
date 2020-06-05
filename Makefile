@@ -62,7 +62,6 @@ development_run_tests: development_env_up
 
 app_structure:
 	@echo "<===|DEVOPS|===> [PACKAGE] Application"
-	# TODO
 
 container_production_build: app_structure
 	@echo "<===|DEVOPS|===> [BUILD] Production container $(container_name):$(tag_version)"
@@ -72,6 +71,9 @@ container_production_push: container_production_build
 	@echo "<===|DEVOPS|===> [PUBLISH]> Production container $(container_name):$(tag_version)"
 	@docker push $(container_name):$(tag_version)
 	@docker push $(container_name):latest
+
+sync_project_version:
+	@echo "<===|DEVOPS|===> [VERSION] Syncing project semantic version"
 
 # Folders
 tmp:
@@ -84,4 +86,4 @@ clean_tmp:
 	@echo "<===|DEVOPS|===> [HOUSEKEEPING] Removing temporary folder"
 	@rm -rf tmp
 
-.PHONY: all install default_dev_configuration dev_environment setup_tool clean development_run_tests app_structure container_production_build container_production_push deploy release clean_tmp clean_bin
+.PHONY: all install default_dev_configuration dev_environment setup_tool clean development_run_tests app_structure container_production_build container_production_push sync_project_version deploy release clean_tmp clean_bin
