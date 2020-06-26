@@ -20,6 +20,7 @@ CMD_IASO_CURATE_START_SESSION=session.gz
 # --- Jobs ---
 CMD_IASO_JOBS_VALID=1
 CMD_IASO_JOBS_RANDOM=99
+CMD_IASO_JOBS_PINGS=5
 # Specify this one if you have data mined this information from the Global Load Balancer
 #CMD_IASO_JOBS_VALID_NAMESPACE_IDS=
 

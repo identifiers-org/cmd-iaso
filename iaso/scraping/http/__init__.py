@@ -51,7 +51,11 @@ async def scrape_http_resource(proxy_address, chrome, timeout, url):
             "response_time": int(round(float(r.headers["x-response-time"]), 3) * 1000)
             if "x-response-time" in r.headers
             else None,
-            "status": r.status if r.status != status_code_values.no_content else None,
+            "status": r.status
+            if r.status != status_code_values.no_content
+            else status_code_values.request_timeout
+            if bool(r.headers.get("x-request-timeout", False))
+            else None,
             "dns_error": bool(r.headers.get("x-dns-error", False)),
             "ssl_error": bool(r.headers.get("x-ssl-error", False)),
             "invalid_response": bool(r.headers.get("x-invalid-response", False)),

@@ -97,6 +97,7 @@ async def navigate_http_resource(
                         _response.headers.get("x-ssl-error", False)
                         or _response.headers.get("x-invalid-response", False)
                         or _response.headers.get("x-dns-error", False)
+                        or _response.headers.get("x-request-timeout", False)
                     ):
                         # The scraping proxy has responded with a destructive error message
                         response = _response

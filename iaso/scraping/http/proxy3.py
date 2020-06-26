@@ -317,7 +317,17 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
             return self.end_headers()
         except urllib3.exceptions.ReadTimeoutError:
-            return self.send_error(408)
+            # Request timed out since server did not respond in time
+            # Need to send a special message here as Chrome does not handle 408s correctly
+            self.wfile.write(
+                f"{self.protocol_version} 204 Request Timeout\r\n".encode("ascii")
+            )
+
+            self.send_header("Date", self.date_time_string())
+            self.send_header("X-Request-Timeout", True)
+            self.send_header("Connection", "close")
+
+            return self.end_headers()
         except urllib3.exceptions.SSLError:
             # Egregious SSL error such that we could not even perform the request in insecure mode
             self.wfile.write(
@@ -366,7 +376,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             self.send_header(key, value)
         self.end_headers()
 
-        if len(res_body) > 0:
+        if len(res_body) > 0 and self.command != "HEAD":
             self.wfile.write(res_body)
 
         self.wfile.flush()

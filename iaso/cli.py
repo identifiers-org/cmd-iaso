@@ -477,6 +477,9 @@ def logs2luis(ctx, logs, valid_namespace_ids, resolution_endpoint):
     "--random", type=click.IntRange(min=0), default=99, show_envvar=True,
 )
 @click.option(
+    "--pings", type=click.IntRange(min=1), default=5, show_envvar=True,
+)
+@click.option(
     "--valid-namespace-ids",
     prompt=True,
     type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
@@ -485,7 +488,7 @@ def logs2luis(ctx, logs, valid_namespace_ids, resolution_endpoint):
     show_envvar=True,
 )
 @wrap_docker()
-def jobs(ctx, jobs, valid, random, valid_namespace_ids):
+def jobs(ctx, jobs, valid, random, pings, valid_namespace_ids):
     """
     Generates the jobs for the data scraping subcommand and stores them at the
     JOBS file path.
@@ -497,6 +500,9 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
     --random specifies the number of LUIs that will be generated randomly per
     resource provider from its namespace's LUI regex pattern.
     By default, the command generates 50 random LUIs per provider.
+    
+    --pings specifies the number of times each generated LUI will be pinged
+    during the data scraping.
     
     Iff --valid VALID is greater than 1, --valid-namespace-ids VALID_NAMESPACE_IDS
     must specify the file path to a namespace ids file.
@@ -514,6 +520,7 @@ def jobs(ctx, jobs, valid, random, valid_namespace_ids):
                 ctx_registry(ctx),
                 valid,
                 random,
+                pings,
                 NamespaceIds(valid_namespace_ids)
                 if valid_namespace_ids is not None
                 else None,

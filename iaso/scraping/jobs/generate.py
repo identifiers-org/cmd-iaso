@@ -7,7 +7,7 @@ from xeger import Xeger
 XEGER_LIMIT = 10
 
 
-def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
+def generate_scraping_jobs(registry, num_valid, num_random, num_pings, namespace_ids):
     resources = dict()
 
     with tqdm(
@@ -124,6 +124,10 @@ def generate_scraping_jobs(registry, num_valid, num_random, namespace_ids):
                 pattern = resource["pattern"].replace("\\\\", "\\")
 
                 xeg = Xeger(limit=XEGER_LIMIT)
+                # Ensure only URL safe charactes are used as patterns might be too general
+                xeg._cases["any"] = lambda x: xeg.random_choice(
+                    xeg._alphabets["urlsafe"]
+                )
 
                 security = 0
 
