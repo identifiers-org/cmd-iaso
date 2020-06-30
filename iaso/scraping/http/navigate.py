@@ -11,16 +11,34 @@ from ..content_type import get_mime_type, get_encoding, get_content_type, decode
 
 
 def build_html_from_dom(ele):
+    if ele["nodeName"] == "#comment":
+        return ""
+
     content = [ele["nodeValue"]]
 
+    # Light DOM children
     if "children" in ele:
         content.extend(build_html_from_dom(child) for child in ele["children"])
 
+    # Owned frame root
+    if "contentDocument" in ele:
+        content.append(build_html_from_dom(ele["contentDocument"]))
+
+    # Shadow DOM roots
     if "shadowRoots" in ele:
         content.extend(build_html_from_dom(root) for root in ele["shadowRoots"])
 
+    # Template element root
+    if "templateContent" in ele:
+        content.append(build_html_from_dom(ele["templateContent"]))
+
+    # Pseudo elements
     # if 'pseudoElements' in ele:
     #    content.extend(build_html_from_dom(pseudo) for pseudo in ele['pseudoElements'])
+
+    # Imported HTML root
+    if "importedDocument" in ele:
+        content.append(build_html_from_dom(ele["importedDocument"]))
 
     content = " ".join(content)
 
