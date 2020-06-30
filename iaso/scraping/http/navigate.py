@@ -10,6 +10,26 @@ from .url import normaliseURL
 from ..content_type import get_mime_type, get_encoding, get_content_type, decode_content
 
 
+def build_html_from_dom(ele):
+    content = [ele["nodeValue"]]
+
+    if "children" in ele:
+        content.extend(build_html_from_dom(child) for child in ele["children"])
+
+    if "shadowRoots" in ele:
+        content.extend(build_html_from_dom(root) for root in ele["shadowRoots"])
+
+    # if 'pseudoElements' in ele:
+    #    content.extend(build_html_from_dom(pseudo) for pseudo in ele['pseudoElements'])
+
+    content = " ".join(content)
+
+    if ele["localName"] == "":
+        return content
+    else:
+        return f'<{ele["localName"]}>{content}</{ele["localName"]}>'
+
+
 async def navigate_http_resource(
     page,
     url,
@@ -125,7 +145,12 @@ async def navigate_http_resource(
         )
 
     if content is False:
-        content = await page.content()
+        # Fetch the entire DOM of the loaded page, including the shadow DOMs
+        dom = (
+            await page._client.send("DOM.getDocument", {"pierce": True, "depth": -1})
+        )["root"]
+
+        content = build_html_from_dom(dom)
 
     pageURL = page.url if page.url != "about:blank" else response.url
 
