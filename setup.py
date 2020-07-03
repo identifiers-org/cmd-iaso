@@ -1,3 +1,5 @@
+import os
+
 from setuptools import setup, find_packages
 
 from pathlib import Path
@@ -27,7 +29,6 @@ setup(
         "certifi==2020.4.5.1",
         "chardet==3.0.4",
         "click==7.1.2",
-        "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.3.0/en_core_web_sm-2.3.0.tar.gz",
         "jsonschema==3.2.0",
         "filelock==3.0.12",
         "psutil==5.7.0",
@@ -41,9 +42,11 @@ setup(
         "tqdm==4.46.0",
         "urllib3==1.25.9",
         "xeger==0.3.5",
-        "xx-ent-wiki-sm @ https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-2.3.0/xx_ent_wiki_sm-2.3.0.tar.gz",
     ],
     author="Moritz Langenstein",
     license="MIT License",
     python_requires=">=3.6",
 )
+
+os.system("python3 -m spacy download en_core_web_sm")
+os.system("python3 -m spacy download xx_ent_wiki_sm")
