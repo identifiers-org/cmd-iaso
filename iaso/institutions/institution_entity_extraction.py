@@ -17,6 +17,8 @@ TODO:
 - add graceful error handling if no JSON response
 - ideally should not lose entire progress
 - can we somehow integrate context ('Trinity College, Dublin' currently resolved to one of many Trinity Colleges as Dublin as a different entity)
+- parallelise extraction and linking
+- add some visual output / interactive curation
 
 """
 
