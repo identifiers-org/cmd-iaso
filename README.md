@@ -80,6 +80,13 @@ To print the current status of the [identifiers.org](https://identifiers.org/) r
 > cmd-iaso registry
 ```
 
+## Institution Deduplication
+The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out and some names are concatinations of multiple institutions. The institution deduplication command
+```
+> cmd-iaso dedup4institutions ACADEMINE
+```
+Collects all existing institutions from the registry and attempts to link them to their real entities to deduplicate the entries and disentangle concatenations of institution names. It also tries to fill in information about the institutions like their name, official URL, ROR ID, country and a description. The results of this command are stored in the `ACADEMINE` file.
+
 ## Data scraping
 Before performing curation of the resource providers in the [identifiers.org](https://identifiers.org/) registry, `cmd-iaso` needs to scrape some data. This section will outline how to configure and run the scraping pipeline.
 

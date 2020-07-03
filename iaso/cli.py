@@ -55,6 +55,8 @@ from .namespace_ids import NamespaceIds
 from .scraping.jobs import ScrapingJobs
 from .scraping.jobs.generate import generate_scraping_jobs
 
+from .institutions import deduplicate_registry_institutions
+
 
 def coroutine(f):
     f = asyncio.coroutine(f)
@@ -71,6 +73,8 @@ def ctx_registry(ctx):
     registry = ctx.obj.get("registry")
 
     if registry is None:
+        click.echo(click.style("Loading the identifiers.org registry ...", fg="yellow"))
+
         registry = Registry()
         ctx.obj["registry"] = registry
 
@@ -687,6 +691,32 @@ def dump2datamine(ctx, dump, datamine):
 
             for file in errors.keys():
                 click.echo(f"- {file}")
+
+
+@cli.command()
+@click.pass_context
+@click.argument(
+    "academine", type=click.Path(exists=False, writable=True, dir_okay=False)
+)
+@wrap_docker()
+def dedup4institutions(ctx, academine):
+    """
+    Collects all existing institutions from the registry and attempts to link them to their real entities to
+    deduplicate the entries and disentangle concatenations of institution names.
+    
+    The command also tries to fill in information about the institutions like their name, official URL,
+    ROR ID, country and a description.
+    
+    The results of this command are stored in the ACADEMINE file.
+    """
+
+    if os.path.exists(academine):
+        click.confirm(
+            f"{academine} already exists. Do you want to overwrite {academine} with the new ACADEMINE file?",
+            abort=True,
+        )
+
+    deduplicate_registry_institutions(ctx_registry(ctx), academine)
 
 
 def main():
