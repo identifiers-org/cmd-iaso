@@ -30,4 +30,30 @@ def extract_named_entities(institution):
     doc_en = nlp_en(institution)
     doc_ml = nlp_ml(institution)
 
-    return set(ent.text for ent in chain(doc_en.ents, doc_ml.ents))
+    named_entities = sorted(
+        set((ent.text, ent.start, ent.end) for ent in chain(doc_en.ents, doc_ml.ents)),
+        key=lambda e: e[1:],
+    )
+
+    monograms = tuple(entity[0] for entity in named_entities)
+
+    bigrams = []
+
+    for n, (entity, start, end) in enumerate(named_entities):
+        successors = []
+
+        while n < len(named_entities) and named_entities[n][1] < end:
+            n += 1
+
+        if n < len(named_entities):
+            next_start = named_entities[n][1]
+
+            while n < len(named_entities) and named_entities[n][1] == next_start:
+                successors.append(named_entities[n][0])
+                n += 1
+
+        bigrams.append(tuple(successors))
+
+    bigrams = tuple(bigrams)
+
+    return (monograms, bigrams)

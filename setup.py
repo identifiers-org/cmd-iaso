@@ -48,5 +48,12 @@ setup(
     python_requires=">=3.6",
 )
 
-os.system("python3 -m spacy download en_core_web_sm")
-os.system("python3 -m spacy download xx_ent_wiki_sm")
+try:
+    import en_core_web_sm
+except ImportError:
+    os.system("python3 -m spacy download en_core_web_sm")
+
+try:
+    import xx_ent_wiki_sm
+except ImportError:
+    os.system("python3 -m spacy download xx_ent_wiki_sm")
