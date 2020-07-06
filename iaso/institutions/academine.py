@@ -22,6 +22,11 @@ Datamine.SCHEMA = {
                         "items": {
                             "type": "object",
                             "properties": {
+                                "matches": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "additionalItems": False,
+                                },
                                 "name": {"type": "string"},
                                 "homeUrl": {"type": "string"},
                                 "description": {"type": "string"},
@@ -36,7 +41,7 @@ Datamine.SCHEMA = {
                                     "additionalProperties": False,
                                 },
                             },
-                            "required": [],
+                            "required": ["matches"],
                             "additionalProperties": False,
                         },
                         "additionalItems": False,
