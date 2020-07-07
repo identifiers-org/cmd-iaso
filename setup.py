@@ -31,6 +31,7 @@ setup(
         "click==7.1.2",
         "jsonschema==3.2.0",
         "filelock==3.0.12",
+        "httpx==0.13.3",
         "psutil==5.7.0",
         "puremagic==1.8",
         "py-cpuinfo==5.0.0",
