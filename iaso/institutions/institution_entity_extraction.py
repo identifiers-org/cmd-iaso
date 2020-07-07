@@ -1,248 +1,229 @@
+from .named_entity_recognition import extract_named_entities
+
+import asyncio
 import re
 
 from collections import Counter, defaultdict
+from enum import Enum, auto
 
-import requests
+import httpx
 
-from .named_entity_recognition import extract_named_entities
-
-HTML_TAG_PATTERN = re.compile(r"<.+?>")
 WORD_PATTERN = re.compile(r"\W+")
 
-
-"""
-
-TODO:
-- do not rely on title snippet in textual mentions, instead retrieve label for each entry and use that not strict match
-- add graceful error handling if no JSON response
-- ideally should not lose entire progress
-- can we somehow integrate context ('Trinity College, Dublin' currently resolved to one of many Trinity Colleges as Dublin as a different entity)
-- parallelise extraction and linking
-- add some visual output / interactive curation
-
-"""
+RANKING_LIMIT = 10
 
 
-def query_wikidata_for_matching_entities(named_entities, wikidata_entity_matches=None):
-    if wikidata_entity_matches is None:
-        wikidata_entity_matches = defaultdict(set)
-
-    for entity in named_entities:
-        # Use the strict entity search based on labels and aliases
-        with requests.get(
-            f"https://www.wikidata.org/w/api.php?action=wbsearchentities&search={entity.lower()}&language=en&limit=10&props=&format=json"
-        ) as req:
-            for result in req.json()["search"]:
-                wikidata_entity_matches[result["id"]].add(
-                    (entity.lower(), result["match"]["text"].lower())
-                )
-
-        # Use the less strict search based on textual mentions
-        with requests.get(
-            f"https://www.wikidata.org/w/api.php?action=query&list=search&srsearch={entity.lower().replace(' ', ' OR ')}&srlimit=10&srprop=&format=json"
-        ) as req:
-            for result in req.json()["query"]["search"]:
-                wikidata_entity_matches[result["title"]].add((entity.lower(), None))
-
-    return wikidata_entity_matches
+class Entity(Enum):
+    IRRELEVANT = auto()
+    ORGANISATION = auto()
+    LOCATION = auto()
 
 
-def filter_location_entities(wikidata_entities):
-    query = (
-        """
-    SELECT DISTINCT ?location ?match WHERE {
-      VALUES ?location { """
-        + " ".join(f"wd:{qid}" for qid in wikidata_entities)
-        + """ }
-  
-      ?location wdt:P31 ?class.
-  
-      FILTER EXISTS { ?class wdt:P279* wd:Q17334923 } # ?location is a location
-      FILTER NOT EXISTS { ?class wdt:P279* wd:Q2385804 } # ?location is not an educational institution
-      
-      ?location rdfs:label ?match. FILTER (lang(?match) = "en").
-    }
-    """
-    )
-
-    with requests.get(
-        "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
-    ) as req:
-        location_entities = set()
-
-        for result in req.json()["results"]["bindings"]:
-            qid = result["location"]["value"][31:]
-
-            location_entities.add(qid)
-
-            wikidata_entities[qid] = set(
-                (search, result["match"]["value"].lower() if match is None else match)
-                for search, match in wikidata_entities[qid]
-            )
-
-    return location_entities
-
-
-def filter_institution_entities(wikidata_entities):
-    query = (
-        """
-    SELECT DISTINCT ?institution ?match WHERE {
-      VALUES ?institution { """
-        + " ".join(f"wd:{qid}" for qid in wikidata_entities)
-        + """ }
-
-      ?institution wdt:P31 ?class.
-      
-      FILTER EXISTS { ?class wdt:P279* wd:Q2385804 } # ?institution is an educational institution
-      
-      ?institution rdfs:label ?match. FILTER (lang(?match) = "en").
-    }
-    """
-    )
-
-    with requests.get(
-        "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
-    ) as req:
-        institution_entities = set()
-
-        for result in req.json()["results"]["bindings"]:
-            qid = result["institution"]["value"][31:]
-
-            institution_entities.add(qid)
-
-            wikidata_entities[qid] = set(
-                (search, result["match"]["value"].lower() if match is None else match)
-                for search, match in wikidata_entities[qid]
-            )
-
-    return institution_entities
-
-
-def filter_institution_entities_with_match_scores(
-    wikidata_entity_matches, institution_entities, location_entities
-):
-    candidate_institutions_with_match_scores = []
-
-    for qid in institution_entities:
-        terms = wikidata_entity_matches[qid]
-
-        term_ious = []
-
-        for search, match in terms:
-            search_set = Counter(s for s in WORD_PATTERN.split(search) if len(s) > 0)
-            match_set = Counter(m for m in WORD_PATTERN.split(match) if len(m) > 0)
-
-            iou = len(search_set & match_set) / len(search_set | match_set)
-
-            term_ious.append((qid, iou, search, match))
-
-        term_max_iou = max(
-            (term_iou[:-1] for term_iou in term_ious), key=lambda e: e[1]
-        )
-
-        searches, matches = zip(*terms)
-        alternatives = set(
-            (aid, term[0], term[1])
-            for aid, aterms in wikidata_entity_matches.items()
-            for term in aterms
-            if aid in location_entities and term[0] in searches and term[1] is not None
-        )
-
-        if len(alternatives) > 0:
-            alternative_ious = []
-
-            for aid, search, match in alternatives:
-                search_set = Counter(
-                    s for s in WORD_PATTERN.split(search) if len(s) > 0
-                )
-                match_set = Counter(m for m in WORD_PATTERN.split(match) if len(m) > 0)
-
-                iou = len(search_set & match_set) / len(search_set | match_set)
-
-                alternative_ious.append((aid, iou, search, match))
-
-            alternative_max_iou = max(
-                alternative_iou[1] for alternative_iou in alternative_ious
-            )
-
-            # Filter out institutions where a location would be a better match
-            if alternative_max_iou > term_max_iou[1]:
-                continue
-
-        if term_max_iou[1] > 0.0:
-            candidate_institutions_with_match_scores.append(
-                (
-                    term_max_iou[0],
-                    term_max_iou[1],
-                    " ".join(WORD_PATTERN.split(term_max_iou[2])),
-                )
-            )
-
-    return candidate_institutions_with_match_scores
-
-
-def greedily_extract_institution_entities(institution_string):
+async def greedily_extract_institution_entities(client, institution_string):
     named_entity_monograms, named_entity_bigrams = extract_named_entities(
         institution_string
     )
 
-    wikidata_entities = query_wikidata_for_matching_entities(named_entity_monograms)
+    named_entities = named_entity_monograms
 
-    location_entities = filter_location_entities(wikidata_entities)
+    async def query_matching_entities(client, entity, wikidata_entity_matches):
+        response = await client.get(
+            f"https://www.wikidata.org/w/api.php?action=query&list=search&srsearch={entity.lower().replace(' ', ' OR ')}&srlimit={RANKING_LIMIT}&srprop=&format=json"
+        )
 
-    location_matches = set(
-        entity[0]
-        for qid, entities in wikidata_entities.items()
-        for entity in entities
-        if qid in location_entities
+        wikidata_entity_matches[entity.lower()] = [
+            result["title"] for result in response.json()["query"]["search"]
+        ]
+
+    wikidata_entity_matches = dict()
+
+    await asyncio.gather(
+        *[
+            query_matching_entities(client, entity, wikidata_entity_matches)
+            for entity in named_entities
+        ]
     )
 
-    # Find named entities which are followed by a location
-    #  -> we should try out the bigram including the location as well to give more context
-    #  -> but the context-including bigram should NOT generate any new entities, just eliminate some ambiguities
-    for monogram, bigrams in zip(named_entity_monograms, named_entity_bigrams):
-        extra_named_entities = set()
+    restricted_qids = set(
+        qid for qids in wikidata_entity_matches.values() for qid in qids
+    )
 
-        for bigram in bigrams:
-            if bigram.lower() in location_matches:
-                extra_named_entities.add(f"{monogram} {bigram}")
+    wikidata_entities = restricted_qids
 
-        if len(extra_named_entities) == 0:
-            continue
+    query = (
+        """SELECT DISTINCT ?entity ?superclass WHERE {
+      VALUES ?entity { """
+        + " ".join(f"wd:{qid}" for qid in wikidata_entities)
+        + """ }
 
+      ?entity wdt:P31 ?class.
+      ?class wdt:P279* ?superclass.
+    }"""
+    )
+
+    response = await client.get(
+        "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
+    )
+
+    entity_superclasses = defaultdict(set)
+
+    for result in response.json()["results"]["bindings"]:
+        entity_superclasses[result["entity"]["value"][31:]].add(
+            result["superclass"]["value"][31:]
+        )
+
+    entity_types = dict()
+
+    for entity, superclasses in entity_superclasses.items():
+        is_organisation = "Q43229" in superclasses
+        is_location = "Q17334923" in superclasses
+        is_territorial_entity = "Q1496967" in superclasses
+
+        if is_organisation and not is_territorial_entity:
+            entity_type = Entity.ORGANISATION
+        elif is_location:
+            entity_type = Entity.LOCATION
+        else:
+            entity_type = Entity.IRRELEVANT
+
+        if entity_type != Entity.IRRELEVANT:
+            entity_types[entity] = entity_type
+
+    wikidata_entity_matches_no_locations = dict()
+    wikidata_entity_only_locations = set()
+
+    for match, qids in wikidata_entity_matches.items():
+        qids = [
+            qid
+            for qid in qids
+            if entity_types.get(qid, Entity.IRRELEVANT) != Entity.IRRELEVANT
+        ]
+
+        if len(qids) > 0 and entity_types[qids[0]] == Entity.LOCATION:
+            wikidata_entity_only_locations.add(match)
+        else:
+            wikidata_entity_matches_no_locations[match] = {
+                qid: i
+                for i, qid in enumerate(qids)
+                if entity_types[qid] == Entity.ORGANISATION
+            }
+
+    async def query_matching_bigram_entities(
+        client, monogram, bigram, concensus_ranking
+    ):
+        response = await client.get(
+            f"https://www.wikidata.org/w/api.php?action=query&list=search&srsearch={f'{monogram} {bigram}'.replace(' ', ' OR ')}&srlimit={RANKING_LIMIT}&srprop=&format=json"
+        )
+
+        ranking = {
+            result["title"]: i
+            for i, result in enumerate(response.json()["query"]["search"])
+        }
+
+        for qid in wikidata_entity_matches_no_locations[monogram]:
+            concensus_ranking[qid] += ranking.get(qid, RANKING_LIMIT)
+
+    async def query_matching_monogram_entity(
+        client,
+        monogram,
+        bigrams,
+        wikidata_entity_only_locations,
+        wikidata_entity_monogram_matches,
+    ):
         monogram = monogram.lower()
+        bigrams = [
+            bigram.lower()
+            for bigram in bigrams
+            if bigram.lower() in wikidata_entity_only_locations
+        ]
 
-        for qid, entities in wikidata_entities.items():
-            extra_terms = []
+        if monogram in wikidata_entity_only_locations:
+            return
 
-            for search, match in entities:
-                if search == monogram:
-                    extra_terms.extend(
-                        ((bigram.lower(), match) for bigram in extra_named_entities)
+        if len(bigrams) > 0:
+            concensus_ranking = defaultdict(int)
+
+            await asyncio.gather(
+                *[
+                    query_matching_bigram_entities(
+                        client, monogram, bigram, concensus_ranking
                     )
+                    for bigram in bigrams
+                ]
+            )
 
-            wikidata_entities[qid].update(extra_terms)
+            ranking = {
+                qid[0]: i
+                for i, qid in enumerate(
+                    sorted(concensus_ranking.items(), key=lambda e: e[1])
+                )
+            }
+        else:
+            ranking = wikidata_entity_matches_no_locations[monogram]
 
-    institution_entities = filter_institution_entities(wikidata_entities)
+        query = (
+            """SELECT DISTINCT ?institution WHERE {
+          VALUES ?institution { """
+            + " ".join(f"wd:{qid}" for qid in ranking)
+            + """ }
 
-    candidate_institutions_with_match_scores = filter_institution_entities_with_match_scores(
-        wikidata_entities, institution_entities, location_entities
+          FILTER EXISTS {
+            ?institution wdt:P31 ?class.
+            ?class wdt:P279* wd:Q43229
+          } # ?institution is an organisation
+        }"""
+        )
+
+        response = await client.get(
+            "https://query.wikidata.org/sparql",
+            params={"format": "json", "query": query},
+        )
+
+        institution_entities = set(
+            result["institution"]["value"][31:]
+            for result in response.json()["results"]["bindings"]
+        )
+
+        ranking = {qid: i for qid, i in ranking.items() if qid in institution_entities}
+
+        if len(ranking) > 0:
+            wikidata_entity_monogram_matches[monogram] = next(iter(ranking.items()))
+
+    wikidata_entity_monogram_matches = dict()
+
+    await asyncio.gather(
+        *[
+            query_matching_monogram_entity(
+                client,
+                monogram,
+                bigrams,
+                wikidata_entity_only_locations,
+                wikidata_entity_monogram_matches,
+            )
+            for monogram, bigrams in zip(named_entity_monograms, named_entity_bigrams)
+        ]
     )
 
-    # Sort by IoU score first, then by number of words matched
+    candidate_institutions_with_match_scores = [
+        (search, qid, score)
+        for search, (qid, score) in wikidata_entity_monogram_matches.items()
+    ]
+
     candidate_institutions_with_match_scores.sort(
-        key=lambda e: (e[1], e[2].count(" ")), reverse=True
+        key=lambda e: (-e[2], e[0].count(" "), len(e[0]), e[0]), reverse=True
     )
 
-    institution_string = " ".join(WORD_PATTERN.split(institution_string.lower()))
-    extracted_institution_entities = set()
+    consumed_institution_string = " ".join(
+        WORD_PATTERN.split(institution_string.lower())
+    )
+    extracted_institution_entities = defaultdict(set)
 
-    for qid, iou, search in candidate_institutions_with_match_scores:
-        if search not in institution_string:
+    for search, qid, score in candidate_institutions_with_match_scores:
+        if search not in consumed_institution_string:
             continue
 
-        institution_string = institution_string.replace(search, "")
+        consumed_institution_string = consumed_institution_string.replace(search, "")
 
-        extracted_institution_entities.add(qid)
+        extracted_institution_entities[qid].add(search)
 
     return extracted_institution_entities

@@ -1,8 +1,11 @@
+import asyncio
 import gzip
 import json
 import math
 
 from itertools import zip_longest
+
+import httpx
 
 from tqdm import tqdm
 
@@ -20,14 +23,37 @@ def chunk(iterable, chunksize, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-def deduplicate_registry_institutions(registry, academine_path):
-    extracted_institution_entities = {
-        iid: greedily_extract_institution_entities(institution.name)
-        for iid, institution in tqdm(
-            list(registry.institution.items())[:20],
-            desc="Extracting institution entities",
+async def deduplicate_registry_institutions(registry, academine_path):
+    client = httpx.AsyncClient(
+        timeout=60, pool_limits=httpx.PoolLimits(max_keepalive=0, max_connections=5)
+    )
+
+    async def collect_extracted_institution_entities(
+        client, institution_string, iid, progress, extracted_institution_entities
+    ):
+        extracted_institution_entities[
+            iid
+        ] = await greedily_extract_institution_entities(client, institution_string)
+
+        progress.update()
+
+    extracted_institution_entities = dict()
+
+    with tqdm(
+        total=len(registry.institution), desc="Extracting institution entities"
+    ) as progress:
+        await asyncio.gather(
+            *[
+                collect_extracted_institution_entities(
+                    client,
+                    institution.name,
+                    iid,
+                    progress,
+                    extracted_institution_entities,
+                )
+                for iid, institution in list(registry.institution.items())[:20]
+            ]
         )
-    }
 
     deduped_institution_entities = set(
         entity
@@ -35,28 +61,49 @@ def deduplicate_registry_institutions(registry, academine_path):
         for entity in entities
     )
 
+    async def collect_institution_entity_details(
+        client, entities, progress, institution_entity_details
+    ):
+        institution_entity_details.update(
+            await query_institution_entity_details(client, entities)
+        )
+
+        progress.update(len(entities))
+
     institution_entity_details = dict()
 
-    for entities in tqdm(
-        chunk(deduped_institution_entities, DETAILS_CHUNK_SIZE),
-        total=int(math.ceil(len(deduped_institution_entities) / DETAILS_CHUNK_SIZE)),
-        desc="Fetching institution details",
-    ):
-        institution_entity_details.update(query_institution_entity_details(entities))
+    with tqdm(
+        total=len(deduped_institution_entities), desc="Fetching institution details"
+    ) as progress:
+        await asyncio.gather(
+            *[
+                collect_institution_entity_details(
+                    client,
+                    [entity for entity in entities if entity is not None],
+                    progress,
+                    institution_entity_details,
+                )
+                for entities in chunk(deduped_institution_entities, DETAILS_CHUNK_SIZE)
+            ]
+        )
 
     institutions = []
 
-    for iid, entities in extracted_institution_entities.items():
+    for iid, entities in tqdm(
+        extracted_institution_entities.items(), desc="Combining to ACADEMINE"
+    ):
         institution_entities = []
 
-        for entity in entities:
-            institution_entity = {
-                k: v
+        for entity, matches in entities.items():
+            institution_entity = {"matches": tuple(matches)}
+
+            institution_entity.update(
+                (k, v)
                 for k, v in institution_entity_details[entity].items()
                 if v is not None
-            }
+            )
 
-            if len(institution_entity) > 0:
+            if len(institution_entity) > 1:
                 institution_entities.append(institution_entity)
 
         institutions.append(

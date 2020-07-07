@@ -17,7 +17,7 @@ def get_optional_sparql_field(result, field, func=None):
     return func(value)
 
 
-def query_institution_entity_details(institution_entities):
+async def query_institution_entity_details(client, institution_entities):
     institution_entity_details = dict()
 
     query = (
@@ -43,25 +43,26 @@ def query_institution_entity_details(institution_entities):
     """
     )
 
-    with requests.get(
+    response = await client.get(
         "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
-    ) as req:
-        for result in req.json()["results"]["bindings"]:
-            institution_entity_details[result["institution"]["value"][31:]] = {
-                "name": get_optional_sparql_field(result, "name"),
-                "homeUrl": get_optional_sparql_field(result, "homeUrl"),
-                "description": get_optional_sparql_field(result, "description"),
-                "rorId": get_optional_sparql_field(
-                    result, "rorId", lambda rorId: f"https://ror.org/{rorId}"
-                ),
-                "location": get_optional_sparql_field(
-                    result,
-                    "location",
-                    lambda location: {
-                        "countryCode": location,
-                        "countryName": countries.get(alpha_2=location).name,
-                    },
-                ),
-            }
+    )
+
+    for result in response.json()["results"]["bindings"]:
+        institution_entity_details[result["institution"]["value"][31:]] = {
+            "name": get_optional_sparql_field(result, "name"),
+            "homeUrl": get_optional_sparql_field(result, "homeUrl"),
+            "description": get_optional_sparql_field(result, "description"),
+            "rorId": get_optional_sparql_field(
+                result, "rorId", lambda rorId: f"https://ror.org/{rorId}"
+            ),
+            "location": get_optional_sparql_field(
+                result,
+                "location",
+                lambda location: {
+                    "countryCode": location,
+                    "countryName": countries.get(alpha_2=location).name,
+                },
+            ),
+        }
 
     return institution_entity_details

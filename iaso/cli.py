@@ -699,7 +699,8 @@ def dump2datamine(ctx, dump, datamine):
     "academine", type=click.Path(exists=False, writable=True, dir_okay=False)
 )
 @wrap_docker()
-def dedup4institutions(ctx, academine):
+@coroutine
+async def dedup4institutions(ctx, academine):
     """
     Collects all existing institutions from the registry and attempts to link them to their real entities to
     deduplicate the entries and disentangle concatenations of institution names.
@@ -716,7 +717,7 @@ def dedup4institutions(ctx, academine):
             abort=True,
         )
 
-    deduplicate_registry_institutions(ctx_registry(ctx), academine)
+    await deduplicate_registry_institutions(ctx_registry(ctx), academine)
 
 
 def main():
