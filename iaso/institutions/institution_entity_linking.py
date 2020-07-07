@@ -43,11 +43,9 @@ async def query_institution_entity_details(client, institution_entities):
     """
     )
 
-    response = await client.get(
-        "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
-    )
+    response = await client.query(query)
 
-    for result in response.json()["results"]["bindings"]:
+    for result in response["results"]["bindings"]:
         institution_entity_details[result["institution"]["value"][31:]] = {
             "name": get_optional_sparql_field(result, "name"),
             "homeUrl": get_optional_sparql_field(result, "homeUrl"),

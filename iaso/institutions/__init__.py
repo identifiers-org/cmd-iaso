@@ -1,14 +1,12 @@
 import asyncio
 import gzip
 import json
-import math
 
 from itertools import zip_longest
 
-import httpx
-
 from tqdm import tqdm
 
+from .wikidataclient import WikiDataClient
 from .institution_entity_extraction import greedily_extract_institution_entities
 from .institution_entity_linking import query_institution_entity_details
 
@@ -24,9 +22,7 @@ def chunk(iterable, chunksize, fillvalue=None):
 
 
 async def deduplicate_registry_institutions(registry, academine_path):
-    client = httpx.AsyncClient(
-        timeout=60, pool_limits=httpx.PoolLimits(max_keepalive=0, max_connections=5)
-    )
+    client = WikiDataClient()
 
     async def collect_extracted_institution_entities(
         client, institution_string, iid, progress, extracted_institution_entities
@@ -36,6 +32,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
         ] = await greedily_extract_institution_entities(client, institution_string)
 
         progress.update()
+        progress.set_postfix(ordered_dict=client.backoff)
 
     extracted_institution_entities = dict()
 
@@ -51,7 +48,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
                     progress,
                     extracted_institution_entities,
                 )
-                for iid, institution in list(registry.institution.items())[:20]
+                for iid, institution in list(registry.institution.items())
             ]
         )
 

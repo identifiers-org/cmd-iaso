@@ -1,4 +1,5 @@
 from .named_entity_recognition import extract_named_entities
+from .wikidataclient import RANKING_LIMIT
 
 import asyncio
 import re
@@ -9,8 +10,6 @@ from enum import Enum, auto
 import httpx
 
 WORD_PATTERN = re.compile(r"\W+")
-
-RANKING_LIMIT = 10
 
 
 class Entity(Enum):
@@ -27,12 +26,10 @@ async def greedily_extract_institution_entities(client, institution_string):
     named_entities = named_entity_monograms
 
     async def query_matching_entities(client, entity, wikidata_entity_matches):
-        response = await client.get(
-            f"https://www.wikidata.org/w/api.php?action=query&list=search&srsearch={entity.lower().replace(' ', ' OR ')}&srlimit={RANKING_LIMIT}&srprop=&format=json"
-        )
+        response = await client.search(entity)
 
         wikidata_entity_matches[entity.lower()] = [
-            result["title"] for result in response.json()["query"]["search"]
+            result["title"] for result in response["query"]["search"]
         ]
 
     wikidata_entity_matches = dict()
@@ -61,13 +58,11 @@ async def greedily_extract_institution_entities(client, institution_string):
     }"""
     )
 
-    response = await client.get(
-        "https://query.wikidata.org/sparql", params={"format": "json", "query": query}
-    )
+    response = await client.query(query)
 
     entity_superclasses = defaultdict(set)
 
-    for result in response.json()["results"]["bindings"]:
+    for result in response["results"]["bindings"]:
         entity_superclasses[result["entity"]["value"][31:]].add(
             result["superclass"]["value"][31:]
         )
@@ -111,13 +106,10 @@ async def greedily_extract_institution_entities(client, institution_string):
     async def query_matching_bigram_entities(
         client, monogram, bigram, concensus_ranking
     ):
-        response = await client.get(
-            f"https://www.wikidata.org/w/api.php?action=query&list=search&srsearch={f'{monogram} {bigram}'.replace(' ', ' OR ')}&srlimit={RANKING_LIMIT}&srprop=&format=json"
-        )
+        response = await client.search(f"{monogram} {bigram}")
 
         ranking = {
-            result["title"]: i
-            for i, result in enumerate(response.json()["query"]["search"])
+            result["title"]: i for i, result in enumerate(response["query"]["search"])
         }
 
         for qid in wikidata_entity_matches_no_locations[monogram]:
@@ -174,14 +166,11 @@ async def greedily_extract_institution_entities(client, institution_string):
         }"""
         )
 
-        response = await client.get(
-            "https://query.wikidata.org/sparql",
-            params={"format": "json", "query": query},
-        )
+        response = await client.query(query)
 
         institution_entities = set(
             result["institution"]["value"][31:]
-            for result in response.json()["results"]["bindings"]
+            for result in response["results"]["bindings"]
         )
 
         ranking = {qid: i for qid, i in ranking.items() if qid in institution_entities}
