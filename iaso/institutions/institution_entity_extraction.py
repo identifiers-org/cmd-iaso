@@ -26,10 +26,20 @@ async def greedily_extract_institution_entities(client, institution_string):
     named_entities = named_entity_monograms
 
     async def query_matching_entities(client, entity, wikidata_entity_matches):
-        response = await client.search(entity)
+        ranking = defaultdict(int)
+
+        response = await client.search(entity, strict=True)
+
+        for r, result in enumerate(response["query"]["search"]):
+            ranking[result["title"]] += r - len(response["query"]["search"]) - 1
+
+        response = await client.search(entity, strict=False)
+
+        for r, result in enumerate(response["query"]["search"]):
+            ranking[result["title"]] += r - len(response["query"]["search"])
 
         wikidata_entity_matches[entity.lower()] = [
-            result["title"] for result in response["query"]["search"]
+            qid for qid, score in sorted(ranking.items(), key=lambda e: e[1])
         ]
 
     wikidata_entity_matches = dict()
@@ -46,6 +56,23 @@ async def greedily_extract_institution_entities(client, institution_string):
     )
 
     wikidata_entities = restricted_qids
+
+    query = (
+        """SELECT DISTINCT ?entity ?label WHERE {
+      VALUES ?entity { """
+        + " ".join(f"wd:{qid}" for qid in wikidata_entities)
+        + """ }
+
+      ?entity rdfs:label ?label. FILTER (lang(?label) = "en").
+    }"""
+    )
+
+    response = await client.query(query)
+
+    entity_labels = dict()
+
+    for result in response["results"]["bindings"]:
+        entity_labels[result["entity"]["value"][31:]] = result["label"]["value"]
 
     query = (
         """SELECT DISTINCT ?entity ?superclass WHERE {
@@ -73,8 +100,12 @@ async def greedily_extract_institution_entities(client, institution_string):
         is_organisation = "Q43229" in superclasses
         is_location = "Q17334923" in superclasses
         is_territorial_entity = "Q1496967" in superclasses
+        is_publication = "Q732577" in superclasses
 
-        if is_organisation and not is_territorial_entity:
+        # IDEAS:
+        # - can we get more context (department, university, city, state)
+
+        if is_organisation and not is_territorial_entity and not is_publication:
             entity_type = Entity.ORGANISATION
         elif is_location:
             entity_type = Entity.LOCATION
@@ -94,7 +125,26 @@ async def greedily_extract_institution_entities(client, institution_string):
             if entity_types.get(qid, Entity.IRRELEVANT) != Entity.IRRELEVANT
         ]
 
-        if len(qids) > 0 and entity_types[qids[0]] == Entity.LOCATION:
+        normalised_match = Counter(WORD_PATTERN.split(match.lower()))
+
+        qid_ious = []
+
+        for qid in qids:
+            normalised_label = Counter(
+                WORD_PATTERN.split(entity_labels.get(qid, "").lower())
+            )
+
+            qid_ious.append(
+                (
+                    qid,
+                    len(normalised_match & normalised_label)
+                    / len(normalised_match | normalised_label),
+                )
+            )
+
+        qid_ious.sort(key=lambda e: e[1], reverse=True)
+
+        if len(qids) > 0 and entity_types[qid_ious[0][0]] == Entity.LOCATION:
             wikidata_entity_only_locations.add(match)
         else:
             wikidata_entity_matches_no_locations[match] = {
@@ -106,14 +156,20 @@ async def greedily_extract_institution_entities(client, institution_string):
     async def query_matching_bigram_entities(
         client, monogram, bigram, concensus_ranking
     ):
-        response = await client.search(f"{monogram} {bigram}")
+        ranking = defaultdict(int)
 
-        ranking = {
-            result["title"]: i for i, result in enumerate(response["query"]["search"])
-        }
+        response = await client.search(f"{monogram} {bigram}", strict=True)
+
+        for r, result in enumerate(response["query"]["search"]):
+            ranking[result["title"]] += r - len(response["query"]["search"]) - 1
+
+        response = await client.search(f"{monogram} {bigram}", strict=False)
+
+        for r, result in enumerate(response["query"]["search"]):
+            ranking[result["title"]] += r - len(response["query"]["search"])
 
         for qid in wikidata_entity_matches_no_locations[monogram]:
-            concensus_ranking[qid] += ranking.get(qid, RANKING_LIMIT)
+            concensus_ranking[qid] += ranking.get(qid, 0)
 
     async def query_matching_monogram_entity(
         client,

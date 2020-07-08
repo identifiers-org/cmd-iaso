@@ -168,6 +168,8 @@ def generate_scraping_jobs(registry, num_valid, num_random, num_pings, namespace
 
                 progress.update(1)
 
+    jobs = jobs * num_pings
+
     random.shuffle(jobs)
 
     return jobs

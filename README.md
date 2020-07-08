@@ -100,9 +100,9 @@ Here, `LOGS` refers to the folder in which the logs are stored, `VALID_NAMESPACE
 ### Generating the jobs for the data scraping pipeline
 `cmd-iaso` needs to know exactly which resource providers and LUIs it will probe during the scraping. To generate the jobs specification file, you can run:
 ```
-> cmd-iaso jobs JOBS [--valid VALID] [--random RANDOM] [--valid-namespace-ids VALID_NAMESPACE_IDS]
+> cmd-iaso jobs JOBS [--valid VALID] [--random RANDOM] [--pings PINGS] [--valid-namespace-ids VALID_NAMESPACE_IDS]
 ```
-This command will attempt to use `VALID` valid LUIs for each resource provider in addition to generating `RANDOM` random LUIs per provider. Iff `VALID` is greater than one, you must also provide `--valid-namespace-ids VALID_NAMESPACE_IDS` where `VALID_NAMESPACE_IDS` points to the file you generated using `cmd-iaso logs2luis`. The final list of jobs will be saved at the `JOBS` file path.
+This command will attempt to use `VALID` valid LUIs for each resource provider in addition to generating `RANDOM` random LUIs per provider. Iff `VALID` is greater than one, you must also provide `--valid-namespace-ids VALID_NAMESPACE_IDS` where `VALID_NAMESPACE_IDS` points to the file you generated using `cmd-iaso logs2luis`. Each job will be repeated `PINGS` times in the jobs list. The final list of jobs will be saved at the `JOBS` file path.
 Note that the resulting jobs list of this command is random. Both the random LUIs and the selection of valid LUIs is random on each run of this command. Furthermore, note that this command will attempt to use valid LUIs from a different namespace if some namespace does not have enough valid LUIs specified in `VALID_NAMESPACE_IDS`. Therefore, as long as there are enough LUIs in `VALID_NAMESPACE_IDS`, it will use more than `VALID` LUIs from some namespaces to compensate for others.
 
 ### [Optional]: Launching your own scraping proxy

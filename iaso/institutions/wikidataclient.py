@@ -47,12 +47,17 @@ class WikiDataClient:
             if response.status_code != httpx.codes.TOO_MANY_REQUESTS:
                 self.backoff[namespace] = max(
                     INITIAL_BACKOFF,
-                    min(self.backoff.get(namespace, INITIAL_BACKOFF), backoff * 0.75),
+                    min(
+                        self.backoff.get(namespace, INITIAL_BACKOFF),
+                        backoff - INITIAL_BACKOFF,
+                    ),
                 )
             else:
                 self.backoff[namespace] = max(
                     self.backoff.get(namespace, INITIAL_BACKOFF), backoff * 2
                 )
+
+            print(f"{namespace}: {self.backoff[namespace]} s")
 
             self.waiting[namespace] -= 1
 
@@ -65,12 +70,12 @@ class WikiDataClient:
             if response.status_code != httpx.codes.TOO_MANY_REQUESTS:
                 return response
 
-    async def search(self, terms):
+    async def search(self, terms, strict=False):
         response = await self.request(
             "search",
             (
                 "https://www.wikidata.org/w/api.php?action=query&list=search"
-                + f"&srsearch={terms.lower().replace(' ', ' OR ')}"
+                + f"&srsearch={terms.lower() if strict else terms.lower().replace(' ', ' OR ')}"
                 + f"&srlimit={RANKING_LIMIT}&srprop=&format=json"
             ),
         )
