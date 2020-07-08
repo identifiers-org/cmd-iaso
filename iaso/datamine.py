@@ -1,5 +1,3 @@
-import click
-
 from .json_schema_file import JsonSchemaFile
 
 

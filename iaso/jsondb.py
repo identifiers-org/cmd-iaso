@@ -95,9 +95,7 @@ def json_to_list_db(data, dbname=None):
     )
 
 
-def json_to_namedtuple(data, ntname=None):
-    classes = dict()
-
+def json_to_namedtuple(data, ntname=None, classes=dict()):
     def _explore_recurse(field, data, classes):
         if type(data) == list:
             return [_explore_recurse(field, item, classes) for item in data]
@@ -116,7 +114,7 @@ def json_to_namedtuple(data, ntname=None):
             }
 
             item = classes[field](
-                *[fields[fieldname] for fieldname in classes[field]._fields]
+                *[fields.get(fieldname) for fieldname in classes[field]._fields]
             )
 
             return item

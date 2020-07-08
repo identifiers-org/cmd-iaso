@@ -1,6 +1,3 @@
-from .named_entity_recognition import extract_named_entities
-from .wikidataclient import RANKING_LIMIT
-
 import asyncio
 import re
 
@@ -8,6 +5,9 @@ from collections import Counter, defaultdict
 from enum import Enum, auto
 
 import httpx
+
+from .named_entity_recognition import extract_named_entities
+from .wikidataclient import RANKING_LIMIT
 
 WORD_PATTERN = re.compile(r"\W+")
 

@@ -56,6 +56,8 @@ from .scraping.jobs import ScrapingJobs
 from .scraping.jobs.generate import generate_scraping_jobs
 
 from .institutions import deduplicate_registry_institutions
+from .institutions.academine import Academine
+from .institutions.differences import find_institution_differences
 
 
 def coroutine(f):
@@ -718,6 +720,24 @@ async def dedup4institutions(ctx, academine):
         )
 
     await deduplicate_registry_institutions(ctx_registry(ctx), academine)
+
+
+@cli.command()
+@click.pass_context
+@click.argument(
+    "academine",
+    type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
+)
+@wrap_docker()
+@coroutine
+async def wip(ctx, academine):
+    click.echo(
+        click.style(f"Loading the academine file from {academine} ...", fg="yellow")
+    )
+
+    differences = find_institution_differences(ctx_registry(ctx), Academine(academine))
+
+    click.echo(format_json(differences))
 
 
 def main():

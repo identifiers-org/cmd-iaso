@@ -9,7 +9,7 @@ from jsonschema import validate
 from .jsondb import json_to_namedtuple
 
 
-def JsonSchemaFile(filepath, schemaname, schema, namedtuple=True):
+def JsonSchemaFile(filepath, schemaname, schema, namedtuple=True, classes=dict()):
     with click.open_file(filepath, "rb") as file:
         content = file.read()
 
@@ -60,4 +60,4 @@ def JsonSchemaFile(filepath, schemaname, schema, namedtuple=True):
             ),
         )
 
-    return json_to_namedtuple(json_file) if namedtuple else json_file
+    return json_to_namedtuple(json_file, classes=dict()) if namedtuple else json_file

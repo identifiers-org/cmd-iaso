@@ -1,13 +1,23 @@
-import click
+from collections import namedtuple
 
 from ..json_schema_file import JsonSchemaFile
 
 
 def Academine(filepath):
-    return JsonSchemaFile(filepath, "ACADEMINE", Academine.SCHEMA)
+    return JsonSchemaFile(
+        filepath,
+        "ACADEMINE",
+        Academine.SCHEMA,
+        classes={
+            "entities": namedtuple(
+                "Entity",
+                ["matches", "name", "homeUrl", "description", "rorId", "location"],
+            )
+        },
+    )
 
 
-Datamine.SCHEMA = {
+Academine.SCHEMA = {
     "type": "object",
     "properties": {
         "institutions": {
