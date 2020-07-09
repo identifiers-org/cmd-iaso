@@ -88,7 +88,7 @@ class CurationFormatter(ABC):
         pass
 
     @abstractmethod
-    def format_json(self, title, content):
+    def format_json(self, title, content, level):
         pass
 
     @abstractmethod

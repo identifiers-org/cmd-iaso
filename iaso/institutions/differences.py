@@ -24,7 +24,7 @@ def get_and_sanitise_prop(institution, prop):
 
 
 def find_institution_differences(registry, academine):
-    institutions_differences = dict()
+    institutions_differences = []
 
     for institutions in academine.institutions:
         old_institution = registry.institution.get(institutions.id)
@@ -73,9 +73,14 @@ def find_institution_differences(registry, academine):
         ):
             institution_differences[0]["description"]["type"] = Difference.KEEP
 
-        institutions_differences[institutions.id] = {
-            "string": institutions.string,
-            "differences": institution_differences,
-        }
+        institutions_differences.append(
+            (
+                institutions.id,
+                {
+                    "string": institutions.string,
+                    "differences": institution_differences,
+                },
+            )
+        )
 
     return institutions_differences

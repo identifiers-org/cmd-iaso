@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import partial
 
 from ..utils import format_json
@@ -9,6 +10,9 @@ from .validators.scheme_redirect_error import SchemeRedirectError
 
 from .interact import CurationController, CurationNavigator, CurationFormatter
 from .generator import curation_entry_generator, CurationDirection
+
+from ..institutions.differences import find_institution_differences
+from ..institutions.validator import InstitutionsValidator
 
 import click
 
@@ -102,6 +106,73 @@ async def curate_resources(
                 )
 
                 await navigator.navigate(navigation_url, provider.urlPattern)
+
+                await informant.output(
+                    navigation_url, provider, namespace, entry.position, entry.total
+                )
+
+                next(entries)
+
+                entry = entries.send(await controller.prompt())
+
+    click.echo(click.style("Finishing the curation process ...", fg="yellow"))
+
+
+async def curate_institutions(
+    registry, Controller, Navigator, Informant, session,
+):
+    differences = find_institution_differences(registry, session.academine)
+
+    provider_namespace = dict()
+    institution_providers = defaultdict(set)
+
+    for nid, namespace in registry.namespaces.items():
+        for resource in namespace.resources:
+            provider_namespace[resource.id] = namespace
+
+            institution_providers[resource.institution.id].add(resource.id)
+
+    def get_compact_identifier(lui, pid):
+        if provider_namespace[pid].namespaceEmbeddedInLui:
+            return lui
+
+        return f"{provider_namespace[pid].prefix}:{lui}"
+
+    entries = curation_entry_generator(differences, [InstitutionsValidator],)
+
+    next(entries)
+    entries.send(session.position)
+
+    click.echo(click.style("Starting the curation process ...", fg="yellow"))
+
+    entry = entries.send(CurationDirection.FORWARD)
+
+    if entry == CurationDirection.FINISH:
+        click.echo(
+            click.style("There are no entries that require curation.", fg="green")
+        )
+    else:
+        async with await CurationController.create(
+            Controller
+        ) as controller, await CurationNavigator.create(
+            Navigator
+        ) as navigator, await CurationFormatter.create(
+            Informant
+        ) as informant:
+            while entry != CurationDirection.FINISH:
+                session.update(entry.index, entry.visited)
+
+                for validation in entry.validations:
+                    validation.format(informant)
+
+                provider_id = next(iter(institution_providers[entry.entry[0]]))
+
+                namespace = provider_namespace[provider_id]
+                provider = registry.resources[provider_id]
+
+                navigation_url = "https://registry.identifiers.org/curation"
+
+                await navigator.navigate(navigation_url, entry.entry[1]["string"])
 
                 await informant.output(
                     navigation_url, provider, namespace, entry.position, entry.total

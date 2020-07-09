@@ -1,15 +1,13 @@
-# import click
+import pyppeteer
 
-# import pyppeteer
-
-# from contextlib import suppress
+from contextlib import suppress
 
 from .navigator import PyppeteerNavigator
 
-# from .coordinator import PyppeteerCoordinator
+from .coordinator import PyppeteerCoordinator
 
 
-class PyppeteerResourceNavigator(PyppeteerNavigator):
+class PyppeteerInstitutionNavigator(PyppeteerNavigator):
     def __init__(self, page):
         super().__init__(page)
 

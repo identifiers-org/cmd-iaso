@@ -25,6 +25,7 @@ from .curation.terminal import (
 from .curation.pyppeteer import PyppeteerLauncher
 from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.resource_navigator import PyppeteerResourceNavigator
+from .curation.pyppeteer.institution_navigator import PyppeteerInstitutionNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
 from .scraping.http.proxy3 import serve as serve_proxy
@@ -58,7 +59,6 @@ from .scraping.jobs.generate import generate_scraping_jobs
 
 from .institutions import deduplicate_registry_institutions
 from .institutions.academine import Academine
-from .institutions.differences import find_institution_differences
 
 
 def coroutine(f):
@@ -320,6 +320,7 @@ async def resources(
 
     await launch_curation(
         curation.curate_resources,
+        PyppeteerResourceNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
@@ -391,7 +392,8 @@ async def institutions(
     )
 
     await launch_curation(
-        curate_institutions,
+        curation.curate_institutions,
+        PyppeteerInstitutionNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
@@ -399,10 +401,6 @@ async def institutions(
         ctx.parent.parent.params["chrome"],
         InstitutionsCurationSession(session, Academine(academine), 0, set(),),
     )
-
-    differences = find_institution_differences(ctx_registry(ctx), Academine(academine))
-
-    click.echo(format_json(differences))
 
 
 @curate.group()
@@ -451,6 +449,7 @@ async def resources(ctx, session):
 
     await launch_curation(
         curation.curate_resources,
+        PyppeteerResourceNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
@@ -496,7 +495,8 @@ async def institutions(ctx, session):
         )
 
     await launch_curation(
-        curate_institutions,
+        curation.curate_institutions,
+        PyppeteerInstitutionNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
@@ -507,7 +507,14 @@ async def institutions(ctx, session):
 
 
 async def launch_curation(
-    curation_func, ctx, controller, navigator, informant, chrome, session
+    curation_func,
+    ChromeNavigator,
+    ctx,
+    controller,
+    navigator,
+    informant,
+    chrome,
+    session,
 ):
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
@@ -521,7 +528,7 @@ async def launch_curation(
         }[controller]
         Navigator = {
             "terminal": TerminalNavigator,
-            "chrome": launcher.warp(PyppeteerResourceNavigator),
+            "chrome": launcher.warp(ChromeNavigator),
         }[navigator]
         Informant = {
             "terminal": TerminalFormatter,
@@ -851,12 +858,6 @@ async def dedup4institutions(ctx, academine):
         )
 
     await deduplicate_registry_institutions(ctx_registry(ctx), academine)
-
-
-async def curate_institutions(registry, Controller, Navigator, Informant, session):
-    differences = find_institution_differences(registry, session.academine)
-
-    click.echo(format_json(differences))
 
 
 def main():
