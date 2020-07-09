@@ -57,8 +57,6 @@ class WikiDataClient:
                     self.backoff.get(namespace, INITIAL_BACKOFF), backoff * 2
                 )
 
-            print(f"{namespace}: {self.backoff[namespace]} s")
-
             self.waiting[namespace] -= 1
 
             # Schedule the next request iff not already done before

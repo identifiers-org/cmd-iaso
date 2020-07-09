@@ -25,7 +25,7 @@ class TerminalController(CurationController):
 
 
 class TerminalNavigator(CurationNavigator):
-    async def navigate(self, url, provider_id):
+    async def navigate(self, url, institution_name):
         ctx = click.get_current_context()
 
         center_str = "_" * len(url)

@@ -37,12 +37,12 @@ Academine.SCHEMA = {
                                     "items": {"type": "string"},
                                     "additionalItems": False,
                                 },
-                                "name": {"type": "string"},
-                                "homeUrl": {"type": "string"},
-                                "description": {"type": "string"},
-                                "rorId": {"type": "string"},
+                                "name": {"type": ["string", "null"]},
+                                "homeUrl": {"type": ["string", "null"]},
+                                "description": {"type": ["string", "null"]},
+                                "rorId": {"type": ["string", "null"]},
                                 "location": {
-                                    "type": "object",
+                                    "type": ["object", "null"],
                                     "properties": {
                                         "countryCode": {"type": "string"},
                                         "countryName": {"type": "string"},

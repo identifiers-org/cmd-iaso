@@ -62,7 +62,7 @@ class CurationNavigator(ABC):
         pass
 
     @abstractmethod
-    async def navigate(self, url, provider_id):
+    async def navigate(self, url, auxiliary):
         pass
 
 

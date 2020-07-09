@@ -14,7 +14,8 @@ load_dotenv(dotenv_path=(Path(".") / ".env"))
 
 from . import curation
 
-from .curation.session import CurationSession
+from .curation.resources_session import ResourcesCurationSession
+from .curation.institutions_session import InstitutionsCurationSession
 
 from .curation.terminal import (
     TerminalController,
@@ -23,7 +24,7 @@ from .curation.terminal import (
 )
 from .curation.pyppeteer import PyppeteerLauncher
 from .curation.pyppeteer.controller import PyppeteerController
-from .curation.pyppeteer.navigator import PyppeteerNavigator
+from .curation.pyppeteer.resource_navigator import PyppeteerResourceNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
 from .scraping.http.proxy3 import serve as serve_proxy
@@ -214,7 +215,14 @@ def curate(ctx, controller, navigator, informant, chrome=None):
     pass
 
 
-@curate.command(cls=ValidateMutex(click.Command))
+@curate.group()
+@click.pass_context
+@wrap_docker(exit=False)
+def start(ctx):
+    pass
+
+
+@start.command(cls=ValidateMutex(click.Command))
 @click.pass_context
 @click.argument(
     "datamine",
@@ -250,14 +258,14 @@ def curate(ctx, controller, navigator, informant, chrome=None):
 @click.option(
     "--session",
     type=click.Path(exists=False, writable=True, dir_okay=False),
-    default="session.gz",
+    default="resources_session.gz",
     cls=MutexOption,
     not_required_if=["discard_session"],
     show_envvar=True,
 )
 @wrap_docker()
 @coroutine
-async def start(
+async def resources(
     ctx,
     datamine,
     validators,
@@ -267,7 +275,7 @@ async def start(
     session,
 ):
     """
-    Starts a new session for the interactive curation process.
+    Starts a new session for the interactive curation process of resource providers.
     Reads the scraped information on providers from the DATAMINE file path.
     
     -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
@@ -291,9 +299,9 @@ async def start(
     
     \b
     --session SESSION stores the session information at the SESSION path.
-    If this option is not provided, session.gz will be used by default.
+    If this option is not provided, resources_session.gz will be used by default.
     To disable storing the new session altogther, use:
-    > cmd-iaso curate [...] start [...] --discard-session [...]
+    > cmd-iaso curate [...] resources [...] --discard-session [...]
     
     \b
     For more information on the interactive curation process, use:
@@ -311,12 +319,13 @@ async def start(
     )
 
     await launch_curation(
+        curation.curate_resources,
         ctx,
-        ctx.parent.params["controller"],
-        ctx.parent.params["navigator"],
-        ctx.parent.params["informant"],
-        ctx.parent.params["chrome"],
-        CurationSession(
+        ctx.parent.parent.params["controller"],
+        ctx.parent.parent.params["navigator"],
+        ctx.parent.parent.params["informant"],
+        ctx.parent.parent.params["chrome"],
+        ResourcesCurationSession(
             session,
             Datamine(datamine),
             validators,
@@ -328,7 +337,82 @@ async def start(
     )
 
 
-@curate.command()
+@start.command(cls=ValidateMutex(click.Command))
+@click.pass_context
+@click.argument(
+    "academine",
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, dir_okay=False, allow_dash=True
+    ),
+)
+@click.option(
+    "--discard-session",
+    is_flag=True,
+    cls=MutexOption,
+    not_required_if=["session"],
+    show_envvar=True,
+)
+@click.option(
+    "--session",
+    type=click.Path(exists=False, writable=True, dir_okay=False),
+    default="institutions_session.gz",
+    cls=MutexOption,
+    not_required_if=["discard_session"],
+    show_envvar=True,
+)
+@wrap_docker()
+@coroutine
+async def institutions(
+    ctx, academine, discard_session, session,
+):
+    """
+    Starts a new session for the interactive curation process of institutions.
+    Reads the deduplicated information on institutions from the ACADEMINE file path.
+    
+    \b
+    --session SESSION stores the session information at the SESSION path.
+    If this option is not provided, institutions_session.gz will be used by default.
+    To disable storing the new session altogther, use:
+    > cmd-iaso curate [...] institutions [...] --discard-session [...]
+    
+    \b
+    For more information on the interactive curation process, use:
+    > cmd-iaso curate --help
+    """
+
+    if session is not None and os.path.exists(session):
+        click.confirm(
+            f"{session} already exists. Do you want to overwrite {session} with a fresh session?",
+            abort=True,
+        )
+
+    click.echo(
+        click.style(f"Loading the academine file from {academine} ...", fg="yellow")
+    )
+
+    await launch_curation(
+        curate_institutions,
+        ctx,
+        ctx.parent.parent.params["controller"],
+        ctx.parent.parent.params["navigator"],
+        ctx.parent.parent.params["informant"],
+        ctx.parent.parent.params["chrome"],
+        InstitutionsCurationSession(session, Academine(academine), 0, set(),),
+    )
+
+    differences = find_institution_differences(ctx_registry(ctx), Academine(academine))
+
+    click.echo(format_json(differences))
+
+
+@curate.group()
+@click.pass_context
+@wrap_docker(exit=False)
+def resume(ctx):
+    pass
+
+
+@resume.command()
 @click.pass_context
 @click.argument(
     "session",
@@ -338,7 +422,7 @@ async def start(
 )
 @wrap_docker()
 @coroutine
-async def resume(ctx, session):
+async def resources(ctx, session):
     """
     Resumes an existing curation session for the interactive curation process.
     Reads the session information the SESSION file path.
@@ -356,27 +440,74 @@ async def resume(ctx, session):
         )
     )
 
-    session = CurationSession.load_from_file(
+    session = ResourcesCurationSession.load_from_file(
         session_path, partial(validate_validators, ctx, None)
     )
 
-    if len(session.visited) == len(session.datamine.providers):
+    if len(session.visited) == len(session):
         click.echo(
             click.style("WARNING: You are working on a completed session.", fg="red")
         )
 
     await launch_curation(
+        curation.curate_resources,
         ctx,
-        ctx.parent.params["controller"],
-        ctx.parent.params["navigator"],
-        ctx.parent.params["informant"],
-        ctx.parent.params["chrome"],
+        ctx.parent.parent.params["controller"],
+        ctx.parent.parent.params["navigator"],
+        ctx.parent.parent.params["informant"],
+        ctx.parent.parent.params["chrome"],
+        session,
+    )
+
+
+@resume.command()
+@click.pass_context
+@click.argument(
+    "session",
+    type=click.Path(
+        exists=DockerPathExists(), readable=True, writable=True, dir_okay=False
+    ),
+)
+@wrap_docker()
+@coroutine
+async def institutions(ctx, session):
+    """
+    Resumes an existing curation session for the interactive curation process.
+    Reads the session information the SESSION file path.
+    
+    \b
+    For more information on the interactive curation process, use:
+    > cmd-iaso curate --help
+    """
+
+    session_path = session
+
+    click.echo(
+        click.style(
+            f"Loading the curation session from {session_path} ...", fg="yellow"
+        )
+    )
+
+    session = InstitutionsCurationSession.load_from_file(session_path)
+
+    if len(session.visited) == len(session):
+        click.echo(
+            click.style("WARNING: You are working on a completed session.", fg="red")
+        )
+
+    await launch_curation(
+        curate_institutions,
+        ctx,
+        ctx.parent.parent.params["controller"],
+        ctx.parent.parent.params["navigator"],
+        ctx.parent.parent.params["informant"],
+        ctx.parent.parent.params["chrome"],
         session,
     )
 
 
 async def launch_curation(
-    ctx, controller, navigator, informant, chrome, session,
+    curation_func, ctx, controller, navigator, informant, chrome, session
 ):
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
@@ -390,7 +521,7 @@ async def launch_curation(
         }[controller]
         Navigator = {
             "terminal": TerminalNavigator,
-            "chrome": launcher.warp(PyppeteerNavigator),
+            "chrome": launcher.warp(PyppeteerResourceNavigator),
         }[navigator]
         Informant = {
             "terminal": TerminalFormatter,
@@ -402,7 +533,7 @@ async def launch_curation(
             ),
         }[informant]
 
-        await curation.curate(
+        await curation_func(
             ctx_registry(ctx), Controller, Navigator, Informant, session,
         )
 
@@ -722,20 +853,8 @@ async def dedup4institutions(ctx, academine):
     await deduplicate_registry_institutions(ctx_registry(ctx), academine)
 
 
-@cli.command()
-@click.pass_context
-@click.argument(
-    "academine",
-    type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
-)
-@wrap_docker()
-@coroutine
-async def wip(ctx, academine):
-    click.echo(
-        click.style(f"Loading the academine file from {academine} ...", fg="yellow")
-    )
-
-    differences = find_institution_differences(ctx_registry(ctx), Academine(academine))
+async def curate_institutions(registry, Controller, Navigator, Informant, session):
+    differences = find_institution_differences(registry, session.academine)
 
     click.echo(format_json(differences))
 

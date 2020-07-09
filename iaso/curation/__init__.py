@@ -13,7 +13,7 @@ from .generator import curation_entry_generator, CurationDirection
 import click
 
 
-async def curate(
+async def curate_resources(
     registry, Controller, Navigator, Informant, session,
 ):
     click.echo(
