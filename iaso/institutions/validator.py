@@ -41,13 +41,11 @@ class InstitutionsValidator:
         self.differences = differences
 
     def format(self, formatter):
-        formatter.format_json("Institution string", self.differences["string"], 1)
-
-        if len(self.differences["differences"]) == 1:
+        for difference in self.differences["differences"]:
             formatter.format_json(
-                "Extracted institution", self.differences["differences"][0], 3,
-            )
-        else:
-            formatter.format_json(
-                f"Extracted institutions", self.differences["differences"], 3,
+                difference["name"].get("same")
+                or difference["name"].get("new")
+                or difference["name"]["old"],
+                difference,
+                2,
             )

@@ -44,7 +44,7 @@ class TerminalFormatter(CurationFormatter):
     def format_json(self, title, content, level):
         self.buffer.append((title, content, level))
 
-    async def output(self, url, resource, position, total):
+    async def output(self, url, title, description, position, total):
         ctx = click.get_current_context()
 
         output = []
@@ -57,13 +57,13 @@ class TerminalFormatter(CurationFormatter):
 
         output.append(
             "\n{}{}{}\n".format(
-                click.style("Curation required for resource provider ", fg="yellow"),
-                click.style(resource.name, fg="yellow", bold=True),
+                click.style(f"Curation required for {title['type']} ", fg="yellow"),
+                click.style(title["text"], fg="yellow", bold=True),
                 click.style(":", fg="yellow"),
             )
         )
 
-        output.append("The following issues were observed:\n")
+        output.append(f"{description}\n")
 
         for title, content, level in self.buffer:
             output.append("- {}: ".format(click.style(title, underline=True)))

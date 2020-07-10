@@ -92,5 +92,5 @@ class CurationFormatter(ABC):
         pass
 
     @abstractmethod
-    async def output(self, url, resource, position, total):
+    async def output(self, url, title, description, position, total):
         pass

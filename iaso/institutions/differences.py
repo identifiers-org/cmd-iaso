@@ -56,8 +56,8 @@ def find_institution_differences(registry, academine):
 
         for new_institution in institutions.entities:
             institution_difference = {
-                "occurrences": entity_resources[new_institution.uuid],
                 "matches": new_institution.matches,
+                "occurrences": entity_resources[new_institution.uuid],
             }
 
             for prop in INSTITUTION_PROPERTIES:

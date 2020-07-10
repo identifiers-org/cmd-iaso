@@ -35,7 +35,7 @@ class PyppeteerFormatter(CurationFormatter):
     def format_json(self, title, content, level):
         self.buffer.append((title, content, level))
 
-    async def output(self, url, resource, position, total):
+    async def output(self, url, title, description, position, total):
         if "{$url}" in self.url_regex_pattern:
             self.url_regex = re.compile(
                 self.url_regex_pattern.replace("{$url}", re.escape(url))

@@ -108,7 +108,11 @@ async def curate_resources(
                 await navigator.navigate(navigation_url, provider.urlPattern)
 
                 await informant.output(
-                    navigation_url, provider, entry.position, entry.total
+                    navigation_url,
+                    {"type": "resource provider", "text": provider.name,},
+                    "The following issues were observed:",
+                    entry.position,
+                    entry.total,
                 )
 
                 next(entries)
@@ -173,17 +177,17 @@ async def curate_institutions(
                 for validation in entry.validations:
                     validation.format(informant)
 
-                provider_id = next(iter(institution_providers[entry.entry[0]]))
-
-                namespace = provider_namespace[provider_id]
-                provider = registry.resources[provider_id]
-
                 navigation_url = "https://registry.identifiers.org/curation"
+                institution = entry.entry[1]["string"]
 
-                await navigator.navigate(navigation_url, entry.entry[1]["string"])
+                await navigator.navigate(navigation_url, institution)
 
                 await informant.output(
-                    navigation_url, provider, entry.position, entry.total
+                    navigation_url,
+                    {"type": "institution", "text": institution,},
+                    "The following institutions were extracted:",
+                    entry.position,
+                    entry.total,
                 )
 
                 next(entries)
