@@ -32,6 +32,7 @@ Academine.SCHEMA = {
                         "items": {
                             "type": "object",
                             "properties": {
+                                "uuid": {"type": "string"},
                                 "matches": {
                                     "type": "array",
                                     "items": {"type": "string"},

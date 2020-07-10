@@ -6,8 +6,8 @@ OK_DIFFERENCES = (Difference.KEEP, Difference.SAME)
 def format_differences(difference, get_namespace_compact_identifier_link):
     difference = dict(difference)
 
-    difference["occurences"] = [
-        get_namespace_compact_identifier_link(rid) for rid in difference["occurences"]
+    difference["occurrences"] = [
+        get_namespace_compact_identifier_link(rid) for rid in difference["occurrences"]
     ]
 
     return difference
