@@ -92,7 +92,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
         institution_entities = []
 
         for entity, matches in entities.items():
-            institution_entity = {"matches": tuple(matches)}
+            institution_entity = {"uuid": entity, "matches": tuple(matches)}
 
             institution_entity.update(
                 (k, v)

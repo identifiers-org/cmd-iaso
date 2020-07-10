@@ -44,7 +44,7 @@ class TerminalFormatter(CurationFormatter):
     def format_json(self, title, content, level):
         self.buffer.append((title, content, level))
 
-    async def output(self, url, resource, namespace, position, total):
+    async def output(self, url, namespace, position, total):
         ctx = click.get_current_context()
 
         output = []

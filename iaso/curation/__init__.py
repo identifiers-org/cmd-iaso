@@ -108,7 +108,7 @@ async def curate_resources(
                 await navigator.navigate(navigation_url, provider.urlPattern)
 
                 await informant.output(
-                    navigation_url, provider, namespace, entry.position, entry.total
+                    navigation_url, provider, entry.position, entry.total
                 )
 
                 next(entries)
@@ -132,13 +132,21 @@ async def curate_institutions(
 
             institution_providers[resource.institution.id].add(resource.id)
 
-    def get_compact_identifier(lui, pid):
-        if provider_namespace[pid].namespaceEmbeddedInLui:
-            return lui
+    def get_namespace_compact_identifier_link(pid):
+        provider = registry.resources[pid]
+        namespace = provider_namespace[pid]
 
-        return f"{provider_namespace[pid].prefix}:{lui}"
+        return f"[{provider.mirId if provider.providerCode == 'CURATOR_REVIEW' else provider.providerCode}/{namespace.prefix}](https://registry.identifiers.org/registry/{namespace.prefix})"
 
-    entries = curation_entry_generator(differences, [InstitutionsValidator],)
+    entries = curation_entry_generator(
+        differences,
+        [
+            partial(
+                InstitutionsValidator.check_and_create,
+                get_namespace_compact_identifier_link,
+            )
+        ],
+    )
 
     next(entries)
     entries.send(session.position)
@@ -175,7 +183,7 @@ async def curate_institutions(
                 await navigator.navigate(navigation_url, entry.entry[1]["string"])
 
                 await informant.output(
-                    navigation_url, provider, namespace, entry.position, entry.total
+                    navigation_url, provider, entry.position, entry.total
                 )
 
                 next(entries)
