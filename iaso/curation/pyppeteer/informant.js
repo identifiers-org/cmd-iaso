@@ -1,4 +1,4 @@
-function (display_informant, display_overlay, provider_name, provider_index, provider_issues) {
+function (display_informant, display_overlay, title_type, title_text, description, entity_index, issues) {
     let header = document.getElementById("iaso-header");
     
     if (header === null) {
@@ -41,11 +41,11 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
             overlay.innerHTML = `
                 <div id="iaso-informant-overlay-content">
                     <h3 style="color: orange">
-                        Curation required for resource provider
-                        <span id="iaso-informant-overlay-provider" style="font-weight: bold"></span>
+                        Curation required for <span id="iaso-informant-overlay-title-type"></span>
+                        <span id="iaso-informant-overlay-title-text" style="font-weight: bold"></span>
                         <span id="iaso-informant-overlay-index" style="color: white"></span>:
                     </h3>
-                    <h4 style="color: white">The following issues were observed:</h4>
+                    <h4 id="iaso-informant-overlay-description" style="color: white"></h4>
                     <ul id="iaso-informant-overlay-issues"></ul>
                 </div>
             `;
@@ -63,11 +63,17 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
     }
     
     if (display_informant) {
-        const overlay_provider = document.getElementById("iaso-informant-overlay-provider");
-        overlay_provider.innerText = provider_name;
+        const overlay_title_type = document.getElementById("iaso-informant-overlay-title-type");
+        overlay_title_type.innerText = title_type;
+        
+        const overlay_title_text = document.getElementById("iaso-informant-overlay-title-text");
+        overlay_title_text.innerText = title_text;
 
         const overlay_index = document.getElementById("iaso-informant-overlay-index");
-        overlay_index.innerText = provider_index;
+        overlay_index.innerText = entity_index;
+        
+        const overlay_description = document.getElementById("iaso-informant-overlay-description");
+        overlay_description.innerText = description;
 
         function noclick (element, show_depth) {
             if (element.onclick === null) {
@@ -97,7 +103,7 @@ function (display_informant, display_overlay, provider_name, provider_index, pro
         const overlay_issues = document.getElementById("iaso-informant-overlay-issues");
         overlay_issues.innerHTML = "";
 
-        for (const [title, issue, level] of provider_issues) {
+        for (const [title, issue, level] of issues) {
             const list = document.createElement('li');
             list.innerHTML = `<span style="text-decoration: underline">${title}: </span>`;
 

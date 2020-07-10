@@ -20,9 +20,11 @@ class PyppeteerFormatter(CurationFormatter):
 
         self.buffer = []
 
-        self.provider_name = ""
-        self.provider_index = ""
-        self.provider_issues = []
+        self.title_type = ""
+        self.title_text = ""
+        self.description = ""
+        self.entity_index = ""
+        self.issues = []
 
     async def __aenter__(self):
         self.page.on("framenavigated", self.onnavigate)
@@ -41,9 +43,11 @@ class PyppeteerFormatter(CurationFormatter):
                 self.url_regex_pattern.replace("{$url}", re.escape(url))
             )
 
-        self.provider_name = resource.name
-        self.provider_index = "({} / {})".format(position + 1, total)
-        self.provider_issues = self.buffer
+        self.title_type = title["type"]
+        self.title_text = title["text"]
+        self.description = description
+        self.entity_index = "({} / {})".format(position + 1, total)
+        self.issues = self.buffer
 
         self.buffer = []
 
@@ -72,7 +76,9 @@ class PyppeteerFormatter(CurationFormatter):
                     "informant.js",
                     self.url_regex.match(self.page.url) is not None,
                     display_overlay,
-                    self.provider_name,
-                    self.provider_index,
-                    self.provider_issues,
+                    self.title_type,
+                    self.title_text,
+                    self.description,
+                    self.entity_index,
+                    self.issues,
                 )
