@@ -22,12 +22,7 @@ class CurationController(ABC):
         if isinstance(ctrl, CoroutineType):
             ctrl = await ctrl
 
-        super(type(ctrl), ctrl).__init__()
-
         return ctrl
-
-    def __init__(self):
-        pass
 
     async def __aenter__(self):
         return self
@@ -48,12 +43,7 @@ class CurationNavigator(ABC):
         if isinstance(nav, CoroutineType):
             nav = await nav
 
-        super(type(nav), nav).__init__()
-
         return nav
-
-    def __init__(self):
-        pass
 
     async def __aenter__(self):
         return self
@@ -74,12 +64,7 @@ class CurationFormatter(ABC):
         if isinstance(fmt, CoroutineType):
             fmt = await fmt
 
-        super(type(fmt), fmt).__init__()
-
         return fmt
-
-    def __init__(self):
-        pass
 
     async def __aenter__(self):
         return self

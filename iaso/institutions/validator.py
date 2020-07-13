@@ -1,14 +1,28 @@
+from copy import deepcopy
+
 from .differences import INSTITUTION_PROPERTIES, Difference
 
 OK_DIFFERENCES = (Difference.KEEP, Difference.SAME)
+URL_PROPERTIES = ["homeUrl", "rorId"]
 
 
 def format_differences(difference, get_namespace_compact_identifier_link):
-    difference = dict(difference)
+    difference = deepcopy(difference)
 
     difference["occurrences"] = [
         get_namespace_compact_identifier_link(rid) for rid in difference["occurrences"]
     ]
+
+    for prop in INSTITUTION_PROPERTIES:
+        difference[prop]["type"] = str(difference[prop]["type"])
+
+        if prop in URL_PROPERTIES:
+            for subprop, value in difference[prop].items():
+                if subprop == "type":
+                    continue
+
+                if value is not None:
+                    difference[prop][subprop] = f"<{value}>"
 
     return difference
 
@@ -47,5 +61,5 @@ class InstitutionsValidator:
                 or difference["name"].get("new")
                 or difference["name"]["old"],
                 difference,
-                2,
+                3,
             )
