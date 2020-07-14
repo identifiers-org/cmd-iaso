@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 
 import pyppeteer
@@ -28,6 +29,7 @@ class PyppeteerFormatter(CurationFormatter):
 
     async def __aenter__(self):
         self.page.on("framenavigated", self.onnavigate)
+        self.page.on("console", self.onconsole)
 
         return self
 
@@ -35,7 +37,7 @@ class PyppeteerFormatter(CurationFormatter):
         await self.refresh(False)
 
     def format_json(self, title, content, level):
-        self.buffer.append((title, content, level))
+        self.buffer.append((title, content, level, ["some", "example", "tags"]))
 
     async def output(self, url, title, description, position, total):
         if "{$url}" in self.url_regex_pattern:
@@ -72,6 +74,14 @@ class PyppeteerFormatter(CurationFormatter):
                     "renderjson.js", "iaso-informant-renderjson-script",
                 )
 
+                await coordinator.addStyleTagWithId(
+                    "tags.css", "iaso-informant-tags-style"
+                )
+
+                await coordinator.addScriptTagWithId(
+                    "tags.js", "iaso-informant-tags-script",
+                )
+
                 await coordinator.evaluate(
                     "informant.js",
                     self.url_regex.match(self.page.url) is not None,
@@ -82,3 +92,12 @@ class PyppeteerFormatter(CurationFormatter):
                     self.entity_index,
                     self.issues,
                 )
+
+    def onconsole(self, console):
+        if console.type == "info" and console.text.startswith("iaso-informant-tags"):
+            try:
+                tags = json.loads(console.text[20:])
+            except json.JSONDecodeError:
+                return
+
+            print("Selected tags:", tags)

@@ -103,13 +103,16 @@ function (display_informant, display_overlay, title_type, title_text, descriptio
         const overlay_issues = document.getElementById("iaso-informant-overlay-issues");
         overlay_issues.innerHTML = "";
 
-        for (const [title, issue, level] of issues) {
+        for (const [title, issue, level, tags] of issues) {
             const list = document.createElement('li');
             list.innerHTML = `<span style="text-decoration: underline">${title}: </span>`;
+
+            const tags_selector = new IasoTagSelector(tags);
 
             const rendered_json = renderjson(issue);
             noclick(rendered_json, level);
 
+            list.appendChild(tags_selector);
             list.appendChild(rendered_json);
             overlay_issues.appendChild(list);
         }
