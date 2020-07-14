@@ -18,7 +18,7 @@ import click
 
 
 async def curate_resources(
-    registry, Controller, Navigator, Informant, session,
+    registry, Controller, Navigator, Informant, tag_store, session,
 ):
     click.echo(
         click.style(
@@ -90,7 +90,7 @@ async def curate_resources(
         ) as controller, await CurationNavigator.create(
             Navigator
         ) as navigator, await CurationFormatter.create(
-            Informant
+            partial(Informant, tag_store)
         ) as informant:
             while entry != CurationDirection.FINISH:
                 session.update(entry.index, entry.visited)
@@ -123,7 +123,7 @@ async def curate_resources(
 
 
 async def curate_institutions(
-    registry, Controller, Navigator, Informant, session,
+    registry, Controller, Navigator, Informant, tag_store, session,
 ):
     differences = find_institution_differences(registry, session.academine)
 
@@ -169,7 +169,7 @@ async def curate_institutions(
         ) as controller, await CurationNavigator.create(
             Navigator
         ) as navigator, await CurationFormatter.create(
-            Informant
+            partial(Informant, tag_store)
         ) as informant:
             while entry != CurationDirection.FINISH:
                 session.update(entry.index, entry.visited)

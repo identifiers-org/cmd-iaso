@@ -59,7 +59,9 @@ class TerminalFormatter(CurationFormatter):
     IGNORE = "ignore"
     TAGS = "tags"
 
-    def __init__(self, ignored_tags=[], control_tags=True):
+    def __init__(self, tag_store, ignored_tags=[], control_tags=True):
+        self.tag_store = tag_store
+
         self.ignored_tags = ignored_tags
         self.control_tags = control_tags
 
@@ -68,10 +70,10 @@ class TerminalFormatter(CurationFormatter):
         click.get_current_context().obj["tags_formatter"] = self
 
         self.buffer = []
-        self.tags = dict()
+        self.tags_mapping = dict()
 
-    def format_json(self, title, content, level):
-        self.buffer.append((title, content, level, ["some", "example", "tags"]))
+    def format_json(self, identifier, title, content, level):
+        self.buffer.append((identifier, title, content, level))
 
     async def output(self, url, title, description, position, total):
         ctx = click.get_current_context()
@@ -94,12 +96,14 @@ class TerminalFormatter(CurationFormatter):
 
         output.append(f"{description}\n")
 
-        self.tags.clear()
+        self.tags_mapping.clear()
 
-        for i, (title, content, level, tags) in enumerate(self.buffer):
+        for i, (identifier, title, content, level) in enumerate(self.buffer):
             output.append(f"- [{i+1}] {click.style(title, underline=True)}: ")
 
-            self.tags[f"[{i+1}]"] = tags
+            tags = self.tag_store.get_tags_for_identifier(identifier)
+
+            self.tags_mapping[f"[{i+1}]"] = identifier
 
             analysed_tags = [(tag, tag in self.ignored_tags) for tag in tags]
 
@@ -194,11 +198,22 @@ class TerminalFormatter(CurationFormatter):
 
         return None
 
+    # TODO: should we check a schema here???
+
     async def edit_all_tags(self):
-        new_all_tags = await self.edit_tags(self.tags)
+        new_all_tags = await self.edit_tags(
+            {
+                k: self.tag_store.get_tags_for_identifier(v)
+                for k, v in self.tags_mapping.items()
+            }
+        )
 
         if new_all_tags is not None:
-            print(f"New Tags: {new_all_tags}")
+            for k, v in new_all_tags.items():
+                identifier = self.tags_mapping.get(k)
+
+                if identifier is not None:
+                    self.tag_store.set_tags_for_identifier(identifier, v)
 
     async def edit_ignored_tags(self):
         new_ignored_tags = await self.edit_tags(self.ignored_tags)

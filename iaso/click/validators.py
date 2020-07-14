@@ -2,7 +2,7 @@ import pkg_resources
 
 import click
 
-from ..curation.error import CurationError
+from ..curation.validator import CurationValidator
 
 
 def load_registered_validators(ctx):
@@ -26,14 +26,14 @@ def validate_validators(ctx, param, value):
         if isinstance(Validator, pkg_resources.EntryPoint):
             Validator = Validator.load()
 
-            if not issubclass(Validator, CurationError):
+            if not issubclass(Validator, CurationValidator):
                 raise click.BadParameter(
-                    f"{validator_name} does not export a subclass of 'iaso.curation.error.CurationError'."
+                    f"{validator_name} does not export a subclass of 'iaso.curation.validator.CurationValidator'."
                 )
 
             if len(Validator.__abstractmethods__) > 0:
                 raise click.BadParameter(
-                    f"{validator_name} does not export a non-abstract subclass of 'iaso.curation.error.CurationError'."
+                    f"{validator_name} does not export a non-abstract subclass of 'iaso.curation.validator.CurationValidator'."
                 )
 
             ctx.obj["validators"][validator_name] = Validator

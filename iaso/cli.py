@@ -17,6 +17,8 @@ from . import curation
 from .curation.resources_session import ResourcesCurationSession
 from .curation.institutions_session import InstitutionsCurationSession
 
+from .curation.tag_store import TagStore
+
 from .curation.terminal import (
     TerminalController,
     TerminalNavigator,
@@ -546,6 +548,10 @@ async def launch_curation(
             abort=True,
         )
 
+        tag_store = TagStore(tags)
+    else:
+        tag_store = TagStore.load_from_file(tags)
+
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
             "terminal": partial(
@@ -578,7 +584,7 @@ async def launch_curation(
         }[informant]
 
         await curation_func(
-            ctx_registry(ctx), Controller, Navigator, Informant, session,
+            ctx_registry(ctx), Controller, Navigator, Informant, tag_store, session,
         )
 
 

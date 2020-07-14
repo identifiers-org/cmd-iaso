@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
 
 
@@ -10,7 +10,7 @@ def strip_scheme(url):
     return parsed.geturl().replace("{}://".format(parsed.scheme), "", 1)
 
 
-class SchemeRedirectError(CurationError):
+class SchemeRedirectError(CurationValidator):
     @staticmethod
     def check_and_create(
         get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider

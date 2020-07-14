@@ -11,8 +11,10 @@ from .coordinator import PyppeteerCoordinator
 
 
 class PyppeteerFormatter(CurationFormatter):
-    def __init__(self, page, ignored_tags=[], url_regex=None):
+    def __init__(self, page, tag_store, ignored_tags=[], url_regex=None):
         self.page = page
+
+        self.tag_store = tag_store
 
         self.url_regex_pattern = url_regex if url_regex is not None else r"^{$url}.*$"
         self.url_regex = re.compile(self.url_regex_pattern)
@@ -26,6 +28,7 @@ class PyppeteerFormatter(CurationFormatter):
         self.description = ""
         self.entity_index = ""
         self.issues = []
+        self.tags_mapping = dict()
 
         self.ignored_tags = ignored_tags
 
@@ -38,8 +41,8 @@ class PyppeteerFormatter(CurationFormatter):
     async def onnavigate(self, frame):
         await self.refresh(False)
 
-    def format_json(self, title, content, level):
-        self.buffer.append((title, content, level, ["some", "example", "tags"]))
+    def format_json(self, identifier, title, content, level):
+        self.buffer.append((identifier, title, content, level))
 
     async def output(self, url, title, description, position, total):
         if "{$url}" in self.url_regex_pattern:
@@ -52,6 +55,10 @@ class PyppeteerFormatter(CurationFormatter):
         self.description = description
         self.entity_index = "({} / {})".format(position + 1, total)
         self.issues = self.buffer
+        self.tags_mapping = {
+            f"[{i+1}]": identifier
+            for i, (identifier, title, content, level) in enumerate(self.issues)
+        }
 
         self.buffer = []
 
@@ -92,7 +99,17 @@ class PyppeteerFormatter(CurationFormatter):
                     self.title_text,
                     self.description,
                     self.entity_index,
-                    self.issues,
+                    [
+                        (
+                            title,
+                            content,
+                            level,
+                            self.tag_store.get_tags_for_identifier(identifier)
+                            if self.tag_store is not None
+                            else [],
+                        )
+                        for identifier, title, content, level in self.issues
+                    ],
                     self.ignored_tags,
                 )
 
@@ -110,4 +127,7 @@ class PyppeteerFormatter(CurationFormatter):
             if identifier == "ignored":
                 self.ignored_tags = tags
             else:
-                print(f"Tags for {identifier}: {tags}")
+                identifier = self.tags_mapping.get(identifier)
+
+                if identifier is not None:
+                    self.tag_store.set_tags_for_identifier(identifier, tags)

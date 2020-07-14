@@ -1,3 +1,5 @@
+import json
+
 from copy import deepcopy
 
 from .differences import INSTITUTION_PROPERTIES, Difference
@@ -40,6 +42,7 @@ class InstitutionsValidator:
             return True
 
         return InstitutionsValidator(
+            iid,
             {
                 "string": differences["string"],
                 "differences": [
@@ -48,18 +51,38 @@ class InstitutionsValidator:
                     )
                     for difference in differences["differences"]
                 ],
-            }
+            },
         )
 
-    def __init__(self, differences):
+    def __init__(self, iid, differences):
+        self.iid = iid
         self.differences = differences
 
     def format(self, formatter):
         for difference in self.differences["differences"]:
             formatter.format_json(
+                InstitutionsValidator.identify(
+                    self.iid, self.differences["string"], difference
+                ),
                 difference["name"].get("same")
                 or difference["name"].get("new")
                 or difference["name"]["old"],
                 difference,
                 3,
             )
+
+    @staticmethod
+    def identify(iid, string, difference):
+        return json.dumps(
+            {
+                "iid": iid,
+                "string": string,
+                "difference": {
+                    k: v
+                    for k, v in difference.items()
+                    if k not in ["matches", "occurrences"]
+                },
+            },
+            separators=(",", ":"),
+            sort_keys=True,
+        )

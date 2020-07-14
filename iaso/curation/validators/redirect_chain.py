@@ -1,11 +1,11 @@
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
 
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
 
 
-class RedirectChain(CurationError):
+class RedirectChain(CurationValidator):
     @staticmethod
     def check_and_create(
         get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider

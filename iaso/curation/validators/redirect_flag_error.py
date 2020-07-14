@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
 
 
-class RedirectFlagError(CurationError, ABC):
+class RedirectFlagError(CurationValidator, ABC):
     @staticmethod
     @abstractmethod
     def get_flag_from_redirect(redirect):
