@@ -1,9 +1,13 @@
 class IasoTagSelector {
-  constructor(tags=[]) {
+  constructor(identifier, tags=[], onupdate=null) {
+    this.identifier = identifier;
+
     this.selector = document.createElement("div");
     this.selector.classList.add("iaso-informant-overlay-tag-selector");
     this.selector.innerHTML = '<span class="iaso-informant-overlay-tag-spacer"></span>';
     this.selector.onclick = e => e.stopPropagation();
+
+    this.onupdate = onupdate;
 
     this.update(tags, tags.length, false);
 
@@ -60,7 +64,11 @@ class IasoTagSelector {
     this.tags = tags;
     this.index = index;
 
-    console.info(`iaso-informant-tags-${JSON.stringify(this.tags)}`);
+    console.info(`iaso-informant-tags-${this.identifier}-${JSON.stringify(this.tags)}`);
+
+    if (this.onupdate !== null) {
+        this.onupdate(tags);
+    }
 
     const prevValue = this.ref ? this.ref.value : "";
 

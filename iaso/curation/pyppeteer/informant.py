@@ -11,7 +11,7 @@ from .coordinator import PyppeteerCoordinator
 
 
 class PyppeteerFormatter(CurationFormatter):
-    def __init__(self, page, url_regex=None):
+    def __init__(self, page, ignored_tags=[], url_regex=None):
         self.page = page
 
         self.url_regex_pattern = url_regex if url_regex is not None else r"^{$url}.*$"
@@ -26,6 +26,8 @@ class PyppeteerFormatter(CurationFormatter):
         self.description = ""
         self.entity_index = ""
         self.issues = []
+
+        self.ignored_tags = ignored_tags
 
     async def __aenter__(self):
         self.page.on("framenavigated", self.onnavigate)
@@ -91,13 +93,21 @@ class PyppeteerFormatter(CurationFormatter):
                     self.description,
                     self.entity_index,
                     self.issues,
+                    self.ignored_tags,
                 )
 
     def onconsole(self, console):
         if console.type == "info" and console.text.startswith("iaso-informant-tags"):
             try:
-                tags = json.loads(console.text[20:])
-            except json.JSONDecodeError:
+                separator = console.text.index("-", 20)
+
+                identifier = console.text[20:separator]
+
+                tags = json.loads(console.text[(separator + 1) :])
+            except (ValueError, json.JSONDecodeError):
                 return
 
-            print("Selected tags:", tags)
+            if identifier == "ignored":
+                self.ignored_tags = tags
+            else:
+                print(f"Tags for {identifier}: {tags}")

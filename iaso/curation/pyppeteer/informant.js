@@ -1,4 +1,4 @@
-function (display_informant, display_overlay, title_type, title_text, description, entity_index, issues) {
+function (display_informant, display_overlay, title_type, title_text, description, entity_index, issues, ignored_tags) {
     let header = document.getElementById("iaso-header");
     
     if (header === null) {
@@ -6,6 +6,31 @@ function (display_informant, display_overlay, title_type, title_text, descriptio
     }
     
     header = header.firstElementChild;
+
+    function updateIgnoredTags(ignored_tags) {
+        let ignored_tags_style = document.getElementById("iaso-informant-ignored-tags-style");
+
+        if (ignored_tags_style === null) {
+            ignored_tags_style = document.createElement("style");
+            ignored_tags_style.id = "iaso-informant-ignored-tags-style";
+            ignored_tags_style.type = "text/css";
+
+            document.head.appendChild(ignored_tags_style);
+        }
+
+        if (ignored_tags.length > 0) {
+            ignored_tags_style.innerText = `
+                ${ignored_tags.map(tag => `.iaso-informant-overlay-tag-text[data-content="${tag}"]`).join(",\n")} {
+                    color: darkgreen;
+                    font-weight: bold;
+                }
+            `;
+        } else {
+            ignored_tags_style.innerText = "";
+        }
+    }
+
+    updateIgnoredTags(ignored_tags);
     
     let overlay = document.getElementById("iaso-informant-overlay");
     
@@ -45,6 +70,8 @@ function (display_informant, display_overlay, title_type, title_text, descriptio
                         <span id="iaso-informant-overlay-title-text" style="font-weight: bold"></span>
                         <span id="iaso-informant-overlay-index" style="color: white"></span>:
                     </h3>
+                    <h4 style="color: white">Entries with the following tags are currently ignored:</h4>
+                    <div id="iaso-informant-overlay-ignored-tags"></div>
                     <h4 id="iaso-informant-overlay-description" style="color: white"></h4>
                     <ul id="iaso-informant-overlay-issues"></ul>
                 </div>
@@ -68,6 +95,11 @@ function (display_informant, display_overlay, title_type, title_text, descriptio
         
         const overlay_title_text = document.getElementById("iaso-informant-overlay-title-text");
         overlay_title_text.innerText = title_text;
+
+        const overlay_ignored_tags = document.getElementById("iaso-informant-overlay-ignored-tags");
+        if (overlay_ignored_tags.children.length == 0) {
+            overlay_ignored_tags.appendChild(new IasoTagSelector("ignored", ignored_tags, updateIgnoredTags));
+        }
 
         const overlay_index = document.getElementById("iaso-informant-overlay-index");
         overlay_index.innerText = entity_index;
@@ -103,11 +135,13 @@ function (display_informant, display_overlay, title_type, title_text, descriptio
         const overlay_issues = document.getElementById("iaso-informant-overlay-issues");
         overlay_issues.innerHTML = "";
 
-        for (const [title, issue, level, tags] of issues) {
-            const list = document.createElement('li');
-            list.innerHTML = `<span style="text-decoration: underline">${title}: </span>`;
+        for (let i = 0; i < issues.length; i++) {
+            const [title, issue, level, tags] = issues[i];
 
-            const tags_selector = new IasoTagSelector(tags);
+            const list = document.createElement('li');
+            list.innerHTML = `[${i+1}] <span style="text-decoration: underline">${title}</span>: `;
+
+            const tags_selector = new IasoTagSelector(`[${i+1}]`, tags);
 
             const rendered_json = renderjson(issue);
             noclick(rendered_json, level);

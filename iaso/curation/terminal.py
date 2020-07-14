@@ -1,4 +1,8 @@
+import asyncio
 import io
+import json
+
+from collections import OrderedDict
 
 import click
 
@@ -10,18 +14,32 @@ from ..click.aprompt import aprompt
 
 
 class TerminalController(CurationController):
-    async def prompt(self):
-        direction = await aprompt(
-            "Continue curation",
-            type=click.Choice(CurationController.CHOICES.keys()),
-            default=next(
-                k
-                for k, v in TerminalController.CHOICES.items()
-                if v == CurationDirection.FORWARD
-            ),
-        )
+    def __init__(self, control_tags=False):
+        self.choices = list(CurationController.CHOICES.keys())
 
-        return TerminalController.CHOICES[direction]
+        if control_tags:
+            self.choices.extend((TerminalFormatter.TAGS, TerminalFormatter.IGNORE))
+
+    async def prompt(self):
+        while True:
+            direction = await aprompt(
+                "Continue curation",
+                type=click.Choice(self.choices),
+                default=next(
+                    k
+                    for k, v in TerminalController.CHOICES.items()
+                    if v == CurationDirection.FORWARD
+                ),
+            )
+
+            if direction == TerminalFormatter.IGNORE:
+                await click.get_current_context().obj[
+                    "tags_formatter"
+                ].edit_ignored_tags()
+            elif direction == TerminalFormatter.TAGS:
+                await click.get_current_context().obj["tags_formatter"].edit_all_tags()
+            else:
+                return TerminalController.CHOICES[direction]
 
 
 class TerminalNavigator(CurationNavigator):
@@ -38,11 +56,22 @@ class TerminalNavigator(CurationNavigator):
 
 
 class TerminalFormatter(CurationFormatter):
-    def __init__(self):
+    IGNORE = "ignore"
+    TAGS = "tags"
+
+    def __init__(self, ignored_tags=[], control_tags=True):
+        self.ignored_tags = ignored_tags
+        self.control_tags = control_tags
+
+        self.prompt_tags_future = None
+
+        click.get_current_context().obj["tags_formatter"] = self
+
         self.buffer = []
+        self.tags = dict()
 
     def format_json(self, title, content, level):
-        self.buffer.append((title, content, level))
+        self.buffer.append((title, content, level, ["some", "example", "tags"]))
 
     async def output(self, url, title, description, position, total):
         ctx = click.get_current_context()
@@ -65,9 +94,38 @@ class TerminalFormatter(CurationFormatter):
 
         output.append(f"{description}\n")
 
-        for title, content, level in self.buffer:
-            output.append("- {}: ".format(click.style(title, underline=True)))
-            output.append(format_json(content, indent=1))
+        self.tags.clear()
+
+        for i, (title, content, level, tags) in enumerate(self.buffer):
+            output.append(f"- [{i+1}] {click.style(title, underline=True)}: ")
+
+            self.tags[f"[{i+1}]"] = tags
+
+            analysed_tags = [(tag, tag in self.ignored_tags) for tag in tags]
+
+            print(tags, analysed_tags, self.ignored_tags)
+
+            if isinstance(content, str):
+                output.append(format_json(content, indent=1))
+                output.append("\n")
+                output.append(
+                    f"  {click.style('tags', fg='red')}: [{', '.join(click.style(tag, fg=('green' if ignored else 'yellow')) for tag, ignored in tags)}]"
+                )
+            else:
+                content = dict(
+                    tags=[
+                        {
+                            "__rich__": True,
+                            "text": tag,
+                            "fg": "green" if ignored else "yellow",
+                            "bold": ignored,
+                        }
+                        for tag, ignored in analysed_tags
+                    ],
+                    **content,
+                )
+                output.append(format_json(content, indent=1))
+
             output.append("\n")
 
         output.append(
@@ -89,3 +147,61 @@ class TerminalFormatter(CurationFormatter):
             )
 
         self.buffer.clear()
+
+        if self.control_tags:
+            await self.prompt_tags()
+
+    async def prompt_tags(self):
+        if self.prompt_tags_future is not None:
+            return
+
+        self.prompt_tags_future = asyncio.create_task(self.prompt_tags_impl())
+
+    async def prompt_tags_impl(self):
+        decision = await aprompt(
+            "Modify tags", type=click.Choice((self.TAGS, self.IGNORE)),
+        )
+
+        if decision == self.IGNORE:
+            await self.edit_ignored_tags()
+        elif decision == self.TAGS:
+            await self.edit_all_tags()
+
+        self.prompt_tags_future = asyncio.create_task(self.prompt_tags_impl())
+
+    def cancel_prompt_tags(self):
+        if self.prompt_tags_future is not None:
+            self.prompt_tags_future.cancel()
+
+            click.echo("")
+            ctx = click.get_current_context()
+            click.echo(
+                "=" * (80 if ctx.max_content_width is None else ctx.max_content_width)
+            )
+
+            self.prompt_tags_future = None
+
+    async def edit_tags(self, tags):
+        result = click.edit(json.dumps(tags, indent=2), extension=".json")
+
+        if result is None:
+            return None
+
+        try:
+            return json.loads(result)
+        except json.JSONDecodeError as err:
+            click.echo(click.style(f"Error modifying the tags: {err}", fg="red"))
+
+        return None
+
+    async def edit_all_tags(self):
+        new_all_tags = await self.edit_tags(self.tags)
+
+        if new_all_tags is not None:
+            print(f"New Tags: {new_all_tags}")
+
+    async def edit_ignored_tags(self):
+        new_ignored_tags = await self.edit_tags(self.ignored_tags)
+
+        if new_ignored_tags is not None:
+            self.ignored_tags = new_ignored_tags

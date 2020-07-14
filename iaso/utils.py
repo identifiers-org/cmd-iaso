@@ -19,23 +19,35 @@ def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=Fals
         accumulator.append("  " * indent)
 
     if isinstance(json_vals, dict):
-        accumulator.append("{\n")
-
-        iters = json_vals.items()
-
-        for i, (key, val) in enumerate(iters):
+        if json_vals.get("__rich__", False) is True:
             accumulator.append(
                 click.style(
-                    "{indent}{key}: ".format(indent=("  " * (indent + 1)), key=key),
-                    fg="red",
+                    json_vals["text"],
+                    **{
+                        k: v
+                        for k, v in json_vals.items()
+                        if k not in ["__rich__", "text"]
+                    }
                 )
             )
+        else:
+            accumulator.append("{\n")
 
-            accumulator.append(
-                format_json(val, (i + 1) < len(iters), indent + 1, False, True)
-            )
+            iters = json_vals.items()
 
-        accumulator.append("{indent}}}".format(indent=("  " * indent)))
+            for i, (key, val) in enumerate(iters):
+                accumulator.append(
+                    click.style(
+                        "{indent}{key}: ".format(indent=("  " * (indent + 1)), key=key),
+                        fg="red",
+                    )
+                )
+
+                accumulator.append(
+                    format_json(val, (i + 1) < len(iters), indent + 1, False, True)
+                )
+
+            accumulator.append("{indent}}}".format(indent=("  " * indent)))
     elif isinstance(json_vals, list) or isinstance(json_vals, tuple):
         accumulator.append("[\n")
 

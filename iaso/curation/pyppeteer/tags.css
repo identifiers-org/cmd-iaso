@@ -40,16 +40,9 @@
   color: black;
 }
 
-/* TODO: these specifiers need to be dynamic and put into separate CSS file */
-.iaso-informant-overlay-tag-text[data-content="fixed"] {
-    color: darkgreen;
-    font-weight: bold;
-}
-
 .iaso-informant-overlay-tag-remove {
   width: 1rem;
   height: 1rem;
-  padding-top: 0.2rem;
   opacity: 0.5;
   cursor: pointer;
 }

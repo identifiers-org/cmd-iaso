@@ -170,6 +170,20 @@ def registry(ctx):
     show_envvar=True,
 )
 @click.option(
+    "--tags",
+    type=click.Path(exists=False, writable=True, dir_okay=False),
+    default="tags.gz",
+    show_envvar=True,
+)
+@click.option(
+    "--ignore",
+    "-i",
+    "ignored_tags",
+    multiple=True,
+    default=["fixed", "ignore"],
+    show_envvar=True,
+)
+@click.option(
     "--list-validators",
     is_flag=True,
     callback=list_validators,
@@ -177,7 +191,7 @@ def registry(ctx):
     is_eager=True,
 )
 @wrap_docker(exit=False)
-def curate(ctx, controller, navigator, informant, chrome=None):
+def curate(ctx, controller, navigator, informant, tags, ignored_tags, chrome=None):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
     
@@ -326,6 +340,8 @@ async def resources(
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],
         ctx.parent.parent.params["chrome"],
+        ctx.parent.parent.params["tags"],
+        ctx.parent.parent.params["ignored_tags"],
         ResourcesCurationSession(
             session,
             Datamine(datamine),
@@ -399,6 +415,8 @@ async def institutions(
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],
         ctx.parent.parent.params["chrome"],
+        ctx.parent.parent.params["tags"],
+        ctx.parent.parent.params["ignored_tags"],
         InstitutionsCurationSession(session, Academine(academine), 0, set(),),
     )
 
@@ -455,6 +473,8 @@ async def resources(ctx, session):
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],
         ctx.parent.parent.params["chrome"],
+        ctx.parent.parent.params["tags"],
+        ctx.parent.parent.params["ignored_tags"],
         session,
     )
 
@@ -502,6 +522,8 @@ async def institutions(ctx, session):
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],
         ctx.parent.parent.params["chrome"],
+        ctx.parent.parent.params["tags"],
+        ctx.parent.parent.params["ignored_tags"],
         session,
     )
 
@@ -514,11 +536,21 @@ async def launch_curation(
     navigator,
     informant,
     chrome,
+    tags,
+    ignored_tags,
     session,
 ):
+    if not os.path.exists(tags):
+        click.confirm(
+            f"{tags} does not exist yet. Do you want to start with a new cross-session tags store?",
+            abort=True,
+        )
+
     async with PyppeteerLauncher(chrome) as launcher:
         Controller = {
-            "terminal": TerminalController,
+            "terminal": partial(
+                TerminalController, control_tags=(informant != "chrome")
+            ),
             "chrome": launcher.warp(
                 partial(
                     PyppeteerController,
@@ -531,10 +563,15 @@ async def launch_curation(
             "chrome": launcher.warp(ChromeNavigator),
         }[navigator]
         Informant = {
-            "terminal": TerminalFormatter,
+            "terminal": partial(
+                TerminalFormatter,
+                ignored_tags=ignored_tags,
+                control_tags=(controller != "terminal"),
+            ),
             "chrome": launcher.warp(
                 partial(
                     PyppeteerFormatter,
+                    ignored_tags=ignored_tags,
                     url_regex=(None if navigator == "chrome" else r"^.*$"),
                 )
             ),
