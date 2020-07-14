@@ -55,10 +55,6 @@ class PyppeteerFormatter(CurationFormatter):
         self.description = description
         self.entity_index = "({} / {})".format(position + 1, total)
         self.issues = self.buffer
-        self.tags_mapping = {
-            f"[{i+1}]": identifier
-            for i, (identifier, title, content, level) in enumerate(self.issues)
-        }
 
         self.buffer = []
 
@@ -91,6 +87,19 @@ class PyppeteerFormatter(CurationFormatter):
                     "tags.js", "iaso-informant-tags-script",
                 )
 
+                issues = []
+
+                self.tags_mapping.clear()
+
+                for i, (identifier, title, content, level) in enumerate(self.issues):
+                    tags = self.tag_store.get_tags_for_identifier(identifier)
+
+                    if any(tag in self.ignored_tags for tag in tags):
+                        continue
+
+                    issues.append((title, content, level, tags))
+                    self.tags_mapping[f"[{i+1}]"] = identifier
+
                 await coordinator.evaluate(
                     "informant.js",
                     self.url_regex.match(self.page.url) is not None,
@@ -99,17 +108,7 @@ class PyppeteerFormatter(CurationFormatter):
                     self.title_text,
                     self.description,
                     self.entity_index,
-                    [
-                        (
-                            title,
-                            content,
-                            level,
-                            self.tag_store.get_tags_for_identifier(identifier)
-                            if self.tag_store is not None
-                            else [],
-                        )
-                        for identifier, title, content, level in self.issues
-                    ],
+                    issues,
                     self.ignored_tags,
                 )
 

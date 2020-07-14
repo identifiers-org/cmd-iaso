@@ -99,15 +99,16 @@ class TerminalFormatter(CurationFormatter):
         self.tags_mapping.clear()
 
         for i, (identifier, title, content, level) in enumerate(self.buffer):
-            output.append(f"- [{i+1}] {click.style(title, underline=True)}: ")
-
             tags = self.tag_store.get_tags_for_identifier(identifier)
+
+            if any(tag in self.ignored_tags for tag in tags):
+                continue
+
+            output.append(f"- [{i+1}] {click.style(title, underline=True)}: ")
 
             self.tags_mapping[f"[{i+1}]"] = identifier
 
             analysed_tags = [(tag, tag in self.ignored_tags) for tag in tags]
-
-            print(tags, analysed_tags, self.ignored_tags)
 
             if isinstance(content, str):
                 output.append(format_json(content, indent=1))
