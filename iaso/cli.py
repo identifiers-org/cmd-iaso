@@ -16,7 +16,7 @@ import click
 import click_completion.core
 
 
-def custom_startswith(string, incomplete):
+def completion_startswith(string, incomplete):
     """A custom completion matching that supports case insensitive matching"""
     if os.environ.get("_CMD_IASO_CASE_INSENSITIVE_COMPLETE"):
         string = string.lower()
@@ -24,7 +24,7 @@ def custom_startswith(string, incomplete):
     return string.startswith(incomplete)
 
 
-click_completion.core.startswith = custom_startswith
+click_completion.core.startswith = completion_startswith
 click_completion.init()
 
 from .click.mutex import ValidateMutex, MutexOption
@@ -185,14 +185,15 @@ def cli(ctx):
     load_registered_validators(ctx)
 
 
-install_help = """Shell completion for cmd-iaso.
-Available shell types:
+install_help = """
+Shell completion commands for cmd-iaso.
+The following shell types are available:
 
 \b
   %s
 
 \b
-Default type: auto
+By default, the current shell is determined automatically.
 """ % "\n  ".join(
     "{:<12} {}".format(k, click_completion.core.shells[k])
     for k in sorted(click_completion.core.shells.keys())
@@ -200,6 +201,7 @@ Default type: auto
 
 
 @cli.group(help=install_help)
+@wrap_docker(exit=False)
 def completion():
     pass
 
@@ -213,8 +215,13 @@ def completion():
     required=False,
     type=click_completion.DocumentedChoice(click_completion.core.shells),
 )
+@wrap_docker()
 def show(shell, case_insensitive):
-    """Show the cmd-iaso shell completion code"""
+    """
+    Shows the code to enable shell completion for cmd-iaso in the selected shell.
+
+    -i enables case insensitive completion.
+    """
     extra_env = (
         {"_CMD_IASO_CASE_INSENSITIVE_COMPLETE": "ON"} if case_insensitive else {}
     )
@@ -236,8 +243,17 @@ def show(shell, case_insensitive):
 @click.argument(
     "path", required=False, type=click.Path(exists=False, writable=True, dir_okay=False)
 )
+@wrap_docker()
 def install(append, case_insensitive, shell, path):
-    """Install the cmd-iaso shell completion"""
+    """
+    Installs shell completion for cmd-iaso in the selected SHELL at PATH.
+
+    \b
+    --append appends the completion code to the file at PATH.
+    --overwrite overwrites the file at PATH with just the completion code.
+
+    -i enables case insensitive completion.
+    """
     extra_env = (
         {"_CMD_IASO_CASE_INSENSITIVE_COMPLETE": "ON"} if case_insensitive else {}
     )
@@ -350,6 +366,15 @@ def curate(ctx, controller, navigator, informant, tags, ignored_tags, chrome=Non
     \b
     You can launch a new Chrome browser using:
     > chrome --remote-debugging-port=PORT
+
+    --tags TAGS changes the path where the cross-session tags will be stored.
+    By default, tags.gz will be used.
+
+    --ignore TAG / -i TAG can be used to explicitly set the tags which will be
+    ignored during the this run of cmd-iaso (more specifically, any suggested curation
+    entry with this tag will not be shown). Note that this selection can be changed
+    at any time while the interactive curation process is running.
+    By default, 'fixed' and 'ignore' will be ignored.
     
     You can list the registered (not yet validated) validator modules using --list-validators.
     
@@ -366,6 +391,9 @@ def curate(ctx, controller, navigator, informant, tags, ignored_tags, chrome=Non
 @click.pass_context
 @wrap_docker(exit=False)
 def start(ctx):
+    """
+    Subcommand to start a new interactive curation process session.
+    """
     pass
 
 
@@ -448,7 +476,7 @@ async def resources(
     --session SESSION stores the session information at the SESSION path.
     If this option is not provided, resources_session.gz will be used by default.
     To disable storing the new session altogther, use:
-    > cmd-iaso curate [...] resources [...] --discard-session [...]
+    > cmd-iaso curate [...] start resources [...] --discard-session [...]
     
     \b
     For more information on the interactive curation process, use:
@@ -523,7 +551,7 @@ async def institutions(
     --session SESSION stores the session information at the SESSION path.
     If this option is not provided, institutions_session.gz will be used by default.
     To disable storing the new session altogther, use:
-    > cmd-iaso curate [...] institutions [...] --discard-session [...]
+    > cmd-iaso curate [...] start institutions [...] --discard-session [...]
     
     \b
     For more information on the interactive curation process, use:
@@ -558,6 +586,9 @@ async def institutions(
 @click.pass_context
 @wrap_docker(exit=False)
 def resume(ctx):
+    """
+    Subcommand to resume an existing curation session for the interactive curation process.
+    """
     pass
 
 
@@ -573,7 +604,8 @@ def resume(ctx):
 @coroutine
 async def resources(ctx, session):
     """
-    Resumes an existing curation session for the interactive curation process.
+    Resumes an existing curation session for the interactive curation process
+    of resource providers.
     Reads the session information the SESSION file path.
     
     \b
@@ -624,7 +656,8 @@ async def resources(ctx, session):
 @coroutine
 async def institutions(ctx, session):
     """
-    Resumes an existing curation session for the interactive curation process.
+    Resumes an existing curation session for the interactive curation process
+    of institutions.
     Reads the session information the SESSION file path.
     
     \b

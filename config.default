@@ -1,30 +1,8 @@
 # Default configuration
 
 
-# --- Scrape ---
-CMD_IASO_SCRAPE_PROXY=launch
-CMD_IASO_SCRAPE_WORKERS=32
-CMD_IASO_SCRAPE_TIMEOUT=30
-
-
-# --- Curate ---
-CMD_IASO_CURATE_CHROME=launch
-CMD_IASO_CURATE_CONTROLLER=terminal
-CMD_IASO_CURATE_NAVIGATOR=chrome
-CMD_IASO_CURATE_INFORMANT=terminal
-
-# --- Curate Resources
-CMD_IASO_CURATE_RESOURCES_VALIDATORS='dns-error invalid-response http-status-error'
-CMD_IASO_CURATE_RESOURCES_VALID_LUIS_THRESHOLD=0
-CMD_IASO_CURATE_RESOURCES_RANDOM_LUIS_THRESHOLD=100
-# Enable this one if you'd like to discard the session
-#CMD_IASO_CURATE_RESOURCES_DISCARD_SESSION=true
-CMD_IASO_CURATE_RESOURCES_SESSION=resources_session.gz
-
-# --- Curate Institutions
-# Enable this one if you'd like to discard the session
-#CMD_IASO_CURATE_INSTITUTIONS_DISCARD_SESSION=true
-CMD_IASO_CURATE_INSTITUTIONS_SESSION=institutions_session.gz
+# --- Logs2LUIs ---
+CMD_IASO_LOGS2LUIS=https://resolver.api.identifiers.org/
 
 
 # --- Jobs ---
@@ -38,3 +16,31 @@ CMD_IASO_JOBS_PINGS=5
 # --- Proxy3 ---
 CMD_IASO_PROXY3_PORT=8080
 CMD_IASO_PROXY3_TIMEOUT=10
+
+
+# --- Scrape ---
+CMD_IASO_SCRAPE_PROXY=launch
+CMD_IASO_SCRAPE_WORKERS=32
+CMD_IASO_SCRAPE_TIMEOUT=30
+
+
+# --- Curate ---
+CMD_IASO_CURATE_CHROME=launch
+CMD_IASO_CURATE_CONTROLLER=terminal
+CMD_IASO_CURATE_NAVIGATOR=chrome
+CMD_IASO_CURATE_INFORMANT=terminal
+CMD_IASO_CURATE_TAGS=tags.gz
+CMD_IASO_CURATE_IGNORED_TAGS='fixed ignore'
+
+# --- Curate Start Resources
+CMD_IASO_CURATE_START_RESOURCES_VALIDATORS='dns-error invalid-response http-status-error'
+CMD_IASO_CURATE_START_RESOURCES_VALID_LUIS_THRESHOLD=0
+CMD_IASO_CURATE_START_RESOURCES_RANDOM_LUIS_THRESHOLD=100
+# Enable this one if you'd like to discard the session
+#CMD_IASO_CURATE_START_RESOURCES_DISCARD_SESSION=true
+CMD_IASO_CURATE_START_RESOURCES_SESSION=resources_session.gz
+
+# --- Curate Start Institutions
+# Enable this one if you'd like to discard the session
+#CMD_IASO_CURATE_START_INSTITUTIONS_DISCARD_SESSION=true
+CMD_IASO_CURATE_START_INSTITUTIONS_SESSION=institutions_session.gz
