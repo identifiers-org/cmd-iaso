@@ -77,5 +77,9 @@ class CurationFormatter(ABC):
         pass
 
     @abstractmethod
+    def check_if_non_empty_else_reset(self):
+        pass
+
+    @abstractmethod
     async def output(self, url, title, description, position, total):
         pass

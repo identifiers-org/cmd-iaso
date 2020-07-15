@@ -6,6 +6,8 @@ from collections import OrderedDict
 
 import click
 
+from jsonschema import validate
+
 from ..utils import format_json
 
 from .generator import CurationDirection
@@ -59,6 +61,18 @@ class TerminalFormatter(CurationFormatter):
     IGNORE = "ignore"
     TAGS = "tags"
 
+    TAGS_SCHEMA = {
+        "type": "array",
+        "items": {"type": "string"},
+        "additionalItems": False,
+    }
+
+    ALL_TAGS_SCHEMA = {
+        "type": "object",
+        "patternProperties": {r"^\[[1-9][0-9]*\]$": TAGS_SCHEMA,},
+        "additionalProperties": False,
+    }
+
     def __init__(self, tag_store, ignored_tags=[], control_tags=True):
         self.tag_store = tag_store
 
@@ -74,6 +88,19 @@ class TerminalFormatter(CurationFormatter):
 
     def format_json(self, identifier, title, content, level):
         self.buffer.append((identifier, title, content, level))
+
+    def check_if_non_empty_else_reset(self):
+        for identifier, title, content, level in self.buffer:
+            tags = self.tag_store.get_tags_for_identifier(identifier)
+
+            if any(tag in self.ignored_tags for tag in tags):
+                continue
+
+            return True
+
+        self.buffer.clear()
+
+        return False
 
     async def output(self, url, title, description, position, total):
         ctx = click.get_current_context()
@@ -186,27 +213,42 @@ class TerminalFormatter(CurationFormatter):
 
             self.prompt_tags_future = None
 
-    async def edit_tags(self, tags):
+    async def edit_tags(self, tags, schema):
         result = click.edit(json.dumps(tags, indent=2), extension=".json")
 
         if result is None:
             return None
 
         try:
-            return json.loads(result)
+            json_result = json.loads(result)
         except json.JSONDecodeError as err:
-            click.echo(click.style(f"Error modifying the tags: {err}", fg="red"))
+            click.echo(
+                click.style(f"Error modifying the tags (invalid JSON): {err}", fg="red")
+            )
 
-        return None
+            return None
 
-    # TODO: should we check a schema here???
+        try:
+            validate(instance=json_result, schema=schema)
+        except Exception as err:
+            click.echo(
+                click.style(
+                    f"Error modifying the tags (does not match expected schema): {err.message} at ROOT{''.join(f'[{repr(attr)}]' for attr in err.absolute_path)}",
+                    fg="red",
+                )
+            )
+
+            return None
+
+        return json_result
 
     async def edit_all_tags(self):
         new_all_tags = await self.edit_tags(
             {
                 k: self.tag_store.get_tags_for_identifier(v)
                 for k, v in self.tags_mapping.items()
-            }
+            },
+            self.ALL_TAGS_SCHEMA,
         )
 
         if new_all_tags is not None:
@@ -217,7 +259,7 @@ class TerminalFormatter(CurationFormatter):
                     self.tag_store.set_tags_for_identifier(identifier, v)
 
     async def edit_ignored_tags(self):
-        new_ignored_tags = await self.edit_tags(self.ignored_tags)
+        new_ignored_tags = await self.edit_tags(self.ignored_tags, self.TAGS_SCHEMA)
 
         if new_ignored_tags is not None:
             self.ignored_tags = new_ignored_tags

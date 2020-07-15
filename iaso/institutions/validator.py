@@ -3,6 +3,7 @@ import json
 from copy import deepcopy
 
 from .differences import INSTITUTION_PROPERTIES, Difference
+from ..curation.tag_store import TagStore
 
 OK_DIFFERENCES = (Difference.KEEP, Difference.SAME)
 URL_PROPERTIES = ["homeUrl", "rorId"]
@@ -73,16 +74,13 @@ class InstitutionsValidator:
 
     @staticmethod
     def identify(iid, string, difference):
-        return json.dumps(
+        return TagStore.serialise_identity(
             {
+                "type": "InstitutionValidator",
                 "iid": iid,
-                "string": string,
-                "difference": {
-                    k: v
-                    for k, v in difference.items()
-                    if k not in ["matches", "occurrences"]
-                },
-            },
-            separators=(",", ":"),
-            sort_keys=True,
+                "name": difference["name"].get("same")
+                or difference["name"].get("new")
+                or difference["name"]["old"],
+                "rorId": difference["rorId"],
+            }
         )

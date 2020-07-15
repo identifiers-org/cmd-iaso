@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
+from ..tag_store import TagStore
 
 
 def strip_scheme(url):
@@ -29,10 +30,22 @@ class SchemeRedirectError(CurationValidator):
         if len(collector) == 0:
             return True
 
-        return SchemeRedirectError(collector.result())
+        return SchemeRedirectError(provider.id, collector.result())
 
-    def __init__(self, redirects):
+    def __init__(self, rid, redirects):
+        self.rid = rid
         self.redirects = redirects
 
     def format(self, formatter):
-        formatter.format_json("Scheme-Only Redirect", self.redirects, 2)
+        formatter.format_json(
+            SchemeRedirectError.identify(self.rid, self.redirects.keys()),
+            "Scheme-Only Redirect",
+            self.redirects,
+            2,
+        )
+
+    @staticmethod
+    def identify(rid, redirects):
+        return TagStore.serialise_identity(
+            {"type": "SchemaRedirectError", "rid": rid, "redirects": sorted(redirects),}
+        )

@@ -78,7 +78,10 @@ async def curate_resources(
 
     click.echo(click.style("Starting the curation process ...", fg="yellow"))
 
-    entry = entries.send(CurationDirection.FORWARD)
+    last_direction = CurationDirection.FORWARD
+    entry = entries.send(last_direction)
+
+    last_index = None
 
     if entry == CurationDirection.FINISH:
         click.echo(
@@ -97,6 +100,31 @@ async def curate_resources(
 
                 for validation in entry.validations:
                     validation.format(informant)
+
+                if (
+                    last_direction != CurationDirection.RELOAD
+                    and not informant.check_if_non_empty_else_reset()
+                ):
+                    if last_index == entry.index:
+                        click.echo(
+                            click.style(
+                                "There are no non-ignored entries that require curation.",
+                                fg="yellow",
+                            )
+                        )
+
+                        break
+
+                    if last_index is None:
+                        last_index = entry.index
+
+                    next(entries)
+
+                    entry = entries.send(last_direction)
+
+                    continue
+
+                last_index = None
 
                 namespace = provider_namespace[entry.entry.id]
                 provider = registry.resources[entry.entry.id]
@@ -117,7 +145,8 @@ async def curate_resources(
 
                 next(entries)
 
-                entry = entries.send(await controller.prompt())
+                last_direction = await controller.prompt()
+                entry = entries.send(last_direction)
 
     click.echo(click.style("Finishing the curation process ...", fg="yellow"))
 
@@ -157,7 +186,10 @@ async def curate_institutions(
 
     click.echo(click.style("Starting the curation process ...", fg="yellow"))
 
-    entry = entries.send(CurationDirection.FORWARD)
+    last_direction = CurationDirection.FORWARD
+    entry = entries.send(last_direction)
+
+    last_index = None
 
     if entry == CurationDirection.FINISH:
         click.echo(
@@ -177,6 +209,31 @@ async def curate_institutions(
                 for validation in entry.validations:
                     validation.format(informant)
 
+                if (
+                    last_direction != CurationDirection.RELOAD
+                    and not informant.check_if_non_empty_else_reset()
+                ):
+                    if last_index == entry.index:
+                        click.echo(
+                            click.style(
+                                "There are no non-ignored entries that require curation.",
+                                fg="yellow",
+                            )
+                        )
+
+                        break
+
+                    if last_index is None:
+                        last_index = entry.index
+
+                    next(entries)
+
+                    entry = entries.send(last_direction)
+
+                    continue
+
+                last_index = None
+
                 navigation_url = "https://registry.identifiers.org/curation"
                 institution = entry.entry[1]["string"]
 
@@ -192,6 +249,7 @@ async def curate_institutions(
 
                 next(entries)
 
-                entry = entries.send(await controller.prompt())
+                last_direction = await controller.prompt()
+                entry = entries.send(last_direction)
 
     click.echo(click.style("Finishing the curation process ...", fg="yellow"))

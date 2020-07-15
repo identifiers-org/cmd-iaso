@@ -10,7 +10,7 @@ class TagStore:
     SCHEMA = {
         "type": "object",
         "patternProperties": {
-            "^.+$": {
+            r"^.+$": {
                 "type": "array",
                 "items": {"type": "string"},
                 "additionalItems": False,
@@ -40,3 +40,7 @@ class TagStore:
     def save(self):
         with gzip.open(self.filepath, "wt") as file:
             json.dump(self.store, file)
+
+    @staticmethod
+    def serialise_identity(json_value):
+        return json.dumps(json_value, separators=(",", ":"), sort_keys=True,)

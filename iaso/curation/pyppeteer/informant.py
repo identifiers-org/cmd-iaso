@@ -44,6 +44,19 @@ class PyppeteerFormatter(CurationFormatter):
     def format_json(self, identifier, title, content, level):
         self.buffer.append((identifier, title, content, level))
 
+    def check_if_non_empty_else_reset(self):
+        for identifier, title, content, level in self.buffer:
+            tags = self.tag_store.get_tags_for_identifier(identifier)
+
+            if any(tag in self.ignored_tags for tag in tags):
+                continue
+
+            return True
+
+        self.buffer.clear()
+
+        return False
+
     async def output(self, url, title, description, position, total):
         if "{$url}" in self.url_regex_pattern:
             self.url_regex = re.compile(
