@@ -1,17 +1,92 @@
 import asyncio
 import json
 import os
+import re
 import socket
 
 from functools import update_wrapper, partial
 from pathlib import Path
 
-import click
-
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=(Path(".") / ".env"))
 
+import click_completion
+import click
+import click_completion.core
+
+
+def custom_startswith(string, incomplete):
+    """A custom completion matching that supports case insensitive matching"""
+    if os.environ.get("_CMD_IASO_CASE_INSENSITIVE_COMPLETE"):
+        string = string.lower()
+        incomplete = incomplete.lower()
+    return string.startswith(incomplete)
+
+
+click_completion.core.startswith = custom_startswith
+click_completion.init()
+
+from .click.mutex import ValidateMutex, MutexOption
+from .click.chrome import ChromeChoice
+from .click.docker import (
+    register_docker,
+    DockerPathExists,
+    wrap_docker,
+    docker_chrome_path,
+)
+
+IMPORT_PATTERN = re.compile(
+    r"from\s+(\.?(?:[a-zA-Z_][a-zA-Z0-9_]*)?(?:\.(?:[a-zA-Z_][a-zA-Z0-9_]*))*)\s+import\s+(?:\(\s*)?((?:(?:[a-zA-Z_][a-zA-Z0-9_]*)(?:\s+as\s+[a-zA-Z_][a-zA-Z0-9_]*)?(?:,\s*)?)+)\s*\)?"
+)
+
+
+def lazy_import(imports):
+    import importlib
+
+    def LazyImportWrapper(path, name, glob):
+        class LazyImport:
+            def __getattribute__(self, attr):
+                module = importlib.import_module(path, package="iaso")
+                helper = getattr(module, name)
+
+                globals()[glob] = helper
+
+                return getattr(helper, attr)
+
+            def __call__(self, *args, **kwargs):
+                module = importlib.import_module(path, package="iaso")
+                helper = getattr(module, name)
+
+                globals()[glob] = helper
+
+                return helper(*args, **kwargs)
+
+        return LazyImport()
+
+    globs = globals()
+
+    for match in IMPORT_PATTERN.finditer(imports):
+        import_path = match.group(1)
+
+        imports = match.group(2).split(",")
+
+        for r_import in imports:
+            r_import = r_import.strip()
+
+            if len(r_import) == 0:
+                continue
+
+            import_split = re.split(r"\sas\s", r_import)
+
+            import_name = import_split[0].strip()
+            import_as = import_split[len(import_split) - 1].strip()
+
+            globs[import_as] = LazyImportWrapper(import_path, import_name, import_as)
+
+
+lazy_import(
+    """
 from . import curation
 
 from .curation.resources_session import ResourcesCurationSession
@@ -30,26 +105,18 @@ from .curation.pyppeteer.resource_navigator import PyppeteerResourceNavigator
 from .curation.pyppeteer.institution_navigator import PyppeteerInstitutionNavigator
 from .curation.pyppeteer.informant import PyppeteerFormatter
 
+from .click.validators import (
+    load_registered_validators,
+    validate_validators,
+    list_validators,
+)
+
 from .scraping.http.proxy3 import serve as serve_proxy
 from .scraping import scrape_resources
 
 from .dump2datamine import generate_datamine_from_dump
 
 from .valid_luis import validate_resolution_endpoint, collect_namespace_ids_from_logs
-
-from .click.validators import (
-    load_registered_validators,
-    validate_validators,
-    list_validators,
-)
-from .click.mutex import ValidateMutex, MutexOption
-from .click.chrome import ChromeChoice
-from .click.docker import (
-    register_docker,
-    DockerPathExists,
-    wrap_docker,
-    docker_chrome_path,
-)
 
 from .utils import format_json
 from .environment import collect_environment_description
@@ -61,6 +128,8 @@ from .scraping.jobs.generate import generate_scraping_jobs
 
 from .institutions import deduplicate_registry_institutions
 from .institutions.academine import Academine
+"""
+)
 
 
 def coroutine(f):
@@ -90,7 +159,7 @@ def get_version():
     try:
         from importlib import metadata
 
-        return metadata.version
+        return metadata.version("cmd-iaso")
     except ImportError:
         # Running on pre-3.8 Python
         import pkg_resources
@@ -114,6 +183,68 @@ def cli(ctx):
     ctx.ensure_object(dict)
 
     load_registered_validators(ctx)
+
+
+install_help = """Shell completion for cmd-iaso.
+Available shell types:
+
+\b
+  %s
+
+\b
+Default type: auto
+""" % "\n  ".join(
+    "{:<12} {}".format(k, click_completion.core.shells[k])
+    for k in sorted(click_completion.core.shells.keys())
+)
+
+
+@cli.group(help=install_help)
+def completion():
+    pass
+
+
+@completion.command()
+@click.option(
+    "-i", "--case-insensitive/--no-case-insensitive", help="Case insensitive completion"
+)
+@click.argument(
+    "shell",
+    required=False,
+    type=click_completion.DocumentedChoice(click_completion.core.shells),
+)
+def show(shell, case_insensitive):
+    """Show the cmd-iaso shell completion code"""
+    extra_env = (
+        {"_CMD_IASO_CASE_INSENSITIVE_COMPLETE": "ON"} if case_insensitive else {}
+    )
+    click.echo(click_completion.core.get_code(shell, extra_env=extra_env))
+
+
+@completion.command()
+@click.option(
+    "--append/--overwrite", help="Append the completion code to the file", default=None
+)
+@click.option(
+    "-i", "--case-insensitive/--no-case-insensitive", help="Case insensitive completion"
+)
+@click.argument(
+    "shell",
+    required=False,
+    type=click_completion.DocumentedChoice(click_completion.core.shells),
+)
+@click.argument(
+    "path", required=False, type=click.Path(exists=False, writable=True, dir_okay=False)
+)
+def install(append, case_insensitive, shell, path):
+    """Install the cmd-iaso shell completion"""
+    extra_env = (
+        {"_CMD_IASO_CASE_INSENSITIVE_COMPLETE": "ON"} if case_insensitive else {}
+    )
+    shell, path = click_completion.core.install(
+        shell=shell, path=path, append=append, extra_env=extra_env
+    )
+    click.echo("%s completion installed in %s" % (shell, path))
 
 
 @cli.command()
