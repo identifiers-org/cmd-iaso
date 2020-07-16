@@ -1,4 +1,5 @@
-class IasoTagSelector {
+// Ensure that IasoTagSelector is not redeclared on every re-evaluation
+window.IasoTagSelector = class IasoTagSelector {
   constructor(identifier, tags=[], onupdate=null) {
     this.identifier = identifier;
 

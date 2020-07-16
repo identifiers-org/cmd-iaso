@@ -2,8 +2,9 @@ import pyppeteer
 
 from contextlib import suppress
 
-from .navigator import PyppeteerNavigator
+import click
 
+from .navigator import PyppeteerNavigator
 from .coordinator import PyppeteerCoordinator
 
 
@@ -12,6 +13,15 @@ class PyppeteerInstitutionNavigator(PyppeteerNavigator):
         super().__init__(page)
 
         self.page = page
+
+    async def __aenter__(self):
+        click.echo(
+            click.style("REMEMBER:", fg="yellow")
+            + " You need to be logged in as a curator on "
+            + "identifiers.org to navigate to specific institutions."
+        )
+
+        return self
 
     async def navigate(self, url, institution_name):
         if not (
