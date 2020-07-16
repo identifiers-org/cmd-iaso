@@ -2,7 +2,7 @@ from collections import defaultdict
 from enum import Enum, auto
 from urllib.parse import urlparse
 
-INSTITUTION_PROPERTIES = ["name", "homeUrl", "description", "rorId", "location"]
+INSTITUTION_PROPERTIES = ("name", "homeUrl", "description", "rorId", "location")
 
 
 class Difference(Enum):
@@ -11,6 +11,9 @@ class Difference(Enum):
     KEEP = auto()
     REPLACE = auto()
     SAME = auto()
+
+
+BAD_DIFFERENCES = (Difference.MISSING, Difference.KEEP)
 
 
 def get_and_sanitise_prop(institution, prop):
@@ -101,6 +104,22 @@ def find_institution_differences(registry, academine):
             and institution_differences[0]["description"]["type"] == Difference.REPLACE
         ):
             institution_differences[0]["description"]["type"] = Difference.KEEP
+
+        institution_differences.sort(
+            key=lambda d: (
+                sum(
+                    1
+                    for k, v in d.items()
+                    if k in INSTITUTION_PROPERTIES and v["type"] == Difference.SAME
+                ),
+                sum(
+                    1
+                    for k, v in d.items()
+                    if k in INSTITUTION_PROPERTIES and v["type"] not in BAD_DIFFERENCES
+                ),
+            ),
+            reverse=True,
+        )
 
         institutions_differences.append(
             (

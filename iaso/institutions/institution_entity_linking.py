@@ -59,7 +59,9 @@ async def query_institution_entity_details(client, institution_entities):
                 lambda location: {
                     "countryCode": location,
                     "countryName": countries.get(alpha_2=location).name,
-                },
+                }
+                if countries.get(alpha_2=location) is not None
+                else None,
             ),
         }
 

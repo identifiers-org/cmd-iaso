@@ -48,7 +48,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
                     progress,
                     extracted_institution_entities,
                 )
-                for iid, institution in list(registry.institution.items())
+                for iid, institution in registry.institution.items()
             ]
         )
 

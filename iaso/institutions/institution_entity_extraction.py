@@ -1,15 +1,10 @@
 import asyncio
-import re
 
 from collections import Counter, defaultdict
 from enum import Enum, auto
 
-import httpx
-
-from .named_entity_recognition import extract_named_entities
+from .named_entity_recognition import extract_named_entities, WORD_PATTERN
 from .wikidataclient import RANKING_LIMIT
-
-WORD_PATTERN = re.compile(r"\W+")
 
 
 class Entity(Enum):
@@ -19,40 +14,59 @@ class Entity(Enum):
 
 
 async def greedily_extract_institution_entities(client, institution_string):
-    named_entity_monograms, named_entity_bigrams = extract_named_entities(
-        institution_string
-    )
+    named_entity_nodes = extract_named_entities(institution_string)
 
-    named_entities = named_entity_monograms
+    async def query_matching_entities(client, entity, strict, wikidata_entity_matches):
+        response = await client.search(entity, strict=strict)
 
-    async def query_matching_entities(client, entity, wikidata_entity_matches):
-        ranking = defaultdict(int)
+        hits = response["query"]["searchinfo"]["totalhits"]
+        qids = [result["title"] for result in response["query"]["search"]]
 
-        response = await client.search(entity, strict=True)
+        wikidata_entity_matches[entity.lower()] = (hits, qids)
 
-        for r, result in enumerate(response["query"]["search"]):
-            ranking[result["title"]] += r - len(response["query"]["search"]) - 1
-
-        response = await client.search(entity, strict=False)
-
-        for r, result in enumerate(response["query"]["search"]):
-            ranking[result["title"]] += r - len(response["query"]["search"])
-
-        wikidata_entity_matches[entity.lower()] = [
-            qid for qid, score in sorted(ranking.items(), key=lambda e: e[1])
-        ]
-
-    wikidata_entity_matches = dict()
+    wikidata_node_matches = dict()
 
     await asyncio.gather(
         *[
-            query_matching_entities(client, entity, wikidata_entity_matches)
-            for entity in named_entities
+            query_matching_entities(client, text, True, wikidata_node_matches)
+            for text in set(node.text for node in named_entity_nodes)
+        ]
+    )
+
+    queue = [("", node) for node in named_entity_nodes]
+
+    queries = []
+
+    wikidata_entity_matches = dict()
+
+    while len(queue) > 0:
+        prefix, node = queue.pop(0)
+
+        matched_hits, matched_qids = wikidata_node_matches[node.text.lower()]
+
+        if len(matched_qids) == 0:
+            if len(prefix) == 0:
+                queries.append((node.text, False))
+
+            continue
+
+        if len(prefix) == 0:
+            wikidata_entity_matches[node.text.lower()] = (matched_hits, matched_qids)
+        else:
+            queries.append((f"{prefix} {node.text}", True))
+
+        for successor in node.successors:
+            queue.append((f"{prefix} {node.text}", successor))
+
+    await asyncio.gather(
+        *[
+            query_matching_entities(client, text, strict, wikidata_entity_matches)
+            for text, strict in queries
         ]
     )
 
     restricted_qids = set(
-        qid for qids in wikidata_entity_matches.values() for qid in qids
+        qid for hits, qids in wikidata_entity_matches.values() for qid in qids
     )
 
     wikidata_entities = restricted_qids
@@ -102,9 +116,6 @@ async def greedily_extract_institution_entities(client, institution_string):
         is_territorial_entity = "Q1496967" in superclasses
         is_publication = "Q732577" in superclasses
 
-        # IDEAS:
-        # - can we get more context (department, university, city, state)
-
         if is_organisation and not is_territorial_entity and not is_publication:
             entity_type = Entity.ORGANISATION
         elif is_location:
@@ -115,10 +126,9 @@ async def greedily_extract_institution_entities(client, institution_string):
         if entity_type != Entity.IRRELEVANT:
             entity_types[entity] = entity_type
 
-    wikidata_entity_matches_no_locations = dict()
-    wikidata_entity_only_locations = set()
+    candidate_institutions_with_match_hits = []
 
-    for match, qids in wikidata_entity_matches.items():
+    for match, (hits, qids) in wikidata_entity_matches.items():
         qids = [
             qid
             for qid in qids
@@ -144,117 +154,18 @@ async def greedily_extract_institution_entities(client, institution_string):
 
         qid_ious.sort(key=lambda e: e[1], reverse=True)
 
-        if len(qids) > 0 and entity_types[qid_ious[0][0]] == Entity.LOCATION:
-            wikidata_entity_only_locations.add(match)
-        else:
-            wikidata_entity_matches_no_locations[match] = {
-                qid: i
-                for i, qid in enumerate(qids)
-                if entity_types[qid] == Entity.ORGANISATION
-            }
-
-    async def query_matching_bigram_entities(
-        client, monogram, bigram, concensus_ranking
-    ):
-        ranking = defaultdict(int)
-
-        response = await client.search(f"{monogram} {bigram}", strict=True)
-
-        for r, result in enumerate(response["query"]["search"]):
-            ranking[result["title"]] += r - len(response["query"]["search"]) - 1
-
-        response = await client.search(f"{monogram} {bigram}", strict=False)
-
-        for r, result in enumerate(response["query"]["search"]):
-            ranking[result["title"]] += r - len(response["query"]["search"])
-
-        for qid in wikidata_entity_matches_no_locations[monogram]:
-            concensus_ranking[qid] += ranking.get(qid, 0)
-
-    async def query_matching_monogram_entity(
-        client,
-        monogram,
-        bigrams,
-        wikidata_entity_only_locations,
-        wikidata_entity_monogram_matches,
-    ):
-        monogram = monogram.lower()
-        bigrams = [
-            bigram.lower()
-            for bigram in bigrams
-            if bigram.lower() in wikidata_entity_only_locations
-        ]
-
-        if monogram in wikidata_entity_only_locations:
-            return
-
-        if len(bigrams) > 0:
-            concensus_ranking = defaultdict(int)
-
-            await asyncio.gather(
-                *[
-                    query_matching_bigram_entities(
-                        client, monogram, bigram, concensus_ranking
-                    )
-                    for bigram in bigrams
-                ]
-            )
-
-            ranking = {
-                qid[0]: i
-                for i, qid in enumerate(
-                    sorted(concensus_ranking.items(), key=lambda e: e[1])
+        if len(qids) > 0 and entity_types[qid_ious[0][0]] != Entity.LOCATION:
+            candidate_institutions_with_match_hits.append(
+                (
+                    match,
+                    set(
+                        qid for qid in qids if entity_types[qid] == Entity.ORGANISATION
+                    ),
+                    hits,
                 )
-            }
-        else:
-            ranking = wikidata_entity_matches_no_locations[monogram]
-
-        query = (
-            """SELECT DISTINCT ?institution WHERE {
-          VALUES ?institution { """
-            + " ".join(f"wd:{qid}" for qid in ranking)
-            + """ }
-
-          FILTER EXISTS {
-            ?institution wdt:P31 ?class.
-            ?class wdt:P279* wd:Q43229
-          } # ?institution is an organisation
-        }"""
-        )
-
-        response = await client.query(query)
-
-        institution_entities = set(
-            result["institution"]["value"][31:]
-            for result in response["results"]["bindings"]
-        )
-
-        ranking = {qid: i for qid, i in ranking.items() if qid in institution_entities}
-
-        if len(ranking) > 0:
-            wikidata_entity_monogram_matches[monogram] = next(iter(ranking.items()))
-
-    wikidata_entity_monogram_matches = dict()
-
-    await asyncio.gather(
-        *[
-            query_matching_monogram_entity(
-                client,
-                monogram,
-                bigrams,
-                wikidata_entity_only_locations,
-                wikidata_entity_monogram_matches,
             )
-            for monogram, bigrams in zip(named_entity_monograms, named_entity_bigrams)
-        ]
-    )
 
-    candidate_institutions_with_match_scores = [
-        (search, qid, score)
-        for search, (qid, score) in wikidata_entity_monogram_matches.items()
-    ]
-
-    candidate_institutions_with_match_scores.sort(
+    candidate_institutions_with_match_hits.sort(
         key=lambda e: (-e[2], e[0].count(" "), len(e[0]), e[0]), reverse=True
     )
 
@@ -263,12 +174,13 @@ async def greedily_extract_institution_entities(client, institution_string):
     )
     extracted_institution_entities = defaultdict(set)
 
-    for search, qid, score in candidate_institutions_with_match_scores:
+    for search, qids, hits in candidate_institutions_with_match_hits:
         if search not in consumed_institution_string:
             continue
 
         consumed_institution_string = consumed_institution_string.replace(search, "")
 
-        extracted_institution_entities[qid].add(search)
+        for qid in qids:
+            extracted_institution_entities[qid].add(search)
 
     return extracted_institution_entities

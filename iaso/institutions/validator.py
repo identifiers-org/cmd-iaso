@@ -6,7 +6,7 @@ from .differences import INSTITUTION_PROPERTIES, Difference
 from ..curation.tag_store import TagStore
 
 OK_DIFFERENCES = (Difference.KEEP, Difference.SAME)
-URL_PROPERTIES = ["homeUrl", "rorId"]
+URL_PROPERTIES = ("homeUrl", "rorId")
 
 
 def format_differences(difference, get_namespace_compact_identifier_link):
