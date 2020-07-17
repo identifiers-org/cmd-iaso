@@ -93,13 +93,6 @@ To print the current status of the [identifiers.org](https://identifiers.org/) r
 > cmd-iaso registry
 ```
 
-## Institution Deduplication
-The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out, and some names are concatenations of multiple institutions. The institution deduplication command
-```
-> cmd-iaso dedup4institutions ACADEMINE
-```
-collects all existing institutions from the registry. It then attempts to link them to the mentioned entities. This process deduplicates the entries and disentangles concatenations of institution names. It also tries to fill in information about the institutions like their name, official URL, ROR ID, country and a description. The results of this command are stored in the `ACADEMINE` file.
-
 ## Data scraping
 Before performing curation of the resource providers in the [identifiers.org](https://identifiers.org/) registry, `cmd-iaso` needs to scrape some data. This section will outline how to configure and run the scraping pipeline.
 
@@ -143,6 +136,13 @@ The collected raw data dumps contain mostly raw information about the scraped re
 > cmd-iaso dump2datamine DUMP DATAMINE
 ```
 which will read the data dumps from the `DUMP` folder and save the datamine to the `DATAMINE` file path.
+
+## Institution Deduplication
+The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out, and some names are concatenations of multiple institutions. The institution deduplication command
+```
+> cmd-iaso dedup4institutions ACADEMINE
+```
+collects all existing institutions from the registry. It then attempts to link them to the mentioned entities. This process deduplicates the entries and disentangles concatenations of institution names. It also tries to fill in information about the institutions like their name, official URL, ROR ID, country and a description. The results of this command are stored in the `ACADEMINE` file.
 
 ## Interactive curation
 The primary purpose of `cmd-iaso` is to aide the curator in their curation process. The interactive curation is run either on the datamine file created from the data scraping pipeline using the `cmd-iaso dump2datamine` command or the academine file created from the institution deduplication using the `cmd-iaso dedup4institutions` command.

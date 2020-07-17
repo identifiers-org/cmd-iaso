@@ -49,16 +49,11 @@ class TerminalInformant(CurationInformant):
 
             self.tags_mapping[f"[{i+1}]"] = identifier
 
-            if isinstance(content, str):
-                output.append(format_json(content, indent=1))
-                output.append("\n")
-                output.append(
-                    f"  {click.style('tags', fg='red')}: [{', '.join(click.style(tag, fg=('green' if ignored else 'yellow')) for tag, ignored in tags)}]"
-                )
-            else:
-                print(content)
-                content = dict(tags=tags, **content)
-                output.append(format_json(content, indent=1))
+            output.append(format_json(content, indent=1))
+            output.append("\n" if isinstance(content, str) else " ")
+            output.append(
+                f"{click.style('tagged with', fg='green')} {format_json(tags, indent=1)}"
+            )
 
             output.append("\n")
 
