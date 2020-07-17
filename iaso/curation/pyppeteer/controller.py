@@ -59,10 +59,12 @@ class PyppeteerController(CurationController):
             and console.text[16:] in CurationController.CHOICES
         ):
             if self.prompt_future is not None:
-                tags_formatter = click.get_current_context().obj.get("tags_formatter")
+                terminal_tag_controller = click.get_current_context().obj.get(
+                    "terminal_tag_controller"
+                )
 
-                if tags_formatter is not None:
-                    tags_formatter.cancel_prompt_tags()
+                if terminal_tag_controller is not None:
+                    terminal_tag_controller.cancel_prompt_tags()
 
                 self.prompt_future.set_result(
                     CurationController.CHOICES[console.text[16:]]

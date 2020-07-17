@@ -56,15 +56,23 @@ class CurationNavigator(ABC):
         pass
 
 
-class CurationFormatter(ABC):
+class CurationInformant(ABC):
     @staticmethod
-    async def create(Formatter, *args, **kwargs):
-        fmt = Formatter(*args, **kwargs)
+    async def create(Informant, *args, **kwargs):
+        fmt = Informant(*args, **kwargs)
 
         if isinstance(fmt, CoroutineType):
             fmt = await fmt
 
         return fmt
+
+    def __init__(self, ignored_tags, tag_store):
+        self.tag_store = tag_store
+
+        self.ignored_tags = ignored_tags
+
+        self.buffer = []
+        self.tags_mapping = dict()
 
     async def __aenter__(self):
         return self
@@ -72,13 +80,21 @@ class CurationFormatter(ABC):
     async def __aexit__(self, exc_type, exc_value, traceback):
         pass
 
-    @abstractmethod
     def format_json(self, identifier, title, content, level):
-        pass
+        self.buffer.append((identifier, title, content, level))
 
-    @abstractmethod
     def check_if_non_empty_else_reset(self):
-        pass
+        for identifier, title, content, level in self.buffer:
+            tags = self.tag_store.get_tags_for_identifier(identifier)
+
+            if any(tag in self.ignored_tags for tag in tags):
+                continue
+
+            return True
+
+        self.buffer.clear()
+
+        return False
 
     @abstractmethod
     async def output(self, url, title, description, position, total):

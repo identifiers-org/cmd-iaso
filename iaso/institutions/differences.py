@@ -13,9 +13,6 @@ class Difference(Enum):
     SAME = auto()
 
 
-BAD_DIFFERENCES = (Difference.MISSING, Difference.KEEP)
-
-
 def get_and_sanitise_prop(institution, prop):
     value = getattr(institution, prop)
 
@@ -115,7 +112,8 @@ def find_institution_differences(registry, academine):
                 sum(
                     1
                     for k, v in d.items()
-                    if k in INSTITUTION_PROPERTIES and v["type"] not in BAD_DIFFERENCES
+                    if k in INSTITUTION_PROPERTIES
+                    and v.get("same", v.get("new")) is not None
                 ),
             ),
             reverse=True,

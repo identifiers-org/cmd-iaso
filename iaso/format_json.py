@@ -19,18 +19,7 @@ def format_json(json_vals, has_next=False, indent=0, force_indent=False, nl=Fals
         accumulator.append("  " * indent)
 
     if isinstance(json_vals, dict):
-        if json_vals.get("__rich__", False) is True:
-            accumulator.append(
-                click.style(
-                    json_vals["text"],
-                    **{
-                        k: v
-                        for k, v in json_vals.items()
-                        if k not in ["__rich__", "text"]
-                    }
-                )
-            )
-        elif len(json_vals) == 0:
+        if len(json_vals) == 0:
             accumulator.append("{ }")
         else:
             accumulator.append("{\n")

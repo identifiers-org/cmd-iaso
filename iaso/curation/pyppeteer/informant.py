@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 
@@ -6,31 +5,24 @@ import pyppeteer
 
 from contextlib import suppress
 
-from ..interact import CurationFormatter
+from ..interact import CurationInformant
 from .coordinator import PyppeteerCoordinator
 
 
-class PyppeteerFormatter(CurationFormatter):
-    def __init__(self, page, tag_store, ignored_tags=[], url_regex=None):
-        self.page = page
+class PyppeteerInformant(CurationInformant):
+    def __init__(self, ignored_tags, page, tag_store, url_regex=None):
+        super().__init__(ignored_tags, tag_store)
 
-        self.tag_store = tag_store
+        self.page = page
 
         self.url_regex_pattern = url_regex if url_regex is not None else r"^{$url}.*$"
         self.url_regex = re.compile(self.url_regex_pattern)
-
-        self.lock = asyncio.Lock()
-
-        self.buffer = []
 
         self.title_type = ""
         self.title_text = ""
         self.description = ""
         self.entity_index = ""
         self.issues = []
-        self.tags_mapping = dict()
-
-        self.ignored_tags = ignored_tags
 
     async def __aenter__(self):
         self.page.on("framenavigated", self.onnavigate)
@@ -40,22 +32,6 @@ class PyppeteerFormatter(CurationFormatter):
 
     async def onnavigate(self, frame):
         await self.refresh(False)
-
-    def format_json(self, identifier, title, content, level):
-        self.buffer.append((identifier, title, content, level))
-
-    def check_if_non_empty_else_reset(self):
-        for identifier, title, content, level in self.buffer:
-            tags = self.tag_store.get_tags_for_identifier(identifier)
-
-            if any(tag in self.ignored_tags for tag in tags):
-                continue
-
-            return True
-
-        self.buffer.clear()
-
-        return False
 
     async def output(self, url, title, description, position, total):
         if "{$url}" in self.url_regex_pattern:

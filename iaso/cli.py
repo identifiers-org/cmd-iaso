@@ -87,23 +87,23 @@ def lazy_import(imports):
 
 lazy_import(
     """
-from . import curation
+from .curation.resources import curate_resources
+from .curation.institutions import curate_institutions
 
 from .curation.resources_session import ResourcesCurationSession
 from .curation.institutions_session import InstitutionsCurationSession
 
 from .curation.tag_store import TagStore
 
-from .curation.terminal import (
-    TerminalController,
-    TerminalNavigator,
-    TerminalFormatter,
-)
+from .curation.terminal.controller import TerminalController
+from .curation.terminal.navigator import TerminalNavigator
+from .curation.terminal.informant import TerminalInformant
+
 from .curation.pyppeteer import PyppeteerLauncher
 from .curation.pyppeteer.controller import PyppeteerController
 from .curation.pyppeteer.resource_navigator import PyppeteerResourceNavigator
 from .curation.pyppeteer.institution_navigator import PyppeteerInstitutionNavigator
-from .curation.pyppeteer.informant import PyppeteerFormatter
+from .curation.pyppeteer.informant import PyppeteerInformant
 
 from .click.validators import (
     load_registered_validators,
@@ -118,7 +118,7 @@ from .dump2datamine import generate_datamine_from_dump
 
 from .valid_luis import validate_resolution_endpoint, collect_namespace_ids_from_logs
 
-from .utils import format_json
+from .format_json import format_json
 from .environment import collect_environment_description
 from .registry import Registry
 from .datamine import Datamine
@@ -494,7 +494,7 @@ async def resources(
     )
 
     await launch_curation(
-        curation.curate_resources,
+        curate_resources,
         PyppeteerResourceNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
@@ -569,7 +569,7 @@ async def institutions(
     )
 
     await launch_curation(
-        curation.curate_institutions,
+        curate_institutions,
         PyppeteerInstitutionNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
@@ -631,7 +631,7 @@ async def resources(ctx, session):
         )
 
     await launch_curation(
-        curation.curate_resources,
+        curate_resources,
         PyppeteerResourceNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
@@ -681,7 +681,7 @@ async def institutions(ctx, session):
         )
 
     await launch_curation(
-        curation.curate_institutions,
+        curate_institutions,
         PyppeteerInstitutionNavigator,
         ctx,
         ctx.parent.parent.params["controller"],
@@ -734,14 +734,14 @@ async def launch_curation(
         }[navigator]
         Informant = {
             "terminal": partial(
-                TerminalFormatter,
-                ignored_tags=ignored_tags,
+                TerminalInformant,
+                ignored_tags,
                 control_tags=(controller != "terminal"),
             ),
             "chrome": launcher.warp(
                 partial(
-                    PyppeteerFormatter,
-                    ignored_tags=ignored_tags,
+                    PyppeteerInformant,
+                    ignored_tags,
                     url_regex=(None if navigator == "chrome" else r"^.*$"),
                 )
             ),
