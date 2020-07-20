@@ -14,6 +14,9 @@ def LazyCommandGroup(package, subcommands):
             return subcommands
 
         def get_command(self, ctx, name):
+            if name not in subcommands:
+                return None
+
             return getattr(importlib.import_module(f".{name}", package=package), name)
 
     return LazyCommandGroup

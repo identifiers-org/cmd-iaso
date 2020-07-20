@@ -5,6 +5,7 @@ import click
 from ..click.lazy import lazy_import
 from ..click.mutex import ValidateMutex, MutexOption
 from ..click.docker import wrap_docker, DockerPathExists
+from ..click.registry import ensure_registry
 
 lazy_import(
     globals(),
@@ -68,7 +69,7 @@ def jobs(ctx, jobs, valid, random, pings, valid_namespace_ids):
     with click.open_file(jobs, "w") as file:
         json.dump(
             generate_scraping_jobs(
-                ctx_registry(ctx),
+                ensure_registry(ctx),
                 valid,
                 random,
                 pings,

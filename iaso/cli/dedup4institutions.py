@@ -5,6 +5,7 @@ import click
 from ..click.lazy import lazy_import
 from ..click.docker import wrap_docker
 from ..click.coroutine import coroutine
+from ..click.registry import ensure_registry
 
 lazy_import(
     globals(),
@@ -38,4 +39,4 @@ async def dedup4institutions(ctx, academine):
             abort=True,
         )
 
-    await deduplicate_registry_institutions(ctx_registry(ctx), academine)
+    await deduplicate_registry_institutions(ensure_registry(ctx), academine)
