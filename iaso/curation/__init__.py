@@ -32,7 +32,12 @@ async def curate(
     next(entries)
     entries.send(session.position)
 
-    click.echo(click.style("Starting the curation process ...", fg="yellow"))
+    click.echo(
+        click.style(
+            f"Starting the curation process of {len(curation_data)} entries ...",
+            fg="yellow",
+        )
+    )
 
     last_direction = CurationDirection.FORWARD
     entry = entries.send(last_direction)

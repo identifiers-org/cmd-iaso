@@ -207,12 +207,14 @@ Iff any of the components are set to `chrome`, the curator must also provide the
 
 All of these options have to be provided via the command line or environment variables. Otherwise, the curator will be asked for their value via a prompt:
 ```
-> cmd-iaso curate --controller CONTROLLER --navigator NAVIGATOR --informant INFORMANT [--chrome CHROME] [--tags TAGS] {-i TAG}
+> cmd-iaso curate --controller CONTROLLER --navigator NAVIGATOR --informant INFORMANT [--chrome CHROME] [--tags TAGS] {-i TAG} [--statistics]
 ```
 
 The curation process also allows the curator to tag identified issues. These tags are associated with a fingerprint of that issue and are stored across different curation session. If you want to change the location of this tags storage from its default of `tags.gz`, you can use the `--tags TAGS` option.
 
 The tags are not only a great way to keep notes on recurring or unsolved issues, but they also allow you to hide the issues they tag temporarily. If you want to ignore any issues with a specific tag, you can pass `-i TAG` or `--ignore TAG` for every tag you wish to ignore. By default, the `fixed` and `ignore` tags are ignored. It is important to note that you can change which tags are ignored at any point during curation. You will have to reload an entry, however, for any change in the ignored tags to take effect.
+
+If you want to just get an overview of all the issues identified, you can provide the `--statistics` flag. Instead of launching an interactive curation session, `cmd-iaso` will then only print a statistical summary. Therefore, none of the `--controller`, `--navigator`, `--informant` or `--chrome` options must be provided.
 
 ### Starting a new curation session
 Curation is performed in sessions to enable the curator to pause and save their progress. Furthermore, they can then resume the curation later on. The settings on how the curation is run, e.g. whether in the terminal or the Chrome browser, is session independent. In contrast, the information dump on which the curation is based is fixed per session. Settings which narrow down the set of issues that are reported are also saved with the session. The session also remembers the point at which the curator left off.

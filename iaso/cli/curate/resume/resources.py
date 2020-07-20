@@ -63,6 +63,7 @@ async def resources(ctx, session):
         curate_resources,
         PyppeteerResourceNavigator,
         ctx,
+        ctx.parent.parent.params["statistics"],
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],

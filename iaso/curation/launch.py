@@ -12,6 +12,12 @@ from .pyppeteer import PyppeteerLauncher
 lazy_import(
     globals(),
     """
+from .statistics import (
+    StatisticsController,
+    StatisticsNavigator,
+    StatisticsInformant
+)
+
 from .terminal.controller import TerminalController
 from .terminal.navigator import TerminalNavigator
 from .terminal.informant import TerminalInformant
@@ -26,6 +32,7 @@ async def launch_curation(
     curation_func,
     ChromeNavigator,
     ctx,
+    statistics,
     controller,
     navigator,
     informant,
@@ -45,35 +52,50 @@ async def launch_curation(
         tag_store = TagStore.load_from_file(tags)
 
     async with PyppeteerLauncher(chrome) as launcher:
-        Controller = {
-            "terminal": partial(
-                TerminalController, control_tags=(informant != "chrome")
-            ),
-            "chrome": launcher.warp(
-                partial(
-                    PyppeteerController,
-                    url_regex=(None if navigator == "chrome" else r"^.*$"),
-                )
-            ),
-        }[controller]
-        Navigator = {
-            "terminal": TerminalNavigator,
-            "chrome": launcher.warp(ChromeNavigator),
-        }[navigator]
-        Informant = {
-            "terminal": partial(
-                TerminalInformant,
-                ignored_tags,
-                control_tags=(controller != "terminal"),
-            ),
-            "chrome": launcher.warp(
-                partial(
-                    PyppeteerInformant,
+        Controller = (
+            {
+                "terminal": partial(
+                    TerminalController, control_tags=(informant != "chrome")
+                ),
+                "chrome": launcher.warp(
+                    partial(
+                        PyppeteerController,
+                        url_regex=(None if navigator == "chrome" else r"^.*$"),
+                    )
+                ),
+            }[controller]
+            if not statistics
+            else StatisticsController
+        )
+        Navigator = (
+            {"terminal": TerminalNavigator, "chrome": launcher.warp(ChromeNavigator),}[
+                navigator
+            ]
+            if not statistics
+            else StatisticsNavigator
+        )
+        Informant = (
+            {
+                "terminal": partial(
+                    TerminalInformant,
                     ignored_tags,
-                    url_regex=(None if navigator == "chrome" else r"^.*$"),
-                )
-            ),
-        }[informant]
+                    control_tags=(controller != "terminal"),
+                ),
+                "chrome": launcher.warp(
+                    partial(
+                        PyppeteerInformant,
+                        ignored_tags,
+                        url_regex=(None if navigator == "chrome" else r"^.*$"),
+                    )
+                ),
+            }[informant]
+            if not statistics
+            else partial(StatisticsInformant, ignored_tags)
+        )
+
+        if statistics:
+            session.reset()
+            session.discard()
 
         await curation_func(
             ensure_registry(ctx), Controller, Navigator, Informant, tag_store, session,

@@ -57,6 +57,7 @@ async def institutions(ctx, session):
         curate_institutions,
         PyppeteerInstitutionNavigator,
         ctx,
+        ctx.parent.parent.params["statistics"],
         ctx.parent.parent.params["controller"],
         ctx.parent.parent.params["navigator"],
         ctx.parent.parent.params["informant"],
