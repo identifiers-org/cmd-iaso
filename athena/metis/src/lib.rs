@@ -655,9 +655,9 @@ impl OneShotGeneralisedSuffixTree {
     ) {
         let node = &self.nodes[node_ref];
 
-        // Only run on non-root nodes (root also contains start of separator)
-        if node.depth > 0 {
-            for start in node.generalised_indices[string_indices.primary_index].iter() {
+        for start in node.generalised_indices[string_indices.primary_index].iter() {
+            // Exclude the start of the separator of the primary string
+            if start < index_lengths.len() {
                 index_lengths[start] = usize::max(index_lengths[start], node.depth);
             }
         }

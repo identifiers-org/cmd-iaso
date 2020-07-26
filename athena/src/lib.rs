@@ -161,7 +161,7 @@ impl SharedFragmentTree {
 
     pub fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
         match bincode::serialize(&self.tree) {
-            Ok(ref bytes) => Ok(PyBytes::new(py, &packing::pack(bytes)).to_object(py)),
+            Ok(bytes) => Ok(PyBytes::new(py, &packing::pack(bytes)).to_object(py)),
             Err(e) => Err(PyErr::new::<PicklingError, _>(format!("{}", e))),
         }
     }

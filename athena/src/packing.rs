@@ -1,5 +1,6 @@
-pub fn pack(bytes: &[u8]) -> Vec<u8> {
-    let mut packed = Vec::with_capacity((((bytes.len() as f64) * 1.125f64).ceil() as usize) + 1);
+pub fn pack(bytes: Vec<u8>) -> Vec<u8> {
+    // Assume an ok compression here so we do not excessively overallocate
+    let mut packed = Vec::with_capacity(bytes.len() / 2);
 
     let mut buffer = Vec::with_capacity(8);
 
@@ -31,7 +32,8 @@ pub fn pack(bytes: &[u8]) -> Vec<u8> {
 }
 
 pub fn unpack(bytes: &[u8]) -> Vec<u8> {
-    let mut unpacked = Vec::with_capacity(bytes.len() * 8);
+    // Underallocate so the output only grows as necessary
+    let mut unpacked = Vec::with_capacity(bytes.len());
 
     let mut bytes_iter = bytes.into_iter().peekable();
 
