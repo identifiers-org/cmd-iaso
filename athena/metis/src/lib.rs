@@ -810,6 +810,10 @@ impl OneShotGeneralisedSuffixTree {
     pub fn is_empty(&self) -> bool {
         self.word_starts.is_empty()
     }
+
+    pub fn size(&self) -> usize {
+        self.word.len()
+    }
 }
 
 #[cfg(test)]

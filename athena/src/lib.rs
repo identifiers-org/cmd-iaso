@@ -117,7 +117,7 @@ fn extract_all_shared_fragments_impl(
 }
 
 #[pyclass(module = "athena")]
-struct SharedFragmentTree {
+pub struct SharedFragmentTree {
     tree: OneShotGeneralisedSuffixTree,
 }
 
@@ -139,7 +139,7 @@ impl pyo3::PySequenceProtocol for SharedFragmentTree {
 impl SharedFragmentTree {
     #[new]
     #[args(input = "vec![]")]
-    fn new(input: Vec<Vec<String>>) -> Self {
+    pub fn new(input: Vec<Vec<String>>) -> Self {
         SharedFragmentTree {
             tree: OneShotGeneralisedSuffixTree::new(
                 input
@@ -166,12 +166,16 @@ impl SharedFragmentTree {
         }
     }
 
+    pub fn size(&self) -> usize {
+        self.tree.size()
+    }
+
     #[args(
         fraction = "1.0f64 / 100.0f64",
         combinator = r#""NOISE""#,
         debug = "false"
     )]
-    fn extract_combination_of_all_common_fragments(
+    pub fn extract_combination_of_all_common_fragments(
         &self,
         py: Python,
         fraction: f64,
@@ -214,7 +218,7 @@ impl SharedFragmentTree {
     }
 
     #[args(threshold = "0.1f64", progress = "None", debug = "false")]
-    fn extract_all_shared_fragments_for_all_strings_parallel(
+    pub fn extract_all_shared_fragments_for_all_strings_parallel(
         &self,
         threshold: Option<f64>,
         progress: Option<&PyAny>,
@@ -273,7 +277,7 @@ impl SharedFragmentTree {
     }
 
     #[args(threshold = "0.1f64", progress = "None", debug = "false")]
-    fn extract_all_shared_fragments_for_all_strings_sequential(
+    pub fn extract_all_shared_fragments_for_all_strings_sequential(
         &self,
         py: Python,
         threshold: Option<f64>,
@@ -304,7 +308,7 @@ impl SharedFragmentTree {
     }
 
     #[args(debug = "false")]
-    fn extract_longest_common_non_overlapping_substrings(
+    pub fn extract_longest_common_non_overlapping_substrings(
         &self,
         py: Python,
         all: std::collections::HashSet<usize>,
@@ -336,7 +340,7 @@ impl SharedFragmentTree {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn athena(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn athena(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<SharedFragmentTree>()?;
 
     Ok(())
