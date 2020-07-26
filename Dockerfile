@@ -14,7 +14,9 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y --no-install-recommends gcc && \
     apt-get install -y --no-install-recommends python3-dev && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y \
     python3 setup.py install && \
+    curl https://sh.rustup.rs -sSf | sh -s -- --uninstall \
     apt-get remove -y python3-dev && \
     apt-get remove -y gcc && \
     apt-get -y autoremove
