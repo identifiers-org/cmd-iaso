@@ -15,7 +15,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc && \
     apt-get install -y --no-install-recommends python3-dev && \
     apt-get install -y --no-install-recommends curl && \
-    curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal && \
+    source $HOME/.cargo/env && \
     python3 setup.py install && \
     curl https://sh.rustup.rs -sSf | sh -s -- --uninstall && \
     apt-get remove -y curl && \
