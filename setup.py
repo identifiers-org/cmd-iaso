@@ -112,7 +112,6 @@ setup(
     package_data={"iaso.curation.pyppeteer": ["*.js", "*.css"]},
     install_requires=[
         "aioconsole==0.1.16",
-        "athena",
         "async-generator==1.10",
         "certifi==2020.4.5.1",
         "chardet==3.0.4",
@@ -147,3 +146,8 @@ try:
     import xx_ent_wiki_sm
 except ImportError:
     os.system("python3 -m spacy download xx_ent_wiki_sm")
+
+try:
+    import athena
+except ImportError:
+    os.system("pip install athena/")
