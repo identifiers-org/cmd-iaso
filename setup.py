@@ -91,10 +91,32 @@ import os
 from pathlib import Path
 from setuptools import setup, find_packages
 
+setup_kwargs = dict()
+
+try:
+    from setuptools_rust import Binding, RustExtension
+
+    setup_kwargs.update(
+        rust_extensions=[
+            RustExtension(
+                "athena",
+                path="athena/Cargo.toml",
+                debug=False,
+                binding=Binding.PyO3,
+                optional=True,
+            )
+        ],
+        setup_requires=["setuptools-rust",],
+    )
+except ImportError:
+    print("Please install the setuptools-rust package using:")
+    print("> pip install setuptools-rust")
+    print()
+
 with open(Path() / "VERSION") as file:
     version = file.read().strip()
 
-setup(
+setup_kwargs.update(
     name="cmd-iaso",
     version=version,
     entry_points={
@@ -108,7 +130,7 @@ setup(
             "scheme-only-redirect = iaso.curation.validators.scheme_redirect_error:SchemeRedirectError",
         ],
     },
-    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
+    packages=(find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"])),
     package_data={"iaso.curation.pyppeteer": ["*.js", "*.css"]},
     install_requires=[
         "aioconsole==0.1.16",
@@ -132,10 +154,16 @@ setup(
         "urllib3==1.25.9",
         "xeger==0.3.5",
     ],
+    setup_requires=(
+        ["setuptools >= 40.8.0", "wheel",] + setup_kwargs.get("setup_requires", [])
+    ),
     author="Moritz Langenstein",
     license="MIT License",
     python_requires=">=3.6",
+    zip_safe=False,
 )
+
+setup(**setup_kwargs)
 
 try:
     import en_core_web_sm
@@ -146,8 +174,3 @@ try:
     import xx_ent_wiki_sm
 except ImportError:
     os.system("python3 -m spacy download xx_ent_wiki_sm")
-
-try:
-    from athena import SharedFragmentTree
-except ImportError:
-    os.system("pip install athena/")

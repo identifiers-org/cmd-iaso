@@ -6,6 +6,7 @@ COPY ./VERSION /app/VERSION
 COPY ./setup.py /app/setup.py
 COPY ./iaso /app/iaso
 COPY ./athena /app/athena
+COPY ./metis /app/metis
 
 WORKDIR /app
 
@@ -19,7 +20,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal && \
     source $HOME/.cargo/env && \
-    python3 setup.py install && \
+    pip install . && \
     rustup self uninstall -y && \
     apt-get remove -y curl && \
     apt-get remove -y python3-dev && \

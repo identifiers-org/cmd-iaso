@@ -2,5 +2,5 @@
 name = "iaso"
 
 [build-system]
-requires = ["setuptools >= 40.6.0", "wheel"]
+requires = ["setuptools >= 40.8.0", "wheel", "setuptools-rust"]
 build-backend = "setuptools.build_meta"

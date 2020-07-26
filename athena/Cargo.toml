@@ -9,7 +9,7 @@ name = "athena"
 crate-type = ["cdylib"]
 
 [dependencies]
-metis = { path = "metis" }
+metis = { path = "../metis" }
 bit-set = "0.5.2"
 pyo3 = { version = "0.11.1", features = ["extension-module"] }
 bincode = "1.3.1"

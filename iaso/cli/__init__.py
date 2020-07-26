@@ -48,6 +48,7 @@ def get_version():
             "jobs",
             "proxy3",
             "scrape",
+            "analyse",
             "dump2datamine",
             "dedup4institutions",
             "curate",
