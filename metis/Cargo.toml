@@ -1,0 +1,12 @@
+[package]
+name = "metis"
+version = "0.1.0"
+authors = ["Moritz Langenstein <moritz.langenstein17@imperial.ac.uk>"]
+edition = "2018"
+
+[dependencies]
+vec_map = "0.8.2"
+bit-vec = "0.6.2"
+bit-set = "0.5.2"
+tinyset = "0.4.4"
+serde = "1.0.114"

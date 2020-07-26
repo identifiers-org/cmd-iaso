@@ -1,0 +1,5 @@
+# Cargo.lock should be ignored in libraries
+Cargo.lock
+
+# Exclude the compiled target
+target/
