@@ -9,6 +9,8 @@ COPY ./athena /app/athena
 
 WORKDIR /app
 
+SHELL ["/bin/bash", "-c"]
+
 # Install cmd-iaso
 RUN apt-get update && \
     apt-get -y upgrade && \
