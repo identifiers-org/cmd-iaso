@@ -5,7 +5,7 @@ COPY ./LICENSE /app/LICENSE
 COPY ./VERSION /app/VERSION
 COPY ./setup.py /app/setup.py
 COPY ./iaso /app/iaso
-COPY .athena /app/athena
+COPY ./athena /app/athena
 
 WORKDIR /app
 
