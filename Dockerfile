@@ -20,7 +20,7 @@ RUN apt-get update && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal && \
     source $HOME/.cargo/env && \
     python3 setup.py install && \
-    curl https://sh.rustup.rs -sSf | sh -s -- --uninstall && \
+    rustup self uninstall && \
     apt-get remove -y curl && \
     apt-get remove -y python3-dev && \
     apt-get remove -y gcc && \
