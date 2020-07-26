@@ -148,6 +148,6 @@ except ImportError:
     os.system("python3 -m spacy download xx_ent_wiki_sm")
 
 try:
-    import athena
+    from athena import SharedFragmentTree
 except ImportError:
     os.system("pip install athena/")
