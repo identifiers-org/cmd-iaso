@@ -1,5 +1,3 @@
-#![feature(try_trait)]
-
 use bit_set::BitSet;
 use bit_vec::BitVec;
 use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
@@ -262,9 +260,12 @@ pub struct AllAnySet {
 }
 
 impl AllAnySet {
-    pub fn new(all: BitSet, any: BitSet) -> Result<AllAnySet, std::option::NoneError> {
-        Ok(AllAnySet {
-            primary_index: all.iter().next()?,
+    pub fn new(all: BitSet, any: BitSet) -> Option<AllAnySet> {
+        Some(AllAnySet {
+            primary_index: match all.iter().next() {
+                Some(primary_index) => primary_index,
+                None => return None,
+            },
 
             all,
             any,
@@ -382,9 +383,7 @@ impl fmt::Debug for OneShotGeneralisedSuffixTree {
 }
 
 impl OneShotGeneralisedSuffixTree {
-    pub fn new(
-        input: Vec<WordString>,
-    ) -> Result<OneShotGeneralisedSuffixTree, std::option::NoneError> {
+    pub fn new(input: Vec<WordString>) -> OneShotGeneralisedSuffixTree {
         let mut nodes = Vec::new();
 
         let root_ref = Node::new(&mut nodes, 0, 0, None);
@@ -407,7 +406,7 @@ impl OneShotGeneralisedSuffixTree {
         words.shrink_to_fit();
         let word = WordString::from(words);
 
-        OneShotGeneralisedSuffixTree::build_mc_creight(&mut nodes, &word[..], root_ref)?;
+        OneShotGeneralisedSuffixTree::build_mc_creight(&mut nodes, &word[..], root_ref);
 
         let mut generalised_indices: Vec<VecMap<TinySet>> = Vec::with_capacity(nodes.len());
         generalised_indices.resize_with(nodes.len(), || VecMap::new());
@@ -472,20 +471,16 @@ impl OneShotGeneralisedSuffixTree {
             nodes[node_ref].generalised_indices = generalised_indices;
         }
 
-        Ok(OneShotGeneralisedSuffixTree {
+        OneShotGeneralisedSuffixTree {
             nodes,
             root_ref,
 
             word,
             word_starts,
-        })
+        }
     }
 
-    fn build_mc_creight<'a>(
-        slab: &mut Vec<Node>,
-        /*x*/ word: &'a [String],
-        root: NodeRef,
-    ) -> Result<(), std::option::NoneError> {
+    fn build_mc_creight<'a>(slab: &mut Vec<Node>, /*x*/ word: &'a [String], root: NodeRef) {
         /*
         Builds a Suffix tree using McCreight O(n) algorithm.
 
@@ -507,7 +502,7 @@ impl OneShotGeneralisedSuffixTree {
             while u.depth == d
                 && transition_links[u_ref].contains_key(std::slice::from_ref(&word[d + i]))
             {
-                u_ref = *(transition_links[u_ref].get(std::slice::from_ref(&word[d + i]))?);
+                u_ref = transition_links[u_ref][std::slice::from_ref(&word[d + i])];
                 d += 1;
                 u = &slab[u_ref];
 
@@ -524,7 +519,7 @@ impl OneShotGeneralisedSuffixTree {
                     word,
                     u_ref,
                     d,
-                )?;
+                );
             }
 
             OneShotGeneralisedSuffixTree::create_leaf(
@@ -535,7 +530,7 @@ impl OneShotGeneralisedSuffixTree {
                 i,
                 u_ref,
                 d,
-            )?;
+            );
 
             if suffix_links[u_ref] == std::usize::MAX {
                 // !suffix_links.contains_key(u_ref)
@@ -545,11 +540,10 @@ impl OneShotGeneralisedSuffixTree {
                     &mut suffix_links,
                     word,
                     u_ref,
-                )?;
+                );
             }
 
             u_ref = suffix_links[u_ref];
-            //u = &slab[u_ref];
 
             d = d.saturating_sub(1);
         }
@@ -559,8 +553,6 @@ impl OneShotGeneralisedSuffixTree {
                 node.transition_links.insert(*link);
             }
         }
-
-        Ok(())
     }
 
     fn create_node<'a>(
@@ -570,7 +562,7 @@ impl OneShotGeneralisedSuffixTree {
         /*x*/ word: &'a [String],
         /*u*/ child_ref: NodeRef,
         /*d*/ depth: usize,
-    ) -> Result<NodeRef, std::option::NoneError> {
+    ) -> NodeRef {
         let child = &slab[child_ref];
         let index = child.index;
         let parent_ref = child.parent;
@@ -588,7 +580,7 @@ impl OneShotGeneralisedSuffixTree {
         transition_links[parent_ref]
             .insert(std::slice::from_ref(&word[index + parent.depth]), node_ref);
 
-        Ok(node_ref)
+        node_ref
     }
 
     fn create_leaf<'a>(
@@ -599,14 +591,14 @@ impl OneShotGeneralisedSuffixTree {
         /*i*/ index: usize,
         /*u*/ parent_ref: NodeRef,
         /*d*/ depth: usize,
-    ) -> Result<NodeRef, std::option::NoneError> {
+    ) -> NodeRef {
         let leaf_ref = Node::new(slab, index, word.len() - index, Some(parent_ref));
         transition_links.push(HashMap::new());
         suffix_links.push(std::usize::MAX);
 
         transition_links[parent_ref].insert(std::slice::from_ref(&word[index + depth]), leaf_ref);
 
-        Ok(leaf_ref)
+        leaf_ref
     }
 
     fn compute_slink<'a>(
@@ -615,7 +607,7 @@ impl OneShotGeneralisedSuffixTree {
         suffix_links: &mut Vec<NodeRef>,
         /*x*/ word: &'a [String],
         /*u*/ u_ref: NodeRef,
-    ) -> Result<(), std::option::NoneError> {
+    ) {
         let u = &slab[u_ref];
 
         let depth = u.depth;
@@ -624,8 +616,7 @@ impl OneShotGeneralisedSuffixTree {
         let mut v = &slab[v_ref];
 
         while v.depth < (depth - 1) {
-            v_ref = *(transition_links[v_ref]
-                .get(std::slice::from_ref(&word[u.index + v.depth + 1]))?);
+            v_ref = transition_links[v_ref][std::slice::from_ref(&word[u.index + v.depth + 1])];
             v = &slab[v_ref];
         }
 
@@ -637,12 +628,10 @@ impl OneShotGeneralisedSuffixTree {
                 word,
                 v_ref,
                 depth - 1,
-            )?;
+            );
         }
 
         suffix_links[u_ref] = v_ref;
-
-        Ok(())
     }
 
     fn terminal_symbols_generator() -> Vec<String> {

@@ -92,7 +92,7 @@ fn extract_all_shared_fragments_impl(
         BitSet::from_iter(i..=i),
         BitSet::from_iter((0..i).chain((i + 1)..tree.len())),
     )
-    .unwrap();
+    .unwrap(); // cannot fail as all set will always be {i}
 
     let fragments = if let Some(threshold) = threshold {
         let dist = Uniform::from(0.0f64..1.0f64);
@@ -139,23 +139,15 @@ impl pyo3::PySequenceProtocol for SharedFragmentTree {
 impl SharedFragmentTree {
     #[new]
     #[args(input = "vec![]")]
-    fn new(input: Vec<Vec<String>>) -> PyResult<Self> {
-        Ok(SharedFragmentTree {
-            tree: match OneShotGeneralisedSuffixTree::new(
+    fn new(input: Vec<Vec<String>>) -> Self {
+        SharedFragmentTree {
+            tree: OneShotGeneralisedSuffixTree::new(
                 input
                     .into_iter()
                     .map(|words| WordString::from(words))
                     .collect(),
-            ) {
-                Ok(tree) => tree,
-                Err(e) => {
-                    return Err(PyErr::new::<pyo3::exceptions::AssertionError, _>(format!(
-                        "{:?}",
-                        e
-                    )))
-                }
-            },
-        })
+            ),
+        }
     }
 
     pub fn __setstate__(&mut self, _py: Python, state: &PyBytes) -> PyResult<()> {
@@ -189,10 +181,10 @@ impl SharedFragmentTree {
         py.allow_threads(|| {
             let string_indices =
                 match AllAnySet::new(BitSet::from_iter(0..self.tree.len()), BitSet::new()) {
-                    Ok(string_indices) => string_indices,
-                    Err(_) => {
+                    Some(string_indices) => string_indices,
+                    None => {
                         return Err(PyErr::new::<pyo3::exceptions::ValueError, _>(
-                            "SharedFragmentTree contains no word strings",
+                            "SharedFragmentTree is empty",
                         ))
                     }
                 };
@@ -227,10 +219,11 @@ impl SharedFragmentTree {
         threshold: Option<f64>,
         progress: Option<&PyAny>,
         debug: bool,
-    ) -> PyResult<Vec<Vec<Vec<String>>>> {
+    ) -> Vec<Vec<Vec<String>>> {
         // rayon takes care of internal parallelisation already, no need to release GIL
 
-        // Unsafe Send + Pointer required as compiler cannot prove self.tree will live as long as the thread will run
+        // Unsafe Send + Pointer required as compiler cannot prove self.tree will live as
+        // long as the thread will run
         struct TreePtr(*const OneShotGeneralisedSuffixTree);
         unsafe impl Send for TreePtr {}
 
@@ -274,10 +267,9 @@ impl SharedFragmentTree {
             }
         }
 
-        match thread.join() {
-            Ok(shared_fragments) => Ok(shared_fragments),
-            Err(_) => unimplemented!(),
-        }
+        // The error from the thread cannot be handled gracefully, propagating is encouraged
+        // (see https://doc.rust-lang.org/std/thread/type.Result.html)
+        thread.join().unwrap()
     }
 
     #[args(threshold = "0.1f64", progress = "None", debug = "false")]
@@ -287,7 +279,7 @@ impl SharedFragmentTree {
         threshold: Option<f64>,
         progress: Option<&PyAny>,
         debug: bool,
-    ) -> PyResult<Vec<Vec<Vec<String>>>> {
+    ) -> Vec<Vec<Vec<String>>> {
         let mut shared_fragments: Vec<Vec<Vec<String>>> = Vec::with_capacity(self.tree.len());
 
         (0..self.tree.len()).for_each(|i| {
@@ -308,7 +300,7 @@ impl SharedFragmentTree {
             }
         });
 
-        Ok(shared_fragments)
+        shared_fragments
     }
 
     #[args(debug = "false")]
@@ -324,10 +316,10 @@ impl SharedFragmentTree {
                 BitSet::from_iter(all.into_iter()),
                 BitSet::from_iter(any.into_iter()),
             ) {
-                Ok(string_indices) => string_indices,
-                Err(_) => {
+                Some(string_indices) => string_indices,
+                None => {
                     return Err(PyErr::new::<pyo3::exceptions::ValueError, _>(
-                        "Empty all set",
+                        "all set is empty",
                     ))
                 }
             };

@@ -3,9 +3,9 @@ FROM python:3.7-slim-buster
 # Copy the relevant resources
 COPY ./LICENSE /app/LICENSE
 COPY ./VERSION /app/VERSION
-COPY ./fastentrypoints.py /app/fastentrypoints.py
 COPY ./setup.py /app/setup.py
 COPY ./iaso /app/iaso
+COPY .athena /app/athena
 
 WORKDIR /app
 
