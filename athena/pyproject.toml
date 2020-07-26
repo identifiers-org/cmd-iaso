@@ -1,0 +1,6 @@
+[project]
+name = "athena"
+
+[build-system]
+requires = ["maturin"]
+build-backend = "maturin"
