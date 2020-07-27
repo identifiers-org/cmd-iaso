@@ -18,14 +18,11 @@ jobs:
         toolchain: stable
         components: clippy, rustfmt
     - name: Clippy
-      uses: actions-rs/clippy@master
-      with:
-        args: --manifest-path athena/Cargo.toml --all-features --all-targets --message-format short
+      run: cargo clippy --manifest-path athena/Cargo.toml --all-features --all-targets --message-format short
     - name: rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path athena/Cargo.toml -- --check
+      run: |
+        cargo fmt --manifest-path metis/Cargo.toml -- --check
+        cargo fmt --manifest-path athena/Cargo.toml -- --check
   test-metis:
     runs-on: ubuntu-latest
     steps:
@@ -36,10 +33,7 @@ jobs:
       with:
         toolchain: stable
     - name: Test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path metis/Cargo.toml --all-features
+      run: cargo test --manifest-path metis/Cargo.toml --all-features
   test-athena:
     runs-on: ${{ matrix.platform }}
     strategy:
@@ -48,7 +42,4 @@ jobs:
         platform: [ ubuntu-latest, macos-latest, windows-latest ]
     steps:
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --manifest-path athena/Cargo.toml --release --all-features
+      run: cargo build --manifest-path athena/Cargo.toml --release --all-features
