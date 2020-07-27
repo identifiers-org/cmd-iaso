@@ -20,7 +20,7 @@ jobs:
     - name: Clippy
       uses: actions-rs/clippy@master
       with:
-        args: --manifest-path athena/Cargo.toml --all-features --all-targets
+        args: --manifest-path athena/Cargo.toml --all-features --all-targets --message-format short
     - name: rustfmt
       uses: actions-rs/cargo@v1
       with:
