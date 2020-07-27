@@ -46,6 +46,7 @@ impl fmt::Debug for Node {
 }
 
 impl Node {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(
         slab: &mut Vec<Node>,
         index: usize,

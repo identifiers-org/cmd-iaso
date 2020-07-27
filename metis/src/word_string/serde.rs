@@ -17,6 +17,6 @@ impl<'de> Deserialize<'de> for WordString {
     where
         D: Deserializer<'de>,
     {
-        Vec::<String>::deserialize(deserializer).map(|words| WordString(words))
+        Vec::<String>::deserialize(deserializer).map(WordString)
     }
 }

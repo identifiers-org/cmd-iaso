@@ -26,9 +26,7 @@ impl SharedFragmentTree {
             });
 
             if let Some(progress) = progress {
-                match progress.call0() {
-                    _ => (), // ignore
-                }
+                let _ = progress.call0(); // ignore the result
             }
         });
 

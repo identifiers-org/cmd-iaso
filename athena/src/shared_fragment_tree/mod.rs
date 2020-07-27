@@ -35,7 +35,7 @@ impl SharedFragmentTree {
             tree: OneShotGeneralisedSuffixTree::new(
                 input
                     .into_iter()
-                    .map(|words| WordString::from(words))
+                    .map(WordString::from)
                     .collect(),
             ),
         }

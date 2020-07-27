@@ -2,8 +2,6 @@ use pyo3::import_exception;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
-use bincode;
-
 mod packing;
 
 import_exception!(pickle, PicklingError);

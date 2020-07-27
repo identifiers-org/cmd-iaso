@@ -60,11 +60,11 @@ fn shared_early_stop<D: Distribution<f64>, R: Rng>(
     rng_iter.next().unwrap_or(0.0f64) < p
 }
 
-fn extract_all_shared_fragments_impl(
+fn extract_all_shared_fragments_impl<'a>(
     tree: &OneShotGeneralisedSuffixTree,
     threshold: Option<f64>,
     debug: bool,
-    rng: &mut ThreadRng,
+    rng: &'a mut ThreadRng,
     i: usize,
 ) -> Vec<Vec<String>> {
     let string_indices: AllAnySet = AllAnySet::new(

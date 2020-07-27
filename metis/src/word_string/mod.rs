@@ -3,16 +3,16 @@ use std::ops::Index;
 
 mod serde;
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Hash, Eq, PartialEq, Debug, Default)]
 pub struct WordString(Vec<String>);
 
 impl WordString {
-    pub fn new() -> Self {
-        WordString(vec![])
-    }
-
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
@@ -24,7 +24,7 @@ impl From<Vec<String>> for WordString {
 
 impl From<Vec<&str>> for WordString {
     fn from(vec: Vec<&str>) -> Self {
-        WordString(vec.into_iter().map(|s| String::from(s)).collect())
+        WordString(vec.into_iter().map(String::from).collect())
     }
 }
 

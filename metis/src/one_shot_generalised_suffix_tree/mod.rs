@@ -3,13 +3,15 @@ use std::fmt;
 mod build;
 mod lcnos;
 mod node;
-    mod serde;
+mod serde;
 
 use super::all_any_set::AllAnySet;
 use super::word_string::WordString;
 use build::build;
 use lcnos::extract_longest_common_non_overlapping_substrings;
 use node::{Node, NodeRef};
+
+pub type EarlyStopCallback<'a> = &'a mut dyn FnMut(usize, &mut Vec<(WordString, usize)>) -> bool;
 
 pub struct OneShotGeneralisedSuffixTree {
     nodes: Vec<Node>,
@@ -64,7 +66,7 @@ impl OneShotGeneralisedSuffixTree {
     pub fn extract_longest_common_non_overlapping_substrings(
         &self,
         string_indices: AllAnySet,
-        early_stop: Option<&mut dyn FnMut(usize, &mut Vec<(WordString, usize)>) -> bool>,
+        early_stop: Option<EarlyStopCallback>,
         debug: bool,
     ) -> Vec<(WordString, usize)> {
         // We require the primary index to be a valid input string index
@@ -89,7 +91,7 @@ impl OneShotGeneralisedSuffixTree {
 
         let no_early_stop = &mut OneShotGeneralisedSuffixTree::no_early_stop;
 
-        let early_stop: &mut dyn FnMut(usize, &mut Vec<(WordString, usize)>) -> bool =
+        let early_stop: EarlyStopCallback =
             match early_stop {
                 Some(early_stop) => early_stop,
                 None => no_early_stop,
@@ -100,7 +102,7 @@ impl OneShotGeneralisedSuffixTree {
             offset,
             self.root_ref,
             &self.nodes,
-            &self.word,
+            &self.word[..],
             string_indices,
             early_stop,
             debug,

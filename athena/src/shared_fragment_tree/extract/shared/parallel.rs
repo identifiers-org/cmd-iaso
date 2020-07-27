@@ -37,14 +37,12 @@ impl SharedFragmentTree {
             (0..tree.len())
                 .into_par_iter()
                 .map_init(
-                    || rand::thread_rng(),
+                    rand::thread_rng,
                     |mut rng, i| {
                         let fragments =
                             extract_all_shared_fragments_impl(tree, threshold, debug, &mut rng, i);
 
-                        match send.send(()) {
-                            _ => (), // ignore
-                        }
+                        let _ = send.send(()); // ignore result
 
                         fragments
                     },
@@ -56,9 +54,7 @@ impl SharedFragmentTree {
 
         for _ in recv.into_iter() {
             if let Some(progress) = progress {
-                match progress.call0() {
-                    _ => (), // ignore
-                }
+                let _ = progress.call0(); // ignore result
             }
         }
 

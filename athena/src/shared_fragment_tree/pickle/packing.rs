@@ -35,7 +35,7 @@ pub fn unpack(bytes: &[u8]) -> Vec<u8> {
     // Underallocate so the output only grows as necessary
     let mut unpacked = Vec::with_capacity(bytes.len());
 
-    let mut bytes_iter = bytes.into_iter().peekable();
+    let mut bytes_iter = bytes.iter().peekable();
 
     while let Some(byte) = bytes_iter.next() {
         let mask = *byte;

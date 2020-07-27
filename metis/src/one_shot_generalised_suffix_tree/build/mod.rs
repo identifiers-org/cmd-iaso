@@ -40,7 +40,7 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
     build_mc_creight(&mut nodes, &word[..], root_ref);
 
     let mut generalised_indices: Vec<VecMap<TinySet>> = Vec::with_capacity(nodes.len());
-    generalised_indices.resize_with(nodes.len(), || VecMap::new());
+    generalised_indices.resize_with(nodes.len(), VecMap::new);
 
     if !word_starts.is_empty() {
         // Label the generalised suffix tree nodes
@@ -62,7 +62,7 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
 
                 generalised_indices[node_ref]
                     .entry(start)
-                    .or_insert_with(|| TinySet::new())
+                    .or_insert_with(TinySet::new)
                     .insert(node.index - word_starts[start]);
             } else if push {
                 stack.push((node_ref, false));
@@ -84,7 +84,7 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
                     };
 
                     for (n, indices) in child_indices.iter() {
-                        let union_indices = node_indices.entry(n).or_insert_with(|| TinySet::new());
+                        let union_indices = node_indices.entry(n).or_insert_with(TinySet::new);
 
                         for index in indices.iter() {
                             union_indices.insert(index);

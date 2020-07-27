@@ -42,12 +42,12 @@ impl AllAnySet {
             return None;
         };
 
-        return Some(AllAnySet {
+        Some(AllAnySet {
             all: self.all.clone(),
             any: new_any,
 
             primary_index: self.primary_index,
-        });
+        })
     }
 
     #[inline]

@@ -7,22 +7,22 @@ mod find;
 
 use find::find_longest_common_substring_per_index;
 
-use super::{AllAnySet, Node, NodeRef, WordString};
+use super::{AllAnySet, Node, NodeRef, WordString, EarlyStopCallback};
 
+#[allow(clippy::too_many_arguments)]
 pub fn extract_longest_common_non_overlapping_substrings(
     primary_length: usize,
     offset: usize,
     root_ref: NodeRef,
-    nodes: &Vec<Node>,
-    word: &WordString,
+    nodes: &[Node],
+    word: &[String],
     string_indices: AllAnySet,
-    early_stop: &mut dyn FnMut(usize, &mut Vec<(WordString, usize)>) -> bool,
+    early_stop: EarlyStopCallback,
     debug: bool,
 ) -> Vec<(WordString, usize)> {
     assert_ne!(primary_length, 0);
 
-    let mut index_lengths = Vec::with_capacity(primary_length);
-    index_lengths.resize(primary_length, 0);
+    let mut index_lengths = vec![0; primary_length];
 
     find_longest_common_substring_per_index(nodes, root_ref, string_indices, &mut index_lengths);
 

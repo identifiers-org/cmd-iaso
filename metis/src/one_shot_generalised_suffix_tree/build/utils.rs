@@ -84,7 +84,7 @@ pub fn terminal_symbols_generator() -> Vec<String> {
     (0xE000..=0xF8FF)
         .chain(0xF0000..=0xFFFFD)
         .chain(0x100000..=0x10FFFD)
-        .filter_map(|code| std::char::from_u32(code))
+        .filter_map(std::char::from_u32)
         .map(|c| {
             let mut s = String::with_capacity(1);
             s.push(c);

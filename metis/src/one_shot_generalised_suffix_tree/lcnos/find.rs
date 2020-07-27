@@ -1,10 +1,10 @@
 use super::{AllAnySet, Node, NodeRef};
 
 pub fn find_longest_common_substring_per_index(
-    nodes: &Vec<Node>,
+    nodes: &[Node],
     node_ref: NodeRef,
     string_indices: AllAnySet,
-    index_lengths: &mut Vec<usize>,
+    index_lengths: &mut [usize],
 ) {
     let node = &nodes[node_ref];
 
