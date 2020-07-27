@@ -7,7 +7,7 @@ mod find;
 
 use find::find_longest_common_substring_per_index;
 
-use super::{AllAnySet, Node, NodeRef, WordString, EarlyStopCallback};
+use super::{AllAnySet, EarlyStopCallback, Node, NodeRef, WordString};
 
 #[allow(clippy::too_many_arguments)]
 pub fn extract_longest_common_non_overlapping_substrings(

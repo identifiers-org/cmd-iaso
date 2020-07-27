@@ -36,17 +36,14 @@ impl SharedFragmentTree {
 
             (0..tree.len())
                 .into_par_iter()
-                .map_init(
-                    rand::thread_rng,
-                    |mut rng, i| {
-                        let fragments =
-                            extract_all_shared_fragments_impl(tree, threshold, debug, &mut rng, i);
+                .map_init(rand::thread_rng, |mut rng, i| {
+                    let fragments =
+                        extract_all_shared_fragments_impl(tree, threshold, debug, &mut rng, i);
 
-                        let _ = send.send(()); // ignore result
+                    let _ = send.send(()); // ignore result
 
-                        fragments
-                    },
-                )
+                    fragments
+                })
                 .collect_into_vec(&mut shared_fragments);
 
             shared_fragments

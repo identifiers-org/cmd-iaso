@@ -91,11 +91,10 @@ impl OneShotGeneralisedSuffixTree {
 
         let no_early_stop = &mut OneShotGeneralisedSuffixTree::no_early_stop;
 
-        let early_stop: EarlyStopCallback =
-            match early_stop {
-                Some(early_stop) => early_stop,
-                None => no_early_stop,
-            };
+        let early_stop: EarlyStopCallback = match early_stop {
+            Some(early_stop) => early_stop,
+            None => no_early_stop,
+        };
 
         extract_longest_common_non_overlapping_substrings(
             primary_length,

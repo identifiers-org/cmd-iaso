@@ -33,10 +33,7 @@ impl SharedFragmentTree {
     pub fn new(input: Vec<Vec<String>>) -> Self {
         SharedFragmentTree {
             tree: OneShotGeneralisedSuffixTree::new(
-                input
-                    .into_iter()
-                    .map(WordString::from)
-                    .collect(),
+                input.into_iter().map(WordString::from).collect(),
             ),
         }
     }
