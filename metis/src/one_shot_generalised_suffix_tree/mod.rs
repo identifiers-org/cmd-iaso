@@ -3,7 +3,7 @@ use std::fmt;
 mod build;
 mod lcnos;
 mod node;
-mod serde;
+    mod serde;
 
 use super::all_any_set::AllAnySet;
 use super::word_string::WordString;
