@@ -1,10 +1,15 @@
+import pickle
+
 import click
 
 from ..click.lazy import lazy_import
 from ..click.docker import wrap_docker
 
 lazy_import(
-    globals(), """""",
+    globals(),
+    """
+from tqdm import tqdm
+""",
 )
 
 
@@ -29,8 +34,26 @@ def analyse(ctx):
 
     tree = SharedFragmentTree(strings)
 
+    tree = pickle.loads(pickle.dumps(tree))
+
     click.echo(
-        tree.extract_longest_common_non_overlapping_substrings(
-            {0}, {1, 2, 3}, debug=True
+        tree.extract_longest_common_non_overlapping_fragments(
+            {0}, {1, 2, 3}, debug=False
         )
     )
+
+    click.echo(tree.extract_combination_of_all_common_fragments())
+
+    with tqdm(total=len(tree)) as progress:
+        click.echo(
+            tree.extract_all_shared_fragments_for_all_strings_parallel(
+                progress=progress.update
+            )
+        )
+
+    with tqdm(total=len(tree)) as progress:
+        click.echo(
+            tree.extract_all_shared_fragments_for_all_strings_sequential(
+                progress=progress.update
+            )
+        )

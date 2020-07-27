@@ -1,0 +1,67 @@
+use std::iter::FromIterator;
+use std::ops::Index;
+
+mod serde;
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+pub struct WordString(Vec<String>);
+
+impl WordString {
+    pub fn new() -> Self {
+        WordString(vec![])
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl From<Vec<String>> for WordString {
+    fn from(vec: Vec<String>) -> Self {
+        WordString(vec)
+    }
+}
+
+impl From<Vec<&str>> for WordString {
+    fn from(vec: Vec<&str>) -> Self {
+        WordString(vec.into_iter().map(|s| String::from(s)).collect())
+    }
+}
+
+impl From<&[String]> for WordString {
+    fn from(slice: &[String]) -> Self {
+        WordString(slice.to_vec())
+    }
+}
+
+impl Into<Vec<String>> for WordString {
+    fn into(self) -> Vec<String> {
+        self.0
+    }
+}
+
+impl IntoIterator for WordString {
+    type Item = String;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl FromIterator<String> for WordString {
+    fn from_iter<I: IntoIterator<Item = String>>(iter: I) -> Self {
+        WordString(iter.into_iter().collect())
+    }
+}
+
+impl<R> Index<R> for WordString
+where
+    Vec<String>: Index<R>,
+{
+    type Output = <Vec<String> as Index<R>>::Output;
+
+    fn index(&self, index: R) -> &Self::Output {
+        &self.0[index]
+    }
+}

@@ -22,7 +22,7 @@ with gzip.open("dump.gz", "rb") as file:
     tree = pickle.load(file)
 
 print(
-    tree.extract_longest_common_non_overlapping_substrings({0}, {1, 2, 3}, debug=False)
+    tree.extract_longest_common_non_overlapping_fragments({0}, {1, 2, 3}, debug=False)
 )
 
 print(tree.extract_combination_of_all_common_fragments())
