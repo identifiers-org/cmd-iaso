@@ -16,7 +16,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        components: [ clippy, rustfmt ]
+        components: clippy, rustfmt
     - name: Clippy
       uses: actions-rs/clippy@master
       with:
