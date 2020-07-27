@@ -4,9 +4,9 @@ from athena import SharedFragmentTree
 
 
 def generate_tree():
-    strings = [("a", "b", "c", "d", "e"), ("a", "b", "c"), ("c", "d", "e"), ("b", "c")]
-
-    return SharedFragmentTree(strings)
+    return SharedFragmentTree(
+        [("a", "b", "c", "d", "e"), ("a", "b", "c"), ("c", "d", "e"), ("b", "c")]
+    )
 
 
 class TestAthena:

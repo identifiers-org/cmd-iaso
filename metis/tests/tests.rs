@@ -17,6 +17,9 @@ fn system_test() {
 
     let tree = OneShotGeneralisedSuffixTree::new(strings);
 
+    assert_eq!(tree.len(), 4);
+    assert_eq!(tree.size(), 17);
+
     let string_indices = match AllAnySet::new(BitSet::from_iter(0..1), BitSet::from_iter(1..4)) {
         Some(string_indices) => string_indices,
         None => panic!("All set is empty"),
