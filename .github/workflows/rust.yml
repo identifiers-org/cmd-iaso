@@ -27,7 +27,7 @@ jobs:
         cargo fmt -- --check
         cd ../athena
         cargo fmt -- --check
-  test-metis:
+  test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -36,11 +36,15 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Test
+    - name: Test metis
       run: |
         cd metis
         cargo test --all-features
-  test-athena:
+    - name: Test athena
+      run: |
+        cd athena
+        cargo test --no-default-features
+  build:
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
