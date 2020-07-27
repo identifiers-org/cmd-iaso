@@ -38,6 +38,7 @@ impl SharedFragmentTree {
         }
     }
 
+    #[getter]
     pub fn size(&self) -> usize {
         self.tree.size()
     }
