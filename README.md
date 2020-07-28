@@ -17,7 +17,7 @@ The codebase is formatted using the [black code style](https://github.com/psf/bl
 This overview will delve into the details of `cmd-iaso`, `cmd-iaso-docker.py` and `iaso.plugins` However, we leave it up to the reader to look into the `iaso` codebase themselves should they wish to see some of the implementation details.
 
 ## Installation
-There are three ways to install the functionality of this tool, all of which bring differences in isolation and control. All of these methods start by cloning the git repository using either HTTPS:
+There are four ways to install the functionality of this tool, all of which bring differences in isolation and control. All of these methods start by cloning the git repository using either HTTPS:
 ```
 > git clone https://github.com/identifiers-org/cmd-iaso.git
 ```
@@ -26,12 +26,23 @@ or SSL:
 > git clone git@github.com:identifiers-org/cmd-iaso.git
 ```
 
+### pip installation
+To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can use pip
+```
+> pip install .
+```
+Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
+
+This installation is the most user-friendly as it takes care of any installation dependencies the package has automatically. For more control over this, use the installation based on Python setuptools described below.
+
 ### Python setuptools
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can make direct use of the `setup.py` script:
 ```
 > python3 setup.py install
 ```
 Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
+
+This installation might skip some optional components if their installation dependencies are not already satisfied.
 
 ### Makefile
 If you want to automatically install `cmd-iaso` inside a fresh and isolated virtual environment, you can simply run:
