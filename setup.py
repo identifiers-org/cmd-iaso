@@ -119,6 +119,10 @@ with open(Path() / "VERSION") as file:
 setup_kwargs.update(
     name="cmd-iaso",
     version=version,
+    author="Moritz Langenstein",
+    license="MIT",
+    description="cmd-iaso is a command-line tool to help the curators of the identifiers.org registry.",
+    url="https://github.com/identifiers-org/cmd-iaso",
     entry_points={
         "console_scripts": ["cmd-iaso = iaso.cli:main"],
         "iaso.plugins": [
@@ -157,8 +161,6 @@ setup_kwargs.update(
     setup_requires=(
         ["setuptools >= 40.8.0", "wheel",] + setup_kwargs.get("setup_requires", [])
     ),
-    author="Moritz Langenstein",
-    license="MIT License",
     python_requires=">=3.6",
     zip_safe=False,
 )
