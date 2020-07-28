@@ -84,8 +84,12 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
                 ):
                     continue
 
+                lui = compact_identifier["localId"]
+
                 namespace_ids[compact_identifier["namespace"]].add(
-                    compact_identifier["localId"]
+                    lui[lui.find(":") :]
+                    if compact_identifier["namespaceEmbeddedInLui"]
+                    else lui
                 )
             except Exception as e:
                 print(
