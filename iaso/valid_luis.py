@@ -87,7 +87,7 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
                 lui = compact_identifier["localId"]
 
                 namespace_ids[compact_identifier["namespace"]].add(
-                    lui[lui.find(":") :]
+                    lui[(lui.find(":") + 1) :]
                     if compact_identifier["namespaceEmbeddedInLui"]
                     else lui
                 )
