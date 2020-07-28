@@ -3,6 +3,7 @@ use std::iter::FromIterator;
 use tinyset::SetUsize as TinySet;
 use vec_map::VecMap;
 
+/// A special set of `usize` which contains both an `all` and and `any` part.
 pub struct AllAnySet {
     all: BitSet,
     any: BitSet,
@@ -11,6 +12,8 @@ pub struct AllAnySet {
 }
 
 impl AllAnySet {
+    /// Creates a new AllAnySet with the `all` and `any` part.
+    /// Iff `all.is_empty()` the constructor will return `None`.
     pub fn new(all: BitSet, any: BitSet) -> Option<AllAnySet> {
         Some(AllAnySet {
             primary_index: match all.iter().next() {
@@ -23,6 +26,10 @@ impl AllAnySet {
         })
     }
 
+    /// Returns true if the set is a subset of the set of keys of `other`.
+    /// A subset must contain all the elements in this `AllAnySet`'s `all` set.
+    /// A subset must contain at least on of the elements in this `AllAnySet`'s
+    /// `any` set iff the `any` set is non-empty.
     pub fn subset(&self, other: &VecMap<TinySet>) -> Option<AllAnySet> {
         if !self.all.iter().all(|index| other.contains_key(index)) {
             return None;
@@ -50,6 +57,7 @@ impl AllAnySet {
         })
     }
 
+    /// Returns an element in the `all` set. The element returned is always the same.
     #[inline]
     pub fn primary_index(&self) -> usize {
         self.primary_index

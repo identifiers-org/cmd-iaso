@@ -1,10 +1,7 @@
 use bit_set::BitSet;
 use std::iter::FromIterator;
 
-use metis::{
-    all_any_set::AllAnySet, one_shot_generalised_suffix_tree::OneShotGeneralisedSuffixTree,
-    word_string::WordString,
-};
+use metis::{AllAnySet, OneShotGeneralisedSuffixTree, WordString};
 
 #[test]
 fn system_test() {

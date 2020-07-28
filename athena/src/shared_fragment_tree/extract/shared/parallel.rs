@@ -2,12 +2,31 @@ use pyo3::prelude::*;
 
 use rayon::prelude::*;
 
-use metis::one_shot_generalised_suffix_tree::OneShotGeneralisedSuffixTree;
+use metis::OneShotGeneralisedSuffixTree;
 
 use super::{extract_all_shared_fragments_impl, SharedFragmentTree};
 
 #[pymethods]
 impl SharedFragmentTree {
+    /// For each string in the tree, it extracts all text fragments shared
+    /// with at least one other fragment in the tree.
+    ///
+    /// This method is parallelised internally by using the `rayon` crate.
+    /// It can, therefore, not be parallelised externally.
+    ///
+    /// `threshold` optionally specifies the percentage threshold between
+    /// a string containing too few or enough unique (non-shared) words.
+    /// Iff it set the extraction might stop early if it can prove that
+    /// it has already been decised which side of the threshold the string
+    /// will land on. Iff omitted, early stopping will be disabled.
+    ///
+    /// `progress` optionally specifies a reference to a Python callable
+    /// which expects  no arguments. It will be called after all shared
+    /// fragments for a string have been extracted.
+    ///
+    /// Iff `debug` is `true`, the state of extraction will be printed after
+    /// each iteration.
+    #[text_signature = "($self, /, threshold=0.1, progress=None, debug=False)"]
     #[args(threshold = "0.1f64", progress = "None", debug = "false")]
     pub fn extract_all_shared_fragments_for_all_strings_parallel(
         &self,

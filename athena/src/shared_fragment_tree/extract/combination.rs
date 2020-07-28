@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-use metis::{all_any_set::AllAnySet, word_string::WordString};
+use metis::{AllAnySet, WordString};
 
 use bit_set::BitSet;
 use std::iter::FromIterator;
@@ -26,6 +26,19 @@ fn common_early_stop(fraction: f64, fragments: &mut Vec<(WordString, usize)>) ->
 
 #[pymethods]
 impl SharedFragmentTree {
+    /// Extracts all common text fragments in the tree. They are then joined
+    /// by the `combinator` word.
+    ///
+    /// This method can be executed on multiple threads in parallel as it
+    /// releases the Python GIL `py`.
+    ///
+    /// `fraction` specifies the length of fragments at which the
+    /// extraction should stop early (relative to the length of the longest
+    /// extracted fragment).
+    ///
+    /// Iff `debug` is `true`, the state of extraction will be printed after
+    /// each iteration.
+    #[text_signature = "($self, /, fraction=0.01, combinator=\"NOISE\", debug=False)"]
     #[args(
         fraction = "1.0f64 / 100.0f64",
         combinator = r#""NOISE""#,

@@ -1,7 +1,4 @@
-use metis::{
-    all_any_set::AllAnySet, one_shot_generalised_suffix_tree::OneShotGeneralisedSuffixTree,
-    word_string::WordString,
-};
+use metis::{AllAnySet, OneShotGeneralisedSuffixTree, WordString};
 
 use bit_set::BitSet;
 use rand::{

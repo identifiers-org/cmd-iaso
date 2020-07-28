@@ -11,8 +11,13 @@ use build::build;
 use lcnos::extract_longest_common_non_overlapping_substrings;
 use node::{Node, NodeRef};
 
+/// An alias for the type signature of the `early_stop` callback for the
+/// `extract_longest_common_non_overlapping_substrings` method of the
+/// `OneShotGeneralisedSuffixTree`.
 pub type EarlyStopCallback<'a> = &'a mut dyn FnMut(usize, &mut Vec<(WordString, usize)>) -> bool;
 
+/// A Generalised Suffix Tree which computes all longest common non-overlapping
+/// substrings in one go.
 pub struct OneShotGeneralisedSuffixTree {
     nodes: Vec<Node>,
     root_ref: NodeRef,
@@ -35,6 +40,8 @@ impl fmt::Debug for OneShotGeneralisedSuffixTree {
 }
 
 impl OneShotGeneralisedSuffixTree {
+    /// Creates a new `OneShotGeneralisedSuffixTree` with the ordered sequence of
+    /// `WordString`s in `input`.
     pub fn new(input: Vec<WordString>) -> OneShotGeneralisedSuffixTree {
         let (nodes, root_ref, word, word_starts) = build(input);
 
@@ -47,14 +54,17 @@ impl OneShotGeneralisedSuffixTree {
         }
     }
 
+    /// Returns the number of `WordString`s stored in the tree.
     pub fn len(&self) -> usize {
         self.word_starts.len()
     }
 
+    /// Returns `true` iff the tree contains no `WordString`s.
     pub fn is_empty(&self) -> bool {
         self.word_starts.is_empty()
     }
 
+    /// Returns the total number of words stored internally in the tree.
     pub fn size(&self) -> usize {
         self.word.len()
     }
@@ -63,6 +73,18 @@ impl OneShotGeneralisedSuffixTree {
         false
     }
 
+    /// Extracts all common non-overlapping substrings of the input `WordString`s
+    /// in one go. The output will be ordered decreasingly by substring length.
+    /// For each substring, it will also report its start index in
+    /// `input[string_indices.primary_index()]`.
+    ///
+    /// `string_indices` specifies the `AllAnySet` which selects which of the input
+    /// `WordString`s to consider for common substring extraction.
+    ///
+    /// `early_stop` is an optional callback which can be used to terminate the algorithm
+    /// early on iff it returns `true`. It is called after each extracted fragment.
+    ///
+    /// Iff `debug` is `true`, the state of extraction will be printed after each iteration.
     pub fn extract_longest_common_non_overlapping_substrings(
         &self,
         string_indices: AllAnySet,

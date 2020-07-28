@@ -3,14 +3,17 @@ use std::ops::Index;
 
 mod serde;
 
+/// A contiguous immutable array type which stores a string of words `[String]`.
 #[derive(Hash, Eq, PartialEq, Debug, Default)]
 pub struct WordString(Vec<String>);
 
 impl WordString {
+    /// Returns the number of words in the `WordString`, also referred to as its 'length'.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Returns `true` iff the `WordString` contains no words.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

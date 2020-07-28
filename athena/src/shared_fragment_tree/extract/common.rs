@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-use metis::all_any_set::AllAnySet;
+use metis::AllAnySet;
 
 use bit_set::BitSet;
 use std::iter::FromIterator;
@@ -9,6 +9,25 @@ use super::SharedFragmentTree;
 
 #[pymethods]
 impl SharedFragmentTree {
+    /// Extracts all common text fragments in the tree. The output will be
+    /// ordered decreasingly by substring length. For each substring, it will
+    /// also report its start index the `input` string at the first index in
+    /// `all`.
+    ///
+    /// This method can be executed on multiple threads in parallel as it
+    /// releases the Python GIL `py`.
+    ///
+    /// `all` specifies the set of indices of strings from `input` from which
+    /// all must contain the fragment. The method will return an error iff `all`
+    /// is empty.
+    ///
+    /// `any` specifies the set of indices of strings from `input` from which
+    /// at least one must contain the fragment. If `any` is empty, it will be
+    /// ignored and have no effect.
+    ///
+    /// Iff `debug` is `true`, the state of extraction will be printed after each
+    /// iteration.
+    #[text_signature = "($self, all, any, /, debug=False)"]
     #[args(debug = "false")]
     pub fn extract_longest_common_non_overlapping_fragments(
         &self,

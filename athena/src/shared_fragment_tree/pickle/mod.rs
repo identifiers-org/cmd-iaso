@@ -11,6 +11,9 @@ use super::SharedFragmentTree;
 
 #[pymethods]
 impl SharedFragmentTree {
+    /// Builtin function for deserialising the suffix tree from Python bytes
+    /// which is used in `pickle.load()`
+    #[text_signature = "($self, state, /)"]
     pub fn __setstate__(&mut self, _py: Python, state: &PyBytes) -> PyResult<()> {
         self.tree = match bincode::deserialize(&packing::unpack(state.as_bytes())) {
             Ok(tree) => tree,
@@ -20,6 +23,9 @@ impl SharedFragmentTree {
         Ok(())
     }
 
+    /// Builtin function for serialising the suffix tree into Python bytes
+    /// which is used in `pickle.dump()`
+    #[text_signature = "($self)"]
     pub fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
         match bincode::serialize(&self.tree) {
             Ok(bytes) => Ok(PyBytes::new(py, &packing::pack(bytes)).to_object(py)),
