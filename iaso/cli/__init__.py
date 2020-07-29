@@ -1,12 +1,17 @@
+import os
+
 from pathlib import Path
+
+import click
+import click_completion
+import click_completion.core
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=(Path(".") / ".env"))
+from ..click.docker import register_docker
+from ..click.lazy import LazyCommandGroup
 
-import click_completion
-import click
-import click_completion.core
+load_dotenv(dotenv_path=(Path(".") / ".env"))
 
 
 def completion_startswith(string, incomplete):
@@ -19,10 +24,6 @@ def completion_startswith(string, incomplete):
 
 click_completion.core.startswith = completion_startswith
 click_completion.init()
-
-
-from ..click.lazy import LazyCommandGroup
-from ..click.docker import register_docker
 
 
 def get_version():

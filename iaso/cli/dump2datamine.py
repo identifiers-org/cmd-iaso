@@ -2,8 +2,8 @@ import os
 
 import click
 
+from ..click.docker import DockerPathExists, wrap_docker
 from ..click.lazy import lazy_import
-from ..click.docker import wrap_docker, DockerPathExists
 
 lazy_import(
     globals(),

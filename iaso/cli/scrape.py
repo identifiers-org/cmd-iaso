@@ -1,21 +1,22 @@
+import json
 import socket
 
 from pathlib import Path
 
 import click
 
-from ..click.lazy import lazy_import
-from ..click.docker import wrap_docker, DockerPathExists, docker_chrome_path
-from ..click.coroutine import coroutine
 from ..click.chrome import ChromeChoice
+from ..click.coroutine import coroutine
+from ..click.docker import DockerPathExists, docker_chrome_path, wrap_docker
+from ..click.lazy import lazy_import
 
 lazy_import(
     globals(),
     """
 from ..environment import collect_environment_description
 
-from ..scraping.jobs import ScrapingJobs
 from ..scraping import scrape_resources
+from ..scraping.jobs import ScrapingJobs
 """,
 )
 

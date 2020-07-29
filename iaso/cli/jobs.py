@@ -1,10 +1,11 @@
+import json
 import os
 
 import click
 
+from ..click.docker import DockerPathExists, wrap_docker
 from ..click.lazy import lazy_import
-from ..click.mutex import ValidateMutex, MutexOption
-from ..click.docker import wrap_docker, DockerPathExists
+from ..click.mutex import MutexOption, ValidateMutex
 from ..click.registry import ensure_registry
 
 lazy_import(

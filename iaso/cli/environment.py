@@ -1,13 +1,13 @@
 import click
 
-from ..click.lazy import lazy_import
 from ..click.docker import wrap_docker
+from ..click.lazy import lazy_import
 
 lazy_import(
     globals(),
     """
-from ..format_json import format_json
 from ..environment import collect_environment_description
+from ..format_json import format_json
 """,
 )
 

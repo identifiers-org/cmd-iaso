@@ -38,8 +38,13 @@ This is better.
 (c) 2016, Aaron Christianson
 http://github.com/ninjaaron/fast-entry_points
 """
-from setuptools.command import easy_install
+import os
 import re
+
+from pathlib import Path
+
+from setuptools import find_packages, setup
+from setuptools.command import easy_install
 
 TEMPLATE = r"""
 # -*- coding: utf-8 -*-
@@ -86,10 +91,6 @@ easy_install.ScriptWriter.get_args = get_args
 
 """ FOOTER fastentrypoints FOOTER """
 
-import os
-
-from pathlib import Path
-from setuptools import setup, find_packages
 
 setup_kwargs = dict()
 

@@ -56,8 +56,7 @@ async def aprompt(
             # getpass doesn't print a newline if the user aborts input with ^C.
             # Allegedly this behavior is inherited from getpass(3).
             # A doc bug has been filed at https://bugs.python.org/issue24711
-            if hide_input:
-                click.echo(None, err=err)
+            click.echo(None, err=err)
             raise click.exceptions.Abort()
 
     if value_proc is None:

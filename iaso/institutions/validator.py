@@ -2,8 +2,8 @@ import json
 
 from copy import deepcopy
 
-from .differences import INSTITUTION_PROPERTIES, Difference
 from ..curation.tag_store import TagStore
+from .differences import INSTITUTION_PROPERTIES, Difference
 
 OK_DIFFERENCES = (Difference.KEEP, Difference.SAME)
 URL_PROPERTIES = ("homeUrl", "rorId")

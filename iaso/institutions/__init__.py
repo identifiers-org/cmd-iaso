@@ -6,9 +6,9 @@ from itertools import zip_longest
 
 from tqdm import tqdm
 
-from .wikidataclient import WikiDataClient
-from .entity.matching import greedily_match_institution_entities
 from .entity.linking import query_institution_entity_details
+from .entity.matching import greedily_match_institution_entities
+from .wikidataclient import WikiDataClient
 
 DETAILS_CHUNK_SIZE = 10
 

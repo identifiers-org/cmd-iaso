@@ -2,16 +2,19 @@ import os
 
 from functools import partial
 
+import click
+
 from ..click.lazy import lazy_import
 from ..click.registry import ensure_registry
-
-from .tag_store import TagStore
-
 from .pyppeteer import PyppeteerLauncher
+from .tag_store import TagStore
 
 lazy_import(
     globals(),
     """
+from .pyppeteer.informant import PyppeteerInformant
+from .pyppeteer.controller import PyppeteerController
+
 from .statistics import (
     StatisticsController,
     StatisticsNavigator,
@@ -19,11 +22,8 @@ from .statistics import (
 )
 
 from .terminal.controller import TerminalController
-from .terminal.navigator import TerminalNavigator
 from .terminal.informant import TerminalInformant
-
-from .pyppeteer.controller import PyppeteerController
-from .pyppeteer.informant import PyppeteerInformant
+from .terminal.navigator import TerminalNavigator
 """,
 )
 

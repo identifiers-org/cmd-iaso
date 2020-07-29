@@ -1,10 +1,10 @@
-import os
 import gzip
 import json
+import os
 
 from collections import defaultdict
 from json import JSONEncoder
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin, urlparse
 
 import click
 import requests
@@ -84,8 +84,12 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
                 ):
                     continue
 
+                lui = compact_identifier["localId"]
+
                 namespace_ids[compact_identifier["namespace"]].add(
-                    compact_identifier["localId"]
+                    lui[(lui.find(":") + 1) :]
+                    if compact_identifier["namespaceEmbeddedInLui"]
+                    else lui
                 )
             except Exception as e:
                 print(

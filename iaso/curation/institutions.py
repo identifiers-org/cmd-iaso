@@ -2,7 +2,6 @@ from functools import partial
 
 from ..institutions.differences import find_institution_differences
 from ..institutions.validator import InstitutionsValidator
-
 from . import curate
 
 
