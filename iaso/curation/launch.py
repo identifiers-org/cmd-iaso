@@ -2,6 +2,8 @@ import os
 
 from functools import partial
 
+import click
+
 from ..click.lazy import lazy_import
 from ..click.registry import ensure_registry
 from .pyppeteer import PyppeteerLauncher

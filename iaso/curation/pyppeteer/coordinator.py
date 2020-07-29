@@ -3,14 +3,15 @@ import asyncio
 from importlib.resources import read_text
 
 
+def read_package_data_file(path):
+    return read_text("iaso.curation.pyppeteer", path)
+
+
 class PyppeteerCoordinator:
     lock = asyncio.Lock()
 
-    def __read_file(path):
-        return read_text("iaso.curation.pyppeteer", path)
-
-    addStyleTagWithIdHelper = __read_file("style.js")
-    addScriptTagWithIdHelper = __read_file("script.js")
+    addStyleTagWithIdHelper = read_package_data_file("style.js")
+    addScriptTagWithIdHelper = read_package_data_file("script.js")
 
     def __init__(self, page):
         self.page = page
@@ -26,16 +27,16 @@ class PyppeteerCoordinator:
     async def addStyleTagWithId(self, path, sid):
         await self.page.evaluate(
             PyppeteerCoordinator.addStyleTagWithIdHelper,
-            PyppeteerCoordinator.__read_file(path),
+            read_package_data_file(path),
             sid,
         )
 
     async def addScriptTagWithId(self, path, sid):
         await self.page.evaluate(
             PyppeteerCoordinator.addScriptTagWithIdHelper,
-            PyppeteerCoordinator.__read_file(path),
+            read_package_data_file(path),
             sid,
         )
 
     async def evaluate(self, path, *args):
-        await self.page.evaluate(PyppeteerCoordinator.__read_file(path), *args)
+        await self.page.evaluate(read_package_data_file(path), *args)
