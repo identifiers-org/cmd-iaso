@@ -7,7 +7,7 @@ class ChromeChoice(click.Choice):
     name = "chrome-choice"
 
     def __init__(self, case_sensitive=True):
-        self.choices = ["'launch'", "IPv4:PORT", "[IPv6]:PORT"]
+        self.choices = ["'launch'", "localhost:PORT", "IPv4:PORT", "[IPv6]:PORT"]
         self.case_sensitive = case_sensitive
 
     def convert(self, value, param, ctx):

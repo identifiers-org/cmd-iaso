@@ -1,11 +1,12 @@
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
+from ..tag_store import TagStore
 
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
 
 
-class RedirectChain(CurationError):
+class RedirectChain(CurationValidator):
     @staticmethod
     def check_and_create(
         get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
@@ -36,10 +37,17 @@ class RedirectChain(CurationError):
         if len(collector) == 0:
             return True
 
-        return RedirectChain(collector.result())
+        return RedirectChain(provider.id, collector.result())
 
-    def __init__(self, redirects):
+    def __init__(self, rid, redirects):
+        self.rid = rid
         self.redirects = redirects
 
     def format(self, formatter):
-        formatter.format_json("Redirection Chain", self.redirects, 2)
+        formatter.format_json(
+            RedirectChain.identify(self.rid), "Redirection Chain", self.redirects, 2
+        )
+
+    @staticmethod
+    def identify(rid):
+        return TagStore.serialise_identity({"type": "RedirectChain", "rid": rid,})

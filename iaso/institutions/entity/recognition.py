@@ -1,3 +1,5 @@
+import re
+
 from itertools import chain
 
 import spacy
@@ -25,6 +27,25 @@ def lazy_model_loader(model):
 nlp_en = lazy_model_loader("en_core_web_sm")
 nlp_ml = lazy_model_loader("xx_ent_wiki_sm")
 
+WORD_PATTERN = re.compile(r"\W+")
+
+
+class NamedEntityNode:
+    def __init__(self, text):
+        self.__text = " ".join(WORD_PATTERN.split(text))
+        self.__successors = set()
+
+    def add(self, successor):
+        self.__successors.add(successor)
+
+    @property
+    def text(self):
+        return self.__text
+
+    @property
+    def successors(self):
+        return self.__successors
+
 
 def extract_named_entities(institution):
     doc_en = nlp_en(institution)
@@ -35,12 +56,10 @@ def extract_named_entities(institution):
         key=lambda e: e[1:],
     )
 
-    monograms = tuple(entity[0] for entity in named_entities)
+    nodes = tuple(NamedEntityNode(entity[0]) for entity in named_entities)
 
-    bigrams = []
-
-    for n, (entity, start, end) in enumerate(named_entities):
-        successors = []
+    for i, (entity, start, end) in enumerate(named_entities):
+        n = i
 
         while n < len(named_entities) and named_entities[n][1] < end:
             n += 1
@@ -49,11 +68,8 @@ def extract_named_entities(institution):
             next_start = named_entities[n][1]
 
             while n < len(named_entities) and named_entities[n][1] == next_start:
-                successors.append(named_entities[n][0])
+                nodes[i].add(nodes[n])
+
                 n += 1
 
-        bigrams.append(tuple(successors))
-
-    bigrams = tuple(bigrams)
-
-    return (monograms, bigrams)
+    return nodes

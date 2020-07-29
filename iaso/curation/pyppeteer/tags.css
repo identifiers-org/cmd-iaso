@@ -1,0 +1,68 @@
+.iaso-informant-overlay-tag-selector {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  margin: 0.5rem;
+  padding-left: 0.5rem;
+  padding-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.iaso-informant-overlay-tag-spacer {
+  height: calc(0.85714286rem + 0.8 * 0.85714286rem + 2px);
+}
+
+.iaso-informant-overlay-tag-input {
+  border: none;
+  outline: none;
+  display: flex;
+  width: unset;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-grow: 1;
+}
+
+.iaso-informant-overlay-tag-item {
+  display: flex;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0px 4px;
+  cursor: text;
+  background: gainsboro;
+  border-radius: 3px;
+}
+
+.iaso-informant-overlay-tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: black;
+}
+
+.iaso-informant-overlay-tag-remove {
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.5;
+  cursor: pointer;
+}
+.iaso-informant-overlay-tag-remove:hover {
+  opacity: 1;
+}
+.iaso-informant-overlay-tag-remove:before, .iaso-informant-overlay-tag-remove:after {
+  position: absolute;
+  margin-left: 0.46875rem;
+  content: ' ';
+  height: 1.1rem;
+  width: 2px;
+  background-color: black;
+}
+.iaso-informant-overlay-tag-remove:hover::before, .iaso-informant-overlay-tag-remove:hover::after {
+  background-color: red;
+}
+.iaso-informant-overlay-tag-remove:before {
+  transform: rotate(45deg);
+}
+.iaso-informant-overlay-tag-remove:after {
+  transform: rotate(-45deg);
+}

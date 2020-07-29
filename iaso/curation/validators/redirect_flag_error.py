@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
+from ..tag_store import TagStore
 
 
-class RedirectFlagError(CurationError, ABC):
+class RedirectFlagError(CurationValidator, ABC):
     @staticmethod
     @abstractmethod
     def get_flag_from_redirect(redirect):
@@ -36,13 +37,23 @@ class RedirectFlagError(CurationError, ABC):
         if len(collector) == 0:
             return True
 
-        return Subclass(collector.result())
+        return Subclass(provider.id, collector.result())
 
-    def __init__(self, urls):
+    def __init__(self, rid, urls):
+        self.rid = rid
         self.urls = urls
 
     def format(self, formatter):
-        formatter.format_json(type(self).get_error_name(), self.urls, 2)
+        formatter.format_json(
+            RedirectFlagError.identify(type(self).__name__, self.rid),
+            type(self).get_error_name(),
+            self.urls,
+            2,
+        )
+
+    @staticmethod
+    def identify(type, rid):
+        return TagStore.serialise_identity({"type": type, "rid": rid,})
 
 
 class DNSError(RedirectFlagError):

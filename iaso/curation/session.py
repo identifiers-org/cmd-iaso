@@ -53,3 +53,9 @@ class CurationSession(ABC):
                     f"The current curation session has been discarded.", fg="yellow"
                 )
             )
+
+    def discard(self):
+        self.__filepath = None
+
+    def reset(self):
+        self.__position = 0

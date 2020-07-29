@@ -1,6 +1,8 @@
+from collections import defaultdict
 from enum import Enum, auto
+from urllib.parse import urlparse
 
-INSTITUTION_PROPERTIES = ["name", "homeUrl", "description", "rorId", "location"]
+INSTITUTION_PROPERTIES = ("name", "homeUrl", "description", "rorId", "location")
 
 
 class Difference(Enum):
@@ -23,7 +25,24 @@ def get_and_sanitise_prop(institution, prop):
     return value
 
 
+def strip_scheme(url):
+    parsed = urlparse(url)
+
+    return parsed.geturl().replace("{}://".format(parsed.scheme), "", 1)
+
+
 def find_institution_differences(registry, academine):
+    old_to_new_institution_entities = {
+        institutions.id: set(institution.uuid for institution in institutions.entities)
+        for institutions in academine.institutions
+    }
+
+    entity_resources = defaultdict(set)
+
+    for rid, resource in registry.resources.items():
+        for entity in old_to_new_institution_entities.get(resource.institution.id, []):
+            entity_resources[entity].add(rid)
+
     institutions_differences = []
 
     for institutions in academine.institutions:
@@ -36,7 +55,10 @@ def find_institution_differences(registry, academine):
         institution_differences = []
 
         for new_institution in institutions.entities:
-            institution_difference = {"matches": new_institution.matches}
+            institution_difference = {
+                "matches": new_institution.matches,
+                "occurrences": entity_resources[new_institution.uuid],
+            }
 
             for prop in INSTITUTION_PROPERTIES:
                 old_value = get_and_sanitise_prop(old_institution, prop)
@@ -51,8 +73,15 @@ def find_institution_differences(registry, academine):
                     if new_value is None:
                         difference = {"type": Difference.KEEP, "old": old_value}
                     elif str(new_value) != str(old_value):
+                        if prop == "homeUrl" and strip_scheme(
+                            old_value.rstrip("/")
+                        ) == strip_scheme(new_value.rstrip("/")):
+                            difference = Difference.KEEP
+                        else:
+                            difference = Difference.REPLACE
+
                         difference = {
-                            "type": Difference.REPLACE,
+                            "type": difference,
                             "new": new_value,
                             "old": old_value,
                         }
@@ -72,6 +101,23 @@ def find_institution_differences(registry, academine):
             and institution_differences[0]["description"]["type"] == Difference.REPLACE
         ):
             institution_differences[0]["description"]["type"] = Difference.KEEP
+
+        institution_differences.sort(
+            key=lambda d: (
+                sum(
+                    1
+                    for k, v in d.items()
+                    if k in INSTITUTION_PROPERTIES and v["type"] == Difference.SAME
+                ),
+                sum(
+                    1
+                    for k, v in d.items()
+                    if k in INSTITUTION_PROPERTIES
+                    and v.get("same", v.get("new")) is not None
+                ),
+            ),
+            reverse=True,
+        )
 
         institutions_differences.append(
             (

@@ -6,9 +6,9 @@ from itertools import zip_longest
 
 from tqdm import tqdm
 
+from .entity.linking import query_institution_entity_details
+from .entity.matching import greedily_match_institution_entities
 from .wikidataclient import WikiDataClient
-from .institution_entity_extraction import greedily_extract_institution_entities
-from .institution_entity_linking import query_institution_entity_details
 
 DETAILS_CHUNK_SIZE = 10
 
@@ -27,9 +27,9 @@ async def deduplicate_registry_institutions(registry, academine_path):
     async def collect_extracted_institution_entities(
         client, institution_string, iid, progress, extracted_institution_entities
     ):
-        extracted_institution_entities[
-            iid
-        ] = await greedily_extract_institution_entities(client, institution_string)
+        extracted_institution_entities[iid] = await greedily_match_institution_entities(
+            client, institution_string
+        )
 
         progress.update()
         progress.set_postfix(ordered_dict=client.backoff)
@@ -48,7 +48,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
                     progress,
                     extracted_institution_entities,
                 )
-                for iid, institution in list(registry.institution.items())
+                for iid, institution in registry.institution.items()
             ]
         )
 
@@ -92,7 +92,7 @@ async def deduplicate_registry_institutions(registry, academine_path):
         institution_entities = []
 
         for entity, matches in entities.items():
-            institution_entity = {"matches": tuple(matches)}
+            institution_entity = {"uuid": entity, "matches": tuple(matches)}
 
             institution_entity.update(
                 (k, v)

@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 
 from filelock import FileLock
 
-from .http import scrape_http_resource
 from .ftp import scrape_ftp_resource
+from .http import scrape_http_resource
 
 
 def fetch_resource_worker(

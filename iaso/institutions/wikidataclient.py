@@ -13,10 +13,11 @@ RANKING_LIMIT = 10
 class WikiDataClient:
     def __init__(self):
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(HTTPX_TIMEOUT, pool_timeout=None)
+            timeout=httpx.Timeout(HTTPX_TIMEOUT, pool_timeout=None),
         )
 
         self.waiting = defaultdict(int)  # Number of waiting requests
+        self.running = defaultdict(int)  # Number of running requests
         self.queue = defaultdict(list)  # Requests not yet scheduled
         self.backoff = dict()  # Exponential backoff times
 
@@ -27,16 +28,21 @@ class WikiDataClient:
             # Only enqueue and wait if there are already ongoing requests
             if self.waiting[namespace] > 1:
                 schedule = asyncio.Future()
+
                 self.queue[namespace].append(schedule)
+
                 await schedule
+            else:
+                self.running[namespace] += 1
 
             backoff = self.backoff.get(namespace, INITIAL_BACKOFF)
-
-            next_scheduled = None
 
             # Schedule the next request using the current backoff
             if len(self.queue[namespace]) > 0:
                 next_scheduled = self.queue[namespace].pop(0)
+
+                self.running[namespace] += 1
+
                 asyncio.get_event_loop().call_later(
                     backoff, next_scheduled.set_result, None
                 )
@@ -58,10 +64,14 @@ class WikiDataClient:
                 )
 
             self.waiting[namespace] -= 1
+            self.running[namespace] -= 1
 
-            # Schedule the next request iff not already done before
-            if next_scheduled is None and len(self.queue[namespace]) > 0:
+            # Schedule the next request iff we are the only one left who can
+            if len(self.queue[namespace]) > 0 and self.running[namespace] < 1:
                 next_scheduled = self.queue[namespace].pop(0)
+
+                self.running[namespace] += 1
+
                 next_scheduled.set_result(None)
 
             # Return iff successful, retry iff backoff required

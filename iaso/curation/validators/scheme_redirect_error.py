@@ -1,7 +1,8 @@
 from urllib.parse import urlparse
 
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
+from ..tag_store import TagStore
 
 
 def strip_scheme(url):
@@ -10,7 +11,7 @@ def strip_scheme(url):
     return parsed.geturl().replace("{}://".format(parsed.scheme), "", 1)
 
 
-class SchemeRedirectError(CurationError):
+class SchemeRedirectError(CurationValidator):
     @staticmethod
     def check_and_create(
         get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
@@ -29,10 +30,22 @@ class SchemeRedirectError(CurationError):
         if len(collector) == 0:
             return True
 
-        return SchemeRedirectError(collector.result())
+        return SchemeRedirectError(provider.id, collector.result())
 
-    def __init__(self, redirects):
+    def __init__(self, rid, redirects):
+        self.rid = rid
         self.redirects = redirects
 
     def format(self, formatter):
-        formatter.format_json("Scheme-Only Redirect", self.redirects, 2)
+        formatter.format_json(
+            SchemeRedirectError.identify(self.rid, self.redirects.keys()),
+            "Scheme-Only Redirect",
+            self.redirects,
+            2,
+        )
+
+    @staticmethod
+    def identify(rid, redirects):
+        return TagStore.serialise_identity(
+            {"type": "SchemaRedirectError", "rid": rid, "redirects": sorted(redirects),}
+        )

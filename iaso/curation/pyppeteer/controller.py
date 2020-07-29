@@ -1,6 +1,7 @@
 import asyncio
 import re
 
+import click
 import pyppeteer
 
 from contextlib import suppress
@@ -58,6 +59,13 @@ class PyppeteerController(CurationController):
             and console.text[16:] in CurationController.CHOICES
         ):
             if self.prompt_future is not None:
+                terminal_tag_controller = click.get_current_context().obj.get(
+                    "terminal_tag_controller"
+                )
+
+                if terminal_tag_controller is not None:
+                    terminal_tag_controller.cancel_prompt_tags()
+
                 self.prompt_future.set_result(
                     CurationController.CHOICES[console.text[16:]]
                 )

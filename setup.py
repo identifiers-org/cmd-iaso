@@ -1,8 +1,10 @@
 import os
 
-from setuptools import setup, find_packages
-
 from pathlib import Path
+
+from setuptools import find_packages, setup
+
+import fastentrypoints
 
 with open(Path() / "VERSION") as file:
     version = file.read().strip()
@@ -29,6 +31,7 @@ setup(
         "certifi==2020.4.5.1",
         "chardet==3.0.4",
         "click==7.1.2",
+        "click-completion==0.5.2",
         "jsonschema==3.2.0",
         "filelock==3.0.12",
         "httpx==0.13.3",

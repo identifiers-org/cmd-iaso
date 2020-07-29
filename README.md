@@ -64,6 +64,19 @@ It is also possible to manually run the `docker run` commands yourself using:
 ```
 Please beware that while you will have more control over the Docker container using this approach, we can provide no guarantees that the commands will run as expected.
 
+## Shell completion
+`cmd-iaso` offers some shell completion functionality for [bash](https://www.gnu.org/software/bash), [fish](https://fishshell.com/), [PowerShell](https://msdn.microsoft.com/en-us/powershell/mt173057.aspx) and [zsh](http://www.zsh.org/). If you want to install the shell completion, you can use
+```
+> cmd-iaso completion install [SHELL] [PATH] [--append/--overwrite] [-i/--case-insensitive/--no-case-insensitive]
+```
+If you do not specify `SHELL` explicitly, your current shell will be detected automatically and used instead. You can optionally also specify the `PATH` to which the completion script will be appended (`--append`) or which will be overwritten (`--overwrite`). Finally, if you want the completion to be case-insensitive, you can enable that via the `-i` or `--case-insensitive` option. To explicitly disable case-insensitive completion, you can provide the `--no-case-insensitive` flag.
+
+If you do not want `cmd-iaso` to install the shell completion, you can simply use
+```
+> cmd-iaso completion show [SHELL] [-i/--case-insensitive/--no-case-insensitive]
+```
+to output the completion script to the terminal.
+
 ## Configuration
 `cmd-iaso` comes with many commands and options. While this document will outline their functionality, you can always provide the `--help` option to any command to read a description of the command and its available options. Most options have default values, while some always require a user-provided value. All options can be provided either via the command-line or via environment variables. `cmd-iaso` also supports reading a `.env` file to get the values of the environment variables. Note that providing command-line options will always overwrite environment variables. A default configuration is provided in `config.default` which is automatically copied to `.env` by `make install`. Please refer to the `--help` pages to find out about the names of the supported environment variables.
 
@@ -79,13 +92,6 @@ To print the current status of the [identifiers.org](https://identifiers.org/) r
 ```
 > cmd-iaso registry
 ```
-
-## Institution Deduplication
-The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out and some names are concatinations of multiple institutions. The institution deduplication command
-```
-> cmd-iaso dedup4institutions ACADEMINE
-```
-Collects all existing institutions from the registry and attempts to link them to their real entities to deduplicate the entries and disentangle concatenations of institution names. It also tries to fill in information about the institutions like their name, official URL, ROR ID, country and a description. The results of this command are stored in the `ACADEMINE` file.
 
 ## Data scraping
 Before performing curation of the resource providers in the [identifiers.org](https://identifiers.org/) registry, `cmd-iaso` needs to scrape some data. This section will outline how to configure and run the scraping pipeline.
@@ -131,8 +137,15 @@ The collected raw data dumps contain mostly raw information about the scraped re
 ```
 which will read the data dumps from the `DUMP` folder and save the datamine to the `DATAMINE` file path.
 
+## Institution Deduplication
+The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out, and some names are concatenations of multiple institutions. The institution deduplication command
+```
+> cmd-iaso dedup4institutions ACADEMINE
+```
+collects all existing institutions from the registry. It then attempts to link them to the mentioned entities. This process deduplicates the entries and disentangles concatenations of institution names. It also tries to fill in information about the institutions like their name, official URL, ROR ID, country and a description. The results of this command are stored in the `ACADEMINE` file.
+
 ## Interactive curation
-The primary purpose of `cmd-iaso` is to aide the curator in their curation process. The interactive curation is run on the datamine file created from the data scraping pipeline using the `cmd-iaso dump2datamine` command.
+The primary purpose of `cmd-iaso` is to aide the curator in their curation process. The interactive curation is run either on the datamine file created from the data scraping pipeline using the `cmd-iaso dump2datamine` command or the academine file created from the institution deduplication using the `cmd-iaso dedup4institutions` command.
 
 ### Curation validators
 `cmd-iaso` uses validator plugins to provide customisable modularised validation of the resource providers. Each validator is a subclass of the `iaso.curartion.error.CurationError` class:
@@ -194,23 +207,41 @@ Iff any of the components are set to `chrome`, the curator must also provide the
 
 All of these options have to be provided via the command line or environment variables. Otherwise, the curator will be asked for their value via a prompt:
 ```
-> cmd-iaso curate --controller CONTROLLER --navigator NAVIGATOR --informant INFORMANT [--chrome CHROME]
+> cmd-iaso curate --controller CONTROLLER --navigator NAVIGATOR --informant INFORMANT [--chrome CHROME] [--tags TAGS] {-i TAG} [--statistics]
 ```
 
+The curation process also allows the curator to tag identified issues. These tags are associated with a fingerprint of that issue and are stored across different curation session. If you want to change the location of this tags storage from its default of `tags.gz`, you can use the `--tags TAGS` option.
+
+The tags are not only a great way to keep notes on recurring or unsolved issues, but they also allow you to hide the issues they tag temporarily. If you want to ignore any issues with a specific tag, you can pass `-i TAG` or `--ignore TAG` for every tag you wish to ignore. By default, the `fixed` and `ignore` tags are ignored. It is important to note that you can change which tags are ignored at any point during curation. You will have to reload an entry, however, for any change in the ignored tags to take effect.
+
+If you want to just get an overview of all the issues identified, you can provide the `--statistics` flag. Instead of launching an interactive curation session, `cmd-iaso` will then only print a statistical summary. Therefore, none of the `--controller`, `--navigator`, `--informant` or `--chrome` options must be provided.
+
 ### Starting a new curation session
-Curation is performed in sessions to enable the curator to pause and save their progress. Furthermore, they can then resume the curation later on. While the information on how the curation is run, i.e. whether the components are run in the terminal or the Chrome browser, is session independent, the `DATAMINE` file and selected curation validators are fixed per session. The session also remembers the point at which the curator left off. To start a new session, you can use:
+Curation is performed in sessions to enable the curator to pause and save their progress. Furthermore, they can then resume the curation later on. The settings on how the curation is run, e.g. whether in the terminal or the Chrome browser, is session independent. In contrast, the information dump on which the curation is based is fixed per session. Settings which narrow down the set of issues that are reported are also saved with the session. The session also remembers the point at which the curator left off.
+
+#### Starting a new resource provider curation session
+To start a new session for curating resource providers, you can use:
 ```
-> cmd-iaso curate [...] resources DATAMINE {-v VALIDATOR} [--valid-luis-threshold VALID_LUIS_THRESHOLD] [--random-luis-threshold RANDOM_LUIS_THRESHOLD] [--session SESSION]
+> cmd-iaso curate [...] start resources DATAMINE {-v VALIDATOR} [--valid-luis-threshold VALID_LUIS_THRESHOLD] [--random-luis-threshold RANDOM_LUIS_THRESHOLD] [--session SESSION]
 ```
 This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `resources_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than ![50%](https://render.githubusercontent.com/render/math?math=50%5C%25) of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
 
-The `[...]` between `curate` and `resources` refer to the `terminal` vs `chrome` component options discussed above.
+The `[...]` between `curate` and `resources` refer to the general curation options discussed above.
+
+#### Starting a new institution curation session
+To start a new session for curating institutions, you can use:
+```
+> cmd-iaso curate [...] start institutions ACADEMINE [--session SESSION]
+```
+This command starts a new session using the `ACADEMINE` file created by the `dedup4institutions` command and will save it either to the `SESSION` file path -- if provided -- or the default `institutions_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead.
+
+The `[...]` between `curate` and `institutions` refer to the general curation options discussed above.
 
 ### Resuming an existing session
 An existing session at the `SESSION` file path can be resumed using:
 ```
-> cmd-iaso curate [...] resume SESSION
+> cmd-iaso curate [...] resume resources/institutions SESSION
 ```
-The `[...]` between `curate` and `resume` refer to the `terminal` vs `chrome` component options discussed above.
+The `[...]` between `curate` and `resume` refer to the general curation options discussed above.
 
 This command will also warn the curator if they have already completed curation on this session.

@@ -5,7 +5,7 @@ import urllib
 from contextlib import closing
 from datetime import datetime, timezone
 
-from .content_type import get_mime_type, get_encoding, get_content_type, decode_content
+from .content_type import decode_content, get_content_type, get_encoding, get_mime_type
 
 FTP_STATUS_PATTERN = re.compile(r"([1-6][0-9][0-9])")
 

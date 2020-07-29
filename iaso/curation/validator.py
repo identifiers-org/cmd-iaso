@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class CurationError(ABC):
+class CurationValidator(ABC):
     @staticmethod
     @abstractmethod
     def check_and_create(

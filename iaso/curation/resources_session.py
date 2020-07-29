@@ -1,7 +1,7 @@
-from .session import CurationSession
-from ..json_schema_file import JsonSchemaFile
 from ..datamine import Datamine
+from ..json_schema_file import JsonSchemaFile
 from ..jsondb import namedtuple_to_dict
+from .session import CurationSession
 
 
 class ResourcesCurationSession(CurationSession):

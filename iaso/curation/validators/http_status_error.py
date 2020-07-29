@@ -3,11 +3,12 @@ from collections import Counter
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
 
-from ..error import CurationError
+from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
+from ..tag_store import TagStore
 
 
-class HTTPStatusError(CurationError):
+class HTTPStatusError(CurationValidator):
     @staticmethod
     def check_and_create(
         get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider
@@ -90,13 +91,15 @@ class HTTPStatusError(CurationError):
         if len(code_urls) == 0:
             return True
 
-        return HTTPStatusError(code_urls)
+        return HTTPStatusError(provider.id, code_urls)
 
-    def __init__(self, code_urls):
+    def __init__(self, rid, code_urls):
+        self.rid = rid
         self.code_urls = code_urls
 
     def format(self, formatter):
         formatter.format_json(
+            HTTPStatusError.identify(self.rid, self.code_urls.keys()),
             "Status code",
             {
                 "{} ({})".format(
@@ -110,4 +113,14 @@ class HTTPStatusError(CurationError):
                 for status_code, urls in self.code_urls.items()
             },
             3,
+        )
+
+    @staticmethod
+    def identify(rid, status_codes):
+        return TagStore.serialise_identity(
+            {
+                "type": "HTTPStatusError",
+                "rid": rid,
+                "status_code": sorted(status_codes),
+            }
         )

@@ -3,8 +3,8 @@ import multiprocessing as mp
 
 from pyppeteer.chromium_downloader import check_chromium, download_chromium
 
-from .http.proxy_launcher import ProxyLauncher
 from .http.patch_pyppeteer import patch_pyppeteer
+from .http.proxy_launcher import ProxyLauncher
 from .pool import scrape_resources_pool
 
 

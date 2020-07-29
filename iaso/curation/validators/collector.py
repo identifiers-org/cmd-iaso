@@ -11,6 +11,7 @@ class ErrorExampleCollector:
         self.name = name
         self.collector = defaultdict(list)
 
+    @staticmethod
     def make_hashable(obj):
         if isinstance(obj, list):
             return tuple(ErrorExampleCollector.make_hashable(child) for child in obj)

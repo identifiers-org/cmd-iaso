@@ -5,6 +5,7 @@
 
 .string {
     color: purple;
+    white-space: normal;
 }
 
 .number, .boolean, .keyword {

@@ -1,6 +1,7 @@
+import platform
+
 from pathlib import Path
 
-import platform
 import cpuinfo
 import psutil
 
@@ -11,12 +12,14 @@ def collect_environment_description():
     return {
         "machine": platform.node(),
         "os": platform.platform(),
-        "cpu": "{} {} {}.{}.{}".format(
+        "cpu": "{} {} {}".format(
             cpu_info["vendor_id"],
             cpu_info["brand"],
-            cpu_info["family"],
-            cpu_info["model"],
-            cpu_info["stepping"],
+            ".".join(
+                str(cpu_info[info])
+                for info in ["family", "model", "stepping"]
+                if info in cpu_info
+            ),
         ),
         "cores": "{} x {}".format(
             psutil.cpu_count(logical=False),
