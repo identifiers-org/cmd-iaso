@@ -6,8 +6,8 @@ from ..click.docker import wrap_docker
 lazy_import(
     globals(),
     """
-from ..format_json import format_json
 from ..environment import collect_environment_description
+from ..format_json import format_json
 """,
 )
 

@@ -12,6 +12,9 @@ from .pyppeteer import PyppeteerLauncher
 lazy_import(
     globals(),
     """
+from .pyppeteer.informant import PyppeteerInformant
+from .pyppeteer.controller import PyppeteerController
+
 from .statistics import (
     StatisticsController,
     StatisticsNavigator,
@@ -19,11 +22,8 @@ from .statistics import (
 )
 
 from .terminal.controller import TerminalController
-from .terminal.navigator import TerminalNavigator
 from .terminal.informant import TerminalInformant
-
-from .pyppeteer.controller import PyppeteerController
-from .pyppeteer.informant import PyppeteerInformant
+from .terminal.navigator import TerminalNavigator
 """,
 )
 

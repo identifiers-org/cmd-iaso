@@ -11,12 +11,12 @@ lazy_import(
     """
 from ....click.validators import validate_validators
 
-from ....datamine import Datamine
-
-from ....curation.resources import curate_resources
 from ....curation.launch import launch_curation
-from ....curation.resources_session import ResourcesCurationSession
 from ....curation.pyppeteer.resource_navigator import PyppeteerResourceNavigator
+from ....curation.resources import curate_resources
+from ....curation.resources_session import ResourcesCurationSession
+
+from ....datamine import Datamine
 """,
 )
 

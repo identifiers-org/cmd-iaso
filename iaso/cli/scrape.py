@@ -15,8 +15,8 @@ lazy_import(
     """
 from ..environment import collect_environment_description
 
-from ..scraping.jobs import ScrapingJobs
 from ..scraping import scrape_resources
+from ..scraping.jobs import ScrapingJobs
 """,
 )
 

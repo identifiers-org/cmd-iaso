@@ -1,10 +1,10 @@
-import os
 import gzip
 import json
+import os
 
 from collections import defaultdict
 from json import JSONEncoder
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin, urlparse
 
 import click
 import requests

@@ -10,12 +10,12 @@ from ....click.coroutine import coroutine
 lazy_import(
     globals(),
     """
-from ....institutions.academine import Academine
-
 from ....curation.institutions import curate_institutions
-from ....curation.launch import launch_curation
 from ....curation.institutions_session import InstitutionsCurationSession
+from ....curation.launch import launch_curation
 from ....curation.pyppeteer.institution_navigator import PyppeteerInstitutionNavigator
+
+from ....institutions.academine import Academine
 """,
 )
 
