@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from threading import Thread
-
 from types import CoroutineType
 
 from .generator import CurationDirection

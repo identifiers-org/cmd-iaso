@@ -1,15 +1,13 @@
 from functools import partial
 
-from ..format_json import format_json
-
-from .validators.redirect_chain import RedirectChain
-from .validators.http_status_error import HTTPStatusError
-from .validators.redirect_flag_error import DNSError, SSLError, InvalidResponseError
-from .validators.scheme_redirect_error import SchemeRedirectError
-
-from . import curate
-
 import click
+
+from ..format_json import format_json
+from . import curate
+from .validators.http_status_error import HTTPStatusError
+from .validators.redirect_chain import RedirectChain
+from .validators.redirect_flag_error import DNSError, InvalidResponseError, SSLError
+from .validators.scheme_redirect_error import SchemeRedirectError
 
 
 def get_curation_data_and_validators_resources(session, registry, provider_namespace):

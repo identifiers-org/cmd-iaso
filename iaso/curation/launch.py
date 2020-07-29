@@ -4,10 +4,8 @@ from functools import partial
 
 from ..click.lazy import lazy_import
 from ..click.registry import ensure_registry
-
-from .tag_store import TagStore
-
 from .pyppeteer import PyppeteerLauncher
+from .tag_store import TagStore
 
 lazy_import(
     globals(),

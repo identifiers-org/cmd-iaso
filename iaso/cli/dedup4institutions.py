@@ -2,9 +2,9 @@ import os
 
 import click
 
-from ..click.lazy import lazy_import
-from ..click.docker import wrap_docker
 from ..click.coroutine import coroutine
+from ..click.docker import wrap_docker
+from ..click.lazy import lazy_import
 from ..click.registry import ensure_registry
 
 lazy_import(

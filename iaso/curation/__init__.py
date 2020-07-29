@@ -1,9 +1,9 @@
 from functools import partial
 
-from .interact import CurationController, CurationNavigator, CurationInformant
-from .generator import curation_entry_generator, CurationDirection
-
 import click
+
+from .generator import CurationDirection, curation_entry_generator
+from .interact import CurationController, CurationInformant, CurationNavigator
 
 
 async def curate(

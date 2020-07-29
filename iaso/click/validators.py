@@ -1,6 +1,5 @@
-import pkg_resources
-
 import click
+import pkg_resources
 
 from ..curation.validator import CurationValidator
 

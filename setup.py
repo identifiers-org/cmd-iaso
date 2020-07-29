@@ -1,9 +1,10 @@
 import os
 
-from setuptools import setup, find_packages
-import fastentrypoints
-
 from pathlib import Path
+
+from setuptools import find_packages, setup
+
+import fastentrypoints
 
 with open(Path() / "VERSION") as file:
     version = file.read().strip()
