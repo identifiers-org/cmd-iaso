@@ -2,8 +2,8 @@ import pickle
 
 import click
 
-from ..click.lazy import lazy_import
 from ..click.docker import wrap_docker
+from ..click.lazy import lazy_import
 
 lazy_import(
     globals(),
