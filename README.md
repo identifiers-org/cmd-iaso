@@ -159,14 +159,23 @@ collects all existing institutions from the registry. It then attempts to link t
 The primary purpose of `cmd-iaso` is to aide the curator in their curation process. The interactive curation is run either on the datamine file created from the data scraping pipeline using the `cmd-iaso dump2datamine` command or the academine file created from the institution deduplication using the `cmd-iaso dedup4institutions` command.
 
 ### Curation validators
-`cmd-iaso` uses validator plugins to provide customisable modularised validation of the resource providers. Each validator is a subclass of the `iaso.curartion.error.CurationError` class:
+`cmd-iaso` uses validator plugins to provide customisable modularised validation of the resource providers. Each validator is a subclass of the `iaso.curation.validator.CurationValidator` class:
 ```python
 from abc import ABC, abstractmethod
+from typing import Union
 
-class CurationError(ABC):
+class CurationValidator(ABC):
     @staticmethod
     @abstractmethod
-    def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> CurationError:
+    def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> Union[CurationValidator, bool]:
+        """
+        Returns False iff this data_entry cannot be included during
+         curation at all.
+        Returns True iff this validator has found nothing to report on
+         this data_entry.
+        Returns an instance of the particular CurationValidator iff it
+         found something to report about this data_entry.
+        """
         pass
 
     @abstractmethod
@@ -191,6 +200,14 @@ setup(
     },
     ...
 )
+```
+As a more general alternative, you can also use a `pyproject.toml` file to register your curation validator:
+```toml
+[project]
+name = "My Curation Plugin"
+
+[project.entry-points."iaso.plugins"]
+my-validator = "my_module:my_validator:MyValidator"
 ```
 `cmd-iaso` comes with the following validators by default:
 - `redirection-chain` displays the entire redirection chain of a resource and, therefore, marks every resource as erroneous

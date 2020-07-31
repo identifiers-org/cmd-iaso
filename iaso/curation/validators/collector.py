@@ -38,7 +38,7 @@ class ErrorExampleCollector:
                 self.name: info,
                 "Example Compact Identifiers": [
                     f"[{compid}](https://identifiers.org/resolve?query={compid})"
-                    for compid in compids
+                    for compid in set(compids)
                 ],
             }
             for info, compids in self.collector.items()

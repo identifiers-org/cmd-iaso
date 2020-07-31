@@ -1,4 +1,1 @@
 include VERSION
-
-recursive-include athena *.toml *.rs
-recursive-include metis *.toml *.rs

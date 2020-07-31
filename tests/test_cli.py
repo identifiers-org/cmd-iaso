@@ -37,3 +37,11 @@ class TestCLI:
         print(" TESTING ENVIRONMENT ".center(80, "="))
         print(result.output, end="")
         print(" TESTING ENVIRONMENT ".center(80, "="))
+
+    def test_athena(self):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, args=["analyse"], prog_name="cmd-iaso", catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0
