@@ -1,1 +1,7 @@
 include VERSION
+
+include athena/Cargo.toml
+recursive-include athena *.rs
+
+include metis/Cargo.toml
+recursive-include metis *.rs

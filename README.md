@@ -232,6 +232,7 @@ The **Navigator** leads the curator to the provider's corresponding namespace pa
 The **Informant** formats and presents information about the discovered issues with each resource provider to the curator. The informant component can be set by the `--informant` option.
 
 Iff any of the components are set to `chrome`, the curator must also provide the `--chrome` option to select how the curation pipeline should connect to Chrome. It can either `launch` a new instance or connect to an existing one if its address, e.g. `localhost:9222` is provided. Note that in order to connect to a running Chrome browser, it must have been started with the `--remote-debugging-port=PORT` option, where `PORT` would be `9222` in this case.
+If you want to connect to a running Chrome browser instance on a different machine, for instance if you are calling `cmd-iaso` through SSH, we recommend taking a look at [inlets](https://github.com/inlets/inlets) which allows you to "[e]xpose your local endpoints to the Internet or to another network, traversing firewalls and NAT".
 
 All of these options have to be provided via the command line or environment variables. Otherwise, the curator will be asked for their value via a prompt:
 ```
