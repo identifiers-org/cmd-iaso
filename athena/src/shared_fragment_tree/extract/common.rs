@@ -42,7 +42,7 @@ impl SharedFragmentTree {
             ) {
                 Some(string_indices) => string_indices,
                 None => {
-                    return Err(PyErr::new::<pyo3::exceptions::ValueError, _>(
+                    return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                         "all set is empty",
                     ))
                 }
