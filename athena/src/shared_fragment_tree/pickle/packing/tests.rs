@@ -1,4 +1,5 @@
 use rand::{self, Rng};
+use std::io::Read;
 
 use super::*;
 
@@ -17,6 +18,14 @@ fn test_that_packing_unpacking_is_bijective() {
             }
         });
 
-        assert_eq!(input, unpack(&pack(input.clone())));
+        let packed = pack(input.clone());
+
+        let mut output = Vec::with_capacity(input.len());
+
+        reader::PackingReader::new(&packed)
+            .read_to_end(&mut output)
+            .unwrap();
+
+        assert_eq!(input, output);
     }
 }

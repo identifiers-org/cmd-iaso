@@ -8,6 +8,7 @@ import_exception!(pickle, PicklingError);
 import_exception!(pickle, UnpicklingError);
 
 use super::SharedFragmentTree;
+use packing::reader::PackingReader;
 
 #[pymethods]
 impl SharedFragmentTree {
@@ -15,7 +16,7 @@ impl SharedFragmentTree {
     /// which is used in `pickle.load()`
     #[text_signature = "($self, state, /)"]
     pub fn __setstate__(&mut self, _py: Python, state: &PyBytes) -> PyResult<()> {
-        self.tree = match bincode::deserialize(&packing::unpack(state.as_bytes())) {
+        self.tree = match bincode::deserialize_from(PackingReader::new(state.as_bytes())) {
             Ok(tree) => tree,
             Err(e) => return Err(PyErr::new::<UnpicklingError, _>(format!("{}", e))),
         };

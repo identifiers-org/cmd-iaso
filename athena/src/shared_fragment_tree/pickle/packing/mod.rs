@@ -84,41 +84,4 @@ pub fn pack(mut bytes: Vec<u8>) -> Vec<u8> {
     bytes
 }
 
-pub fn unpack(bytes: &[u8]) -> Vec<u8> {
-    // Underallocate so the output only grows as necessary
-    let mut unpacked = Vec::with_capacity(bytes.len());
-
-    let mut bytes_iter = bytes.iter().peekable();
-
-    while let Some(byte) = bytes_iter.next() {
-        let mask = *byte;
-
-        if mask != 0x00u8 && bytes_iter.peek().is_none() {
-            unpacked.truncate(unpacked.len() - (mask.count_zeros() as usize));
-
-            break;
-        };
-
-        if mask == 0x00u8 {
-            unpacked.resize(unpacked.len() + 8, 0x00u8);
-
-            continue;
-        };
-
-        let mut marker = 0x80u8;
-
-        for _ in 0..8 {
-            if (mask & marker) != 0x00u8 {
-                unpacked.push(*bytes_iter.next().unwrap())
-            } else {
-                unpacked.push(0x00u8)
-            };
-
-            marker >>= 1;
-        }
-    }
-
-    unpacked.shrink_to_fit();
-
-    unpacked
-}
+pub mod reader;
