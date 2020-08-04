@@ -1,5 +1,5 @@
 use rand::{self, Rng};
-use std::io::Read;
+use std::io::{Read, Write};
 
 use super::*;
 
@@ -18,7 +18,14 @@ fn test_that_packing_unpacking_is_bijective() {
             }
         });
 
-        let packed = pack(input.clone());
+        let packed_size =
+            size::PackingSize::calc_size(len, bytecount::count(&input, 0x00u8)).unwrap();
+
+        let mut packed = vec![0; packed_size];
+
+        writer::PackingWriter::new(&mut packed)
+            .write_all(&input)
+            .unwrap();
 
         let mut output = Vec::with_capacity(input.len());
 

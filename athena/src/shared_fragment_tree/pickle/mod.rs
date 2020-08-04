@@ -8,7 +8,7 @@ import_exception!(pickle, PicklingError);
 import_exception!(pickle, UnpicklingError);
 
 use super::SharedFragmentTree;
-use packing::reader::PackingReader;
+use packing::{reader::PackingReader, size::PackingSize, writer::PackingWriter};
 
 #[pymethods]
 impl SharedFragmentTree {
@@ -28,8 +28,19 @@ impl SharedFragmentTree {
     /// which is used in `pickle.dump()`
     #[text_signature = "($self)"]
     pub fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
-        match bincode::serialize(&self.tree) {
-            Ok(bytes) => Ok(PyBytes::new(py, &packing::pack(bytes)).to_object(py)),
+        let mut packing_size = PackingSize::new();
+
+        if let Err(e) = bincode::serialize_into(packing_size.writer(), &self.tree) {
+            return Err(PyErr::new::<PicklingError, _>(format!("{}", e)));
+        }
+
+        let packing_size = packing_size.size();
+
+        // TODO: Allocate buffer directly in Python bytes
+        let mut buffer = vec![0; packing_size].into_boxed_slice();
+
+        match bincode::serialize_into(PackingWriter::new(&mut buffer), &self.tree) {
+            Ok(()) => Ok(PyBytes::new(py, &buffer).to_object(py)),
             Err(e) => Err(PyErr::new::<PicklingError, _>(format!("{}", e))),
         }
     }

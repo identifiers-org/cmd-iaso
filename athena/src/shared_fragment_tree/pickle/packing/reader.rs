@@ -40,7 +40,7 @@ impl<'b> io::Read for PackingReader<'b> {
                     break;
                 }
 
-                // Fill the next part of bug with the remainder of the buffer
+                // Fill the next part of buf with the remainder of the buffer
                 read += self.buffered;
 
                 buf[0..self.buffered].copy_from_slice(&self.buffer[0..self.buffered]);
