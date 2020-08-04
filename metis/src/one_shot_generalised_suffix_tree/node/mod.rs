@@ -7,11 +7,10 @@ Published under the MIT License
 use std::fmt;
 use std::iter::FromIterator;
 use tinyset::SetUsize as TinySet;
-use vec_map::VecMap;
 
 mod serde;
 
-use super::OneShotGeneralisedSuffixTree;
+use super::{FrozenFlattenedVecMap, OneShotGeneralisedSuffixTree};
 
 pub type NodeRef = usize;
 
@@ -20,7 +19,7 @@ pub struct Node {
     pub depth: usize,
     pub parent: NodeRef,
     pub transition_links: TinySet,
-    pub generalised_indices: VecMap<TinySet>,
+    pub generalised_indices: FrozenFlattenedVecMap<usize, usize>,
 }
 
 impl fmt::Debug for Node {
@@ -33,14 +32,7 @@ impl fmt::Debug for Node {
                 "transition_links",
                 &Vec::<usize>::from_iter(self.transition_links.iter()),
             )
-            .field(
-                "generalised_indices",
-                &VecMap::<Vec<usize>>::from_iter(
-                    self.generalised_indices
-                        .iter()
-                        .map(|(key, value)| (key, Vec::<usize>::from_iter(value.iter()))),
-                ),
-            )
+            .field("generalised_indices", &self.generalised_indices)
             .finish()
     }
 }
@@ -60,7 +52,7 @@ impl Node {
             depth,
             parent: parent.unwrap_or(reference),
             transition_links: TinySet::new(),
-            generalised_indices: VecMap::new(),
+            generalised_indices: FrozenFlattenedVecMap::empty(),
         });
 
         reference
@@ -74,13 +66,7 @@ impl Node {
     ) -> fmt::Result {
         fmt.write_fmt(format_args!(
             "Node {{ index: {:?} depth: {:?} generalised_indices: {:?} transition_links: [",
-            self.index,
-            self.depth,
-            VecMap::<Vec<usize>>::from_iter(
-                self.generalised_indices
-                    .iter()
-                    .map(|(key, value)| (key, Vec::<usize>::from_iter(value.iter())))
-            )
+            self.index, self.depth, self.generalised_indices,
         ))?;
 
         if !self.transition_links.is_empty() {

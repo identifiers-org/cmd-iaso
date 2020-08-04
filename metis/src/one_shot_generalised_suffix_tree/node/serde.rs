@@ -3,7 +3,6 @@ use serde::ser::{Serialize, SerializeTuple, Serializer};
 use std::fmt;
 use std::iter::FromIterator;
 use tinyset::SetUsize as TinySet;
-use vec_map::VecMap;
 
 use super::Node;
 
@@ -18,13 +17,7 @@ impl Serialize for Node {
         tuple.serialize_element(&self.depth)?;
         tuple.serialize_element(&self.parent)?;
         tuple.serialize_element(&self.transition_links.iter().collect::<Vec<usize>>())?;
-        tuple.serialize_element(
-            &self
-                .generalised_indices
-                .iter()
-                .map(|(key, value)| (key, value.iter().collect::<Vec<usize>>()))
-                .collect::<Vec<(usize, Vec<usize>)>>(),
-        )?;
+        tuple.serialize_element(&self.generalised_indices)?;
 
         tuple.end()
     }
@@ -60,7 +53,7 @@ impl<'de> Deserialize<'de> for Node {
                 let transition_links: Vec<usize> = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(3, &self))?;
-                let generalised_indices: Vec<(usize, Vec<usize>)> = seq
+                let generalised_indices = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(4, &self))?;
 
@@ -69,11 +62,7 @@ impl<'de> Deserialize<'de> for Node {
                     depth,
                     parent,
                     transition_links: TinySet::from_iter(transition_links.into_iter()),
-                    generalised_indices: VecMap::from_iter(
-                        generalised_indices
-                            .into_iter()
-                            .map(|(key, value)| (key, TinySet::from_iter(value.into_iter()))),
-                    ),
+                    generalised_indices,
                 })
             }
         }

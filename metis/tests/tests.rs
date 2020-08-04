@@ -1,7 +1,6 @@
-use bit_set::BitSet;
 use std::iter::FromIterator;
 
-use metis::{AllAnySet, OneShotGeneralisedSuffixTree, WordString};
+use metis::{AllAnySet, FrozenVecSet, OneShotGeneralisedSuffixTree, WordString};
 
 #[test]
 fn system_test() {
@@ -17,10 +16,11 @@ fn system_test() {
     assert_eq!(tree.len(), 4);
     assert_eq!(tree.size(), 17);
 
-    let string_indices = match AllAnySet::new(BitSet::from_iter(0..1), BitSet::from_iter(1..4)) {
-        Some(string_indices) => string_indices,
-        None => panic!("All set is empty"),
-    };
+    let string_indices =
+        match AllAnySet::new(FrozenVecSet::from_iter(0..1), FrozenVecSet::from_iter(1..4)) {
+            Some(string_indices) => string_indices,
+            None => panic!("All set is empty"),
+        };
 
     let lcnos = tree.extract_longest_common_non_overlapping_substrings(string_indices, None, false);
 

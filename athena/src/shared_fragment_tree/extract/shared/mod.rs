@@ -1,6 +1,5 @@
-use metis::{AllAnySet, OneShotGeneralisedSuffixTree, WordString};
+use metis::{AllAnySet, FrozenVecSet, OneShotGeneralisedSuffixTree, WordString};
 
-use bit_set::BitSet;
 use rand::{
     self,
     distributions::{DistIter, Distribution, Uniform},
@@ -65,8 +64,8 @@ fn extract_all_shared_fragments_impl<'a>(
     i: usize,
 ) -> Vec<Vec<String>> {
     let string_indices: AllAnySet = AllAnySet::new(
-        BitSet::from_iter(i..=i),
-        BitSet::from_iter((0..i).chain((i + 1)..tree.len())),
+        FrozenVecSet::from_iter(i..=i),
+        FrozenVecSet::from_iter((0..i).chain((i + 1)..tree.len())),
     )
     .unwrap(); // cannot fail as all set will always be {i}
 

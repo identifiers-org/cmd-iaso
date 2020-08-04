@@ -6,6 +6,7 @@ mod node;
 mod serde;
 
 use super::all_any_set::AllAnySet;
+use super::frozen_vec::flattened_map::FrozenFlattenedVecMap;
 use super::word_string::WordString;
 use build::build;
 use lcnos::extract_longest_common_non_overlapping_substrings;

@@ -21,6 +21,9 @@
 //! ) == [(["c", "d", "e"], 2), (["a", "b"], 0)]
 //! ```
 
+#![deny(clippy::all)]
+#![deny(missing_docs)]
+
 use pyo3::prelude::*;
 
 mod shared_fragment_tree;

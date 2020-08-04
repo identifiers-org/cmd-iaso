@@ -1,8 +1,7 @@
 use pyo3::prelude::*;
 
-use metis::{AllAnySet, WordString};
+use metis::{AllAnySet, FrozenVecSet, WordString};
 
-use bit_set::BitSet;
 use std::iter::FromIterator;
 
 use super::SharedFragmentTree;
@@ -52,15 +51,17 @@ impl SharedFragmentTree {
         debug: bool,
     ) -> PyResult<Vec<String>> {
         py.allow_threads(|| {
-            let string_indices =
-                match AllAnySet::new(BitSet::from_iter(0..self.tree.len()), BitSet::new()) {
-                    Some(string_indices) => string_indices,
-                    None => {
-                        return Err(PyErr::new::<pyo3::exceptions::ValueError, _>(
-                            "SharedFragmentTree is empty",
-                        ))
-                    }
-                };
+            let string_indices = match AllAnySet::new(
+                FrozenVecSet::from_iter(0..self.tree.len()),
+                FrozenVecSet::empty(),
+            ) {
+                Some(string_indices) => string_indices,
+                None => {
+                    return Err(PyErr::new::<pyo3::exceptions::ValueError, _>(
+                        "SharedFragmentTree is empty",
+                    ))
+                }
+            };
 
             let mut fragments = self.tree.extract_longest_common_non_overlapping_substrings(
                 string_indices,

@@ -1,8 +1,7 @@
 use pyo3::prelude::*;
 
-use metis::AllAnySet;
+use metis::{AllAnySet, FrozenVecSet};
 
-use bit_set::BitSet;
 use std::iter::FromIterator;
 
 use super::SharedFragmentTree;
@@ -38,8 +37,8 @@ impl SharedFragmentTree {
     ) -> PyResult<Vec<(Vec<String>, usize)>> {
         py.allow_threads(|| {
             let string_indices = match AllAnySet::new(
-                BitSet::from_iter(all.into_iter()),
-                BitSet::from_iter(any.into_iter()),
+                FrozenVecSet::from_iter(all.into_iter()),
+                FrozenVecSet::from_iter(any.into_iter()),
             ) {
                 Some(string_indices) => string_indices,
                 None => {

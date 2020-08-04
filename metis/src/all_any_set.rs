@@ -1,12 +1,9 @@
-use bit_set::BitSet;
-use std::iter::FromIterator;
-use tinyset::SetUsize as TinySet;
-use vec_map::VecMap;
+use super::FrozenVecSet;
 
 /// A special set of `usize` which contains both an `all` and and `any` part.
 pub struct AllAnySet {
-    all: BitSet,
-    any: BitSet,
+    all: FrozenVecSet<usize>,
+    any: FrozenVecSet<usize>,
 
     primary_index: usize,
 }
@@ -14,10 +11,10 @@ pub struct AllAnySet {
 impl AllAnySet {
     /// Creates a new AllAnySet with the `all` and `any` part.
     /// Iff `all.is_empty()` the constructor will return `None`.
-    pub fn new(all: BitSet, any: BitSet) -> Option<AllAnySet> {
+    pub fn new(all: FrozenVecSet<usize>, any: FrozenVecSet<usize>) -> Option<AllAnySet> {
         Some(AllAnySet {
-            primary_index: match all.iter().next() {
-                Some(primary_index) => primary_index,
+            primary_index: match all.as_ref().first() {
+                Some(primary_index) => *primary_index,
                 None => return None,
             },
 
@@ -30,20 +27,20 @@ impl AllAnySet {
     /// A subset must contain all the elements in this `AllAnySet`'s `all` set.
     /// A subset must contain at least on of the elements in this `AllAnySet`'s
     /// `any` set iff the `any` set is non-empty.
-    pub fn subset(&self, other: &VecMap<TinySet>) -> Option<AllAnySet> {
-        if !self.all.iter().all(|index| other.contains_key(index)) {
+    pub fn subset(&self, other: &FrozenVecSet<usize>) -> Option<AllAnySet> {
+        if !self.all.is_subset(other) {
             return None;
-        };
+        }
 
         if self.any.is_empty() {
             return Some(AllAnySet {
                 all: self.all.clone(),
-                any: BitSet::new(),
+                any: FrozenVecSet::empty(),
                 primary_index: self.primary_index,
             });
         };
 
-        let new_any = BitSet::from_iter(self.any.iter().filter(|index| other.contains_key(*index)));
+        let new_any = self.any.intersection(other);
 
         if new_any.is_empty() {
             return None;

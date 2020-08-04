@@ -11,11 +11,11 @@ fn test_that_packing_unpacking_is_bijective() {
         input.resize(len, 0);
         rng.fill(&mut input[..]);
 
-        for i in 0..len {
+        input.iter_mut().for_each(|i| {
             if rng.gen_bool(3.0f64 / 8.0f64) {
-                input[i] = 0u8;
+                *i = 0u8;
             }
-        }
+        });
 
         assert_eq!(input, unpack(&pack(input.clone())));
     }

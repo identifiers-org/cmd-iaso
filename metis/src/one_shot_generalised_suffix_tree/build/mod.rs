@@ -4,12 +4,14 @@ https://github.com/ptrus/suffix-trees
 Published under the MIT License
 */
 
+use std::iter::FromIterator;
 use tinyset::SetUsize as TinySet;
-use vec_map::VecMap;
+use vector_map::VecMap as PairVecMap;
 
 mod mc_creight;
 mod utils;
 
+use super::FrozenFlattenedVecMap;
 use super::{Node, NodeRef, WordString};
 use mc_creight::build_mc_creight;
 use utils::terminal_symbols_generator;
@@ -39,8 +41,8 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
 
     build_mc_creight(&mut nodes, &word[..], root_ref);
 
-    let mut generalised_indices: Vec<VecMap<TinySet>> = Vec::with_capacity(nodes.len());
-    generalised_indices.resize_with(nodes.len(), VecMap::new);
+    let mut generalised_indices: Vec<PairVecMap<usize, TinySet>> = Vec::with_capacity(nodes.len());
+    generalised_indices.resize_with(nodes.len(), PairVecMap::new);
 
     if !word_starts.is_empty() {
         // Label the generalised suffix tree nodes
@@ -60,10 +62,10 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
                     Err(idx) => idx - 1,
                 };
 
-                generalised_indices[node_ref]
-                    .entry(start)
-                    .or_insert_with(TinySet::new)
-                    .insert(node.index - word_starts[start]);
+                if !generalised_indices[node_ref].contains_key(&start) {
+                    generalised_indices[node_ref].insert(start, TinySet::new());
+                }
+                generalised_indices[node_ref][&start].insert(node.index - word_starts[start]);
             } else if push {
                 stack.push((node_ref, false));
 
@@ -84,7 +86,10 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
                     };
 
                     for (n, indices) in child_indices.iter() {
-                        let union_indices = node_indices.entry(n).or_insert_with(TinySet::new);
+                        if !node_indices.contains_key(n) {
+                            node_indices.insert(*n, TinySet::new());
+                        }
+                        let union_indices = &mut node_indices[n];
 
                         for index in indices.iter() {
                             union_indices.insert(index);
@@ -96,7 +101,7 @@ pub fn build(input: Vec<WordString>) -> (Vec<Node>, NodeRef, WordString, Vec<usi
     }
 
     for (node_ref, generalised_indices) in generalised_indices.into_iter().enumerate() {
-        nodes[node_ref].generalised_indices = generalised_indices;
+        nodes[node_ref].generalised_indices = FrozenFlattenedVecMap::from_iter(generalised_indices);
     }
 
     (nodes, root_ref, word, word_starts)

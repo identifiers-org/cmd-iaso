@@ -4,8 +4,7 @@
 //! # Examples
 //!
 //! ```
-//! # use bit_set::BitSet;
-//! # use std::iter::FromIterator;
+//! use std::iter::FromIterator;
 //! use metis::*;
 //!
 //! let strings = vec![
@@ -18,8 +17,8 @@
 //! let tree = OneShotGeneralisedSuffixTree::new(strings);
 //!
 //! let string_indices = AllAnySet::new(
-//!     BitSet::from_iter(0..1),
-//!     BitSet::from_iter(1..4),
+//!     FrozenVecSet::from_iter(0..1),
+//!     FrozenVecSet::from_iter(1..4),
 //! ).unwrap(); // cannot fail here as the `all` set is non-empty
 //!
 //! let lcnos = tree.extract_longest_common_non_overlapping_substrings(
@@ -35,10 +34,15 @@
 //! );
 //! ```
 
+#![deny(clippy::all)]
+#![deny(missing_docs)]
+
 mod all_any_set;
+mod frozen_vec;
 mod one_shot_generalised_suffix_tree;
 mod word_string;
 
 pub use all_any_set::AllAnySet;
+pub use frozen_vec::set::FrozenVecSet;
 pub use one_shot_generalised_suffix_tree::{EarlyStopCallback, OneShotGeneralisedSuffixTree};
 pub use word_string::WordString;

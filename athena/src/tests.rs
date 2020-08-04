@@ -31,10 +31,7 @@ fn test_tree_len_builtin() {
 fn test_tree_str_builtin() {
     use pyo3::class::basic::PyObjectProtocol;
 
-    let _: String = match generate_tree().__str__() {
-        Ok(output) => output,
-        Err(_) => panic!("__str__ failed"),
-    };
+    let _: String = generate_tree().__str__().unwrap();
 }
 
 #[test]
