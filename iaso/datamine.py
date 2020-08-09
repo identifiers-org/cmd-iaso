@@ -69,7 +69,7 @@ Datamine.SCHEMA = {
                                     "contentEncoding": "base64",
                                 },
                             },
-                            "required": ["lui", "date", "redirects"],
+                            "required": ["lui", "random", "date", "redirects"],
                             "additionalProperties": False,
                         },
                         "additionalItems": False,
