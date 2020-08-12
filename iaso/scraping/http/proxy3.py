@@ -36,6 +36,7 @@ import ipaddress
 import logging
 import os
 import select
+import signal
 import socket
 import ssl
 import threading
@@ -422,8 +423,15 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
 
 def serve(
-    port, timeout, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1",
+    port,
+    timeout,
+    ServerClass=ThreadingHTTPServer,
+    protocol="HTTP/1.1",
+    ignore_sigint=False,
 ):
+    if ignore_sigint:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     with NamedTemporaryFile() as cakey, NamedTemporaryFile() as cacert, NamedTemporaryFile() as certkey, TemporaryDirectory() as certdir:
         devnull = open(os.devnull, "w")
 

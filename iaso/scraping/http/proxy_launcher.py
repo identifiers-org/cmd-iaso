@@ -25,7 +25,10 @@ class ProxyLauncher:
             proxy_port = find_free_port()
 
             self.proxy = self.ctx.Process(
-                target=proxy3.serve, args=(proxy_port, self.timeout), daemon=True
+                target=proxy3.serve,
+                args=(proxy_port, self.timeout),
+                kwargs={"ignore_sigint": True},
+                daemon=True,
             )
             self.proxy.start()
 

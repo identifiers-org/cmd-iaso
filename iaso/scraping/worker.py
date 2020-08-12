@@ -1,7 +1,9 @@
 import asyncio
 import gzip
 import logging
+import os
 import pickle
+import signal
 import sys
 import traceback
 import warnings
@@ -17,9 +19,11 @@ from .http import scrape_http_resource
 def fetch_resource_worker(
     dump, proxy_address, chrome, timeout, tempdir, rid, lui, random, url
 ):
-    loop = asyncio.new_event_loop()
-
     try:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        loop = asyncio.new_event_loop()
+
         coro = fetch_resource(
             dump, proxy_address, chrome, timeout, tempdir, rid, lui, random, url
         )
@@ -30,9 +34,13 @@ def fetch_resource_worker(
         warnings.filterwarnings("ignore")
 
         return loop.run_until_complete(coro)
-    finally:
-        loop.stop()
-        loop.close()
+    except:
+        if os.path.exists(tempdir / "pings.lock"):
+            with FileLock(tempdir / "pings.lock"):
+                with open("scraper.log", "a") as log:
+                    log.write(f"Error at rid={rid} lui={lui} url={url} random={random}")
+
+                    traceback.print_exc(file=log)
 
 
 async def fetch_resource(
@@ -62,14 +70,10 @@ async def fetch_resource(
             "content-type": content_type,
         }
 
-        with FileLock(tempdir / "pings.lock"):
-            with gzip.open(dump / f"pings_{rid}.gz", "ab") as file:
-                pickle.dump(ping, file)
+        if os.path.exists(tempdir / "pings.lock"):
+            with FileLock(tempdir / "pings.lock"):
+                with gzip.open(dump / f"pings_{rid}.gz", "ab") as file:
+                    pickle.dump(ping, file)
+
     except asyncio.TimeoutError:
         pass
-    except Exception:
-        with FileLock(tempdir / "pings.lock"):
-            log.write(f"Error at rid={rid} lui={lui} url={url} random={random}")
-
-            with open("scraper.log", "a") as log:
-                traceback.print_exc(file=log)

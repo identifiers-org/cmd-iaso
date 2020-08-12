@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import multiprocessing as mp
+import signal
 import warnings
 
 from pyppeteer.chromium_downloader import check_chromium, download_chromium
@@ -11,6 +12,8 @@ from .pool import scrape_resources_pool
 
 
 async def scrape_resources(jobs, dump, proxy_address, chrome, workers, timeout):
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     if chrome is None:
         if not check_chromium():
             patch_pyppeteer()

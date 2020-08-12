@@ -26,7 +26,10 @@ async def scrape_http_resource(proxy_address, chrome, timeout, url):
             async with launch_browser(
                 headless=True,
                 ignoreHTTPSErrors=True,
-                autoClose=False,
+                autoClose=True,
+                handleSIGINT=False,
+                handleSIGTERM=False,
+                handleSIGHUP=False,
                 args=[
                     "--no-sandbox",
                     f"--proxy-server={proxy_address}",
