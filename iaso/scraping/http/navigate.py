@@ -6,58 +6,13 @@ from tempfile import TemporaryDirectory
 
 import pyppeteer
 
+from .html import fetch_html_content
 from .url import normaliseURL
 from ..content_type import get_mime_type, get_encoding, get_content_type, decode_content
 
 
-def build_html_from_dom(ele):
-    if ele["nodeName"] == "#comment":
-        return ""
-
-    content = [ele["nodeValue"]]
-
-    # Light DOM children
-    if "children" in ele:
-        content.extend(build_html_from_dom(child) for child in ele["children"])
-
-    # Owned frame root
-    if "contentDocument" in ele:
-        content.append(build_html_from_dom(ele["contentDocument"]))
-
-    # Shadow DOM roots
-    if "shadowRoots" in ele:
-        content.extend(build_html_from_dom(root) for root in ele["shadowRoots"])
-
-    # Template element root
-    if "templateContent" in ele:
-        content.append(build_html_from_dom(ele["templateContent"]))
-
-    # Pseudo elements
-    # if 'pseudoElements' in ele:
-    #    content.extend(build_html_from_dom(pseudo) for pseudo in ele['pseudoElements'])
-
-    # Imported HTML root
-    if "importedDocument" in ele:
-        content.append(build_html_from_dom(ele["importedDocument"]))
-
-    content = " ".join(content)
-
-    if ele["localName"] == "":
-        return content
-    else:
-        return f'<{ele["localName"]}>{content}</{ele["localName"]}>'
-
-
 async def navigate_http_resource(
-    page,
-    url,
-    timeout,
-    responses,
-    redirects,
-    finishing,
-    failures,
-    requests,
-    navigations,
+    page, url, timeout, requests, responses, failures, navigations,
 ):
     response = None
 
@@ -90,16 +45,22 @@ async def navigate_http_resource(
                 url, timeout=(timeout * 1000), waitUntil=["domcontentloaded"]
             )
 
-            await page.waitFor(500)
+            old_html = None
+            new_html = await fetch_html_content(page)
 
-            # Wait for additional HTTP requests to finish, but at most for timeout
-            while (len(redirects) > 0 or len(finishing) > 0) and (
-                (time.time() - start_time) < timeout
-            ):
+            early_stop = 0
+
+            while early_stop < 10 and (time.time() - start_time) < timeout:
+                old_html = new_html
+
                 await page.waitFor(500)
 
-            # Give dynamic webpages time to load their content
-            await page.waitFor(timeout / 2)
+                new_html = await fetch_html_content(page)
+
+                if len(new_html) == len(old_html):
+                    early_stop += 1
+                else:
+                    early_stop = 0
 
             response = True
         except pyppeteer.errors.PageError as err:
@@ -163,12 +124,8 @@ async def navigate_http_resource(
         )
 
     if content is False:
-        # Fetch the entire DOM of the loaded page, including the shadow DOMs
-        dom = (
-            await page._client.send("DOM.getDocument", {"pierce": True, "depth": -1})
-        )["root"]
-
-        content = build_html_from_dom(dom)
+        # Fetch the entire HTML of the loaded page, including shadow DOMs and frames
+        content = await fetch_html_content(page)
 
     pageURL = page.url if page.url != "about:blank" else response.url
 

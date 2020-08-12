@@ -7,30 +7,14 @@ from . import patch_pyppeteer
 patch_pyppeteer.patch_pyppeteer()
 
 
-def patch_pyppeteer():
-    original_connect = pyppeteer.connection.websockets.client.connect
-
-    def new_connect(*args, **kwargs):
-        kwargs["ping_interval"] = None
-        kwargs["ping_timeout"] = None
-
-        return original_connect(*args, **kwargs)
-
-    pyppeteer.connection.websockets.client.connect = new_connect
-
-    if "--disable-features=site-per-process" in pyppeteer.launcher.DEFAULT_ARGS:
-        pyppeteer.launcher.DEFAULT_ARGS.remove("--disable-features=site-per-process")
-
-
-patch_pyppeteer()
-
-
 @asynccontextmanager
 async def launch_browser(options=None, **kwargs):
     try:
         browser = await pyppeteer.launch(options, **kwargs)
 
         yield browser
+    except Exception as err:
+        raise pyppeteer.errors.BrowserError(err)
     finally:
         try:
             await browser.close()

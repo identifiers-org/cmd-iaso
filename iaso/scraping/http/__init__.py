@@ -1,4 +1,9 @@
+import logging
 import os
+
+from datetime import datetime, timezone
+
+os.environ["PYPPETEER_CHROMIUM_REVISION"] = "796222"
 
 from .pyppeteer import launch_browser, new_page
 from .navigate import navigate_http_resource
@@ -9,6 +14,8 @@ from requests import codes as status_code_values
 
 
 async def scrape_http_resource(proxy_address, chrome, timeout, url):
+    logging.getLogger("pyppeteer").setLevel(logging.CRITICAL + 1)
+
     while True:
         try:
             options = {}
@@ -41,7 +48,28 @@ async def scrape_http_resource(proxy_address, chrome, timeout, url):
                     )
 
                 break
-        except (pyppeteer_errors.NetworkError, pyppeteer_errors.BrowserError):
+        except pyppeteer_errors.TimeoutError:
+            return (
+                datetime.now(timezone.utc).replace(microsecond=0, tzinfo=None),
+                [
+                    {
+                        "url": url,
+                        "ip_port": None,
+                        "response_time": int(round(float(timeout), 3) * 1000),
+                        "status": status_code_values.timeout,
+                        "dns_error": False,
+                        "ssl_error": False,
+                        "invalid_response": False,
+                    }
+                ],
+                None,
+                None,
+            )
+        except (
+            pyppeteer_errors.BrowserError,
+            pyppeteer_errors.NetworkError,
+            pyppeteer_errors.PageError,
+        ):
             continue
 
     redirects = [

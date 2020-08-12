@@ -140,10 +140,12 @@ setup_kwargs.update(
     install_requires=[
         "aioconsole==0.1.16",
         "async-generator==1.10",
+        "beautifulsoup4==4.9.1",
         "certifi==2020.4.5.1",
         "chardet==3.0.4",
         "click==7.1.2",
         "click-completion==0.5.2",
+        "eml-parser==1.14.1",
         "jsonschema==3.2.0",
         "filelock==3.0.12",
         "httpx==0.13.3",

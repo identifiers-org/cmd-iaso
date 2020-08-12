@@ -26,7 +26,7 @@ def fetch_resource_worker(
 
         asyncio.set_event_loop(loop)
 
-        logging.getLogger("asyncio").setLevel(logging.CRITICAL)
+        logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
         warnings.filterwarnings("ignore")
 
         return loop.run_until_complete(coro)
@@ -65,6 +65,11 @@ async def fetch_resource(
         with FileLock(tempdir / "pings.lock"):
             with gzip.open(dump / f"pings_{rid}.gz", "ab") as file:
                 pickle.dump(ping, file)
-
+    except asyncio.TimeoutError:
+        pass
     except Exception:
-        traceback.print_exc(file=sys.stdout)
+        with FileLock(tempdir / "pings.lock"):
+            log.write(f"Error at rid={rid} lui={lui} url={url} random={random}")
+
+            with open("scraper.log", "a") as log:
+                traceback.print_exc(file=log)
