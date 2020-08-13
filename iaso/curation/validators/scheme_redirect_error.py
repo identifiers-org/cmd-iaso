@@ -38,7 +38,10 @@ class SchemeRedirectError(CurationValidator):
 
     def format(self, formatter):
         formatter.format_json(
-            SchemeRedirectError.identify(self.rid, self.redirects.keys()),
+            SchemeRedirectError.identify(
+                self.rid,
+                [redirect["Schema-Only Redirect"] for redirect in self.redirects],
+            ),
             "Scheme-Only Redirect",
             self.redirects,
             2,
