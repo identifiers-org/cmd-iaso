@@ -38,5 +38,5 @@ class PyppeteerCoordinator:
             sid,
         )
 
-    async def evaluate(self, path, *args):
+    async def evaluateScript(self, path, *args):
         await self.page.evaluate(read_package_data_file(path), *args)

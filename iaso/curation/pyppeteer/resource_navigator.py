@@ -100,4 +100,4 @@ class PyppeteerResourceNavigator(PyppeteerNavigator):
 
                 await self.page.waitForXPath(xpath, timeout=1000)
 
-                await coordinator.evaluate("edit_resource.js", xpath)
+                await coordinator.evaluateScript("edit_resource.js", xpath)

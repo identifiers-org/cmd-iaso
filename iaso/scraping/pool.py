@@ -58,7 +58,10 @@ async def scrape_resources_pool(
                             finished_processes.append(process)
 
                     for _ in range(min(workers - len(active_processes), len(jobs))):
-                        rid, lui, random, url = jobs.pop()
+                        try:
+                            rid, lui, random, url = jobs.pop()
+                        except IndexError:
+                            break
 
                         process = ctx.Process(
                             target=fetch_resource_worker,

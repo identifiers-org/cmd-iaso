@@ -42,4 +42,4 @@ class PyppeteerInstitutionNavigator(PyppeteerNavigator):
                 xpath = f'//a[text()="{institution_name}"]'
                 await self.page.waitForXPath(xpath, timeout=1000)
 
-                await coordinator.evaluate("edit_institution.js", xpath)
+                await coordinator.evaluateScript("edit_institution.js", xpath)

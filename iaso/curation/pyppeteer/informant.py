@@ -55,7 +55,7 @@ class PyppeteerInformant(CurationInformant):
                 await coordinator.addStyleTagWithId("iaso.css", "iaso-style")
                 await coordinator.addStyleTagWithId("header.css", "iaso-header-style")
 
-                await coordinator.evaluate("header.js")
+                await coordinator.evaluateScript("header.js")
 
                 await coordinator.addStyleTagWithId(
                     "informant.css", "iaso-informant-style"
@@ -89,7 +89,7 @@ class PyppeteerInformant(CurationInformant):
                     issues.append((title, content, level, tags))
                     self.tags_mapping[f"[{i+1}]"] = identifier
 
-                await coordinator.evaluate(
+                await coordinator.evaluateScript(
                     "informant.js",
                     self.url_regex.match(self.page.url) is not None,
                     display_overlay,
