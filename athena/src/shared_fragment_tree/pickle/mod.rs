@@ -40,9 +40,9 @@ impl SharedFragmentTree {
 
         // Serialise the tree to a Python allocated bytestring (zero-copy)
         Ok(PyBytes::new_with(py, packing_size, |buffer: &mut [u8]| {
-            // Serialisation cannot fail here as we have already done it successfully above
-            bincode::serialize_into(PackingWriter::new(buffer), &self.tree).unwrap()
-        })
+            bincode::serialize_into(PackingWriter::new(buffer), &self.tree)
+                .map_err(|e| PyErr::new::<PicklingError, _>(format!("{}", e)))
+        })?
         .to_object(py))
     }
 }
