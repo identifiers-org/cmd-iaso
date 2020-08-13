@@ -1,5 +1,15 @@
 import click
-import pkg_resources
+
+try:
+    from importlib.metadata import entry_points, EntryPoint
+
+    def iter_entry_points(path):
+        return entry_points().get(path, [])
+
+
+except ImportError:
+    # Running on pre-3.8 Python
+    from pkg_resources import iter_entry_points, EntryPoint
 
 from ..curation.validator import CurationValidator
 
@@ -10,7 +20,7 @@ def ensure_registered_validators(ctx):
     if registered_validators is None:
         registered_validators = ctx.obj["validators"] = {
             entry_point.name: entry_point
-            for entry_point in pkg_resources.iter_entry_points("iaso.plugins")
+            for entry_point in iter_entry_points("iaso.plugins")
         }
 
     return registered_validators
@@ -29,7 +39,7 @@ def validate_validators(ctx, param, value):
                 f"{validator_name} is not a registered validator plugin in 'iaso.plugins'."
             )
 
-        if isinstance(Validator, pkg_resources.EntryPoint):
+        if isinstance(Validator, EntryPoint):
             Validator = Validator.load()
 
             if not issubclass(Validator, CurationValidator):
