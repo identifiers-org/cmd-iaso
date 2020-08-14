@@ -1,6 +1,6 @@
 import pickle
 
-from athena import SharedFragmentTree
+from athena import SharedFragmentTree, tokenise_and_join_with_spaces
 
 
 def generate_tree():
@@ -10,6 +10,27 @@ def generate_tree():
 
 
 class TestAthena:
+    def test_tokenisation(self):
+        joined_tokens = tokenise_and_join_with_spaces(
+            """
+<html>
+  <ul>
+    <li>A</li>
+    <li>b</li>
+    <li>
+      <a href="https://github.com/identifiers-org/cmd-iaso">c</a>
+    </li>
+    <li>D</li>
+    <li>ignore</li>
+    <li>E</li>
+  </ul>
+</html>
+""",
+            ["ignore"],
+        )
+
+        assert joined_tokens == "a b c d e"
+
     def test_tree_generation(self):
         generate_tree()
 
