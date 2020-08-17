@@ -1,6 +1,4 @@
-use html2text::{
-    from_read_with_decorator as html2text_with_decorator, render::text_renderer::TrivialDecorator,
-};
+use html2text::from_read_raw as html2text;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::{escape, Regex};
@@ -40,11 +38,8 @@ fn extract_text_from_json(json: serde_json::Value, acc: &mut String) {
 }
 
 pub fn tokenise_and_join_with_spaces(content: &[u8], exclusions: &[&str]) -> String {
-    // TODO: Are we sure that content.len() is the upper bound here? Why does it
-    //       allocate the full space?
     println!("a {} {}", content.len(), exclusions.len());
-    let parsed_html_text =
-        html2text_with_decorator(content, content.len(), TrivialDecorator::new());
+    let parsed_html_text = html2text(content);
     println!("b");
     // Allocate a String with sufficient capacity for the text without JSON
     let mut parsed_html_text_no_json = String::with_capacity(parsed_html_text.len());
