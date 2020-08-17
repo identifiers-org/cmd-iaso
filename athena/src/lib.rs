@@ -70,7 +70,6 @@ mod tests;
 #[pyfunction(module = "athena")]
 #[text_signature = "(content, exclusions, /)"]
 pub fn tokenise_and_join_with_spaces(py: Python, content: &str, exclusions: Vec<&str>) -> String {
-    println!("{}", content.chars().take(100).collect::<String>());
     py.allow_threads(|| tokeniser::tokenise_and_join_with_spaces(content.as_bytes(), &exclusions))
 }
 

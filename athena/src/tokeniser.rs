@@ -38,12 +38,11 @@ fn extract_text_from_json(json: serde_json::Value, acc: &mut String) {
 }
 
 pub fn tokenise_and_join_with_spaces(content: &[u8], exclusions: &[&str]) -> String {
-    println!("a {} {}", content.len(), exclusions.len());
     let parsed_html_text = html2text(content);
-    println!("b");
+
     // Allocate a String with sufficient capacity for the text without JSON
     let mut parsed_html_text_no_json = String::with_capacity(parsed_html_text.len());
-    println!("c");
+
     // json_search_pos is the byte index from which we will search for JSON
     let mut json_search_pos: usize = 0;
 
@@ -81,7 +80,7 @@ pub fn tokenise_and_join_with_spaces(content: &[u8], exclusions: &[&str]) -> Str
 
     // Push the remaining non-JSON content into the processed string buffer
     parsed_html_text_no_json.push_str(&parsed_html_text[json_search_pos..]);
-    println!("d");
+
     // Create the Regex pattern to capture all URLs and exclusions in the text
     // Only checks for ASCII word boundaries around an exclusion to use the DFA
     // (see https://github.com/rust-lang/regex/blob/master/PERFORMANCE.md#
@@ -90,12 +89,12 @@ pub fn tokenise_and_join_with_spaces(content: &[u8], exclusions: &[&str]) -> Str
         .chain(exclusions.iter().copied().map(escape))
         .map(|p| format!(r"(?:(?-u:\b){}(?-u:\b))", p))
         .join("|");
-    println!("e {}", pattern.len());
+
     // Remove all URLs and exclusions from the text
     let parsed_html_text_no_json_or_links_or_exclusions = Regex::new(&pattern)
         .unwrap()
         .replace_all(&parsed_html_text_no_json, "");
-    println!("f");
+
     // Extract only the tokens, remove all extraneous whitespaces
     // Then join the tokens with spaces and put them into lower case
     TOKEN_RE
