@@ -41,7 +41,10 @@ class TestCLI:
     def test_athena(self):
         runner = CliRunner()
         result = runner.invoke(
-            cli, args=["analyse"], prog_name="cmd-iaso", catch_exceptions=False,
+            cli,
+            args=["analyse", "--check-athena"],
+            prog_name="cmd-iaso",
+            catch_exceptions=False,
         )
 
         assert result.exit_code == 0

@@ -1,4 +1,9 @@
-use super::{tokenise_and_join_with_spaces as tokenise, SharedFragmentTree};
+use std::collections::HashSet;
+use std::iter::FromIterator;
+
+use pyo3::Python;
+
+use super::{tokenise_and_join_with_spaces, SharedFragmentTree};
 
 fn generate_tree() -> SharedFragmentTree {
     SharedFragmentTree::new(vec![
@@ -40,6 +45,48 @@ fn test_tree_size_getter() {
 }
 
 #[test]
+fn test_longest_common_non_overlapping_fragments() {
+    assert_eq!(
+        Python::with_gil(|py| generate_tree()
+            .extract_longest_common_non_overlapping_fragments(
+                py,
+                HashSet::from_iter(0..1),
+                HashSet::from_iter(1..4),
+                false
+            )
+            .unwrap()),
+        vec![
+            (vec!["c".to_owned(), "d".to_owned(), "e".to_owned()], 2),
+            (vec!["a".to_owned(), "b".to_owned()], 0)
+        ]
+    )
+}
+
+#[test]
+fn test_combination_of_all_common_fragments() {
+    assert_eq!(
+        Python::with_gil(|py| generate_tree()
+            .extract_combination_of_all_common_fragments(py, 0.0f64, "@", false)
+            .unwrap()),
+        vec!["c"]
+    )
+}
+
+#[test]
+fn test_asffas_sequential() {
+    assert_eq!(
+        Python::with_gil(|py| generate_tree()
+            .extract_all_shared_fragments_for_all_strings_sequential(py, None, None, false)),
+        vec![
+            vec![vec!["c", "d", "e"], vec!["a", "b"]],
+            vec![vec!["a", "b", "c"]],
+            vec![vec!["c", "d", "e"]],
+            vec![vec!["b", "c"]],
+        ]
+    )
+}
+
+#[test]
 fn test_asffas_parallel() {
     assert_eq!(
         generate_tree().extract_all_shared_fragments_for_all_strings_parallel(None, None, false),
@@ -50,6 +97,10 @@ fn test_asffas_parallel() {
             vec![vec!["b", "c"]],
         ]
     )
+}
+
+fn tokenise(content: &str, exclusions: Vec<&str>) -> String {
+    Python::with_gil(|py| tokenise_and_join_with_spaces(py, content, exclusions))
 }
 
 #[test]

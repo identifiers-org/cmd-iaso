@@ -2,27 +2,76 @@ import pickle
 
 import click
 
-from ..click.docker import wrap_docker
+from ..click.docker import DockerPathExists, wrap_docker
 from ..click.lazy import lazy_import
 
 lazy_import(
     globals(),
     """
-from tqdm import tqdm
+from ..analysis import analyse_dumped_information_content
 """,
 )
 
 
+def check_athena():
+    try:
+        import athena
+    except ImportError:
+        return False
+
+    return True
+
+
+def check_athena_callback(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+
+    if check_athena():
+        click.echo(
+            click.style("cmd-iaso has been installed with athena analysis.", fg="green")
+        )
+
+        ctx.exit(0)
+    else:
+        click.echo(
+            click.style(
+                "cmd-iaso has not been installed with athena analysis.", fg="red"
+            )
+        )
+
+        ctx.exit(1)
+
+
 @click.command()
 @click.pass_context
+@click.argument(
+    "dump", type=click.Path(exists=DockerPathExists(), readable=True, file_okay=False)
+)
+@click.option(
+    "--check-athena",
+    is_flag=True,
+    callback=check_athena_callback,
+    expose_value=False,
+    is_eager=True,
+)
 @wrap_docker()
-def analyse(ctx):
+def analyse(ctx, dump):
     """
-    WIP: Will be the command to analyse the data dump
+    Analyses the scraped responses in the DUMP folder to check if
+    resource providers are working as expected.
+
+    This command can only be run if cmd-iaso was installed with
+    athena analysis. Please make sure you install it with both
+    setuptools-rust and Rust installed (see the README for more
+    information on the installation process).
+
+    \b
+    You can check whether athena analysis is available by running
+    > cmd-iaso analyse --check-athena
+
+    This command is still Work In Progress.
     """
-    try:
-        from athena import SharedFragmentTree
-    except ImportError:
+    if not check_athena():
         raise click.UsageError(
             click.style(
                 "cmd-iaso has not been installed with athena analysis. Please make sure you install it with both setuptools-rust and Rust installed.",
@@ -30,30 +79,4 @@ def analyse(ctx):
             )
         )
 
-    strings = [("a", "b", "c", "d", "e"), ("a", "b", "c"), ("c", "d", "e"), ("b", "c")]
-
-    tree = SharedFragmentTree(strings)
-
-    tree = pickle.loads(pickle.dumps(tree))
-
-    click.echo(
-        tree.extract_longest_common_non_overlapping_fragments(
-            {0}, {1, 2, 3}, debug=False
-        )
-    )
-
-    click.echo(tree.extract_combination_of_all_common_fragments())
-
-    with tqdm(total=len(tree)) as progress:
-        click.echo(
-            tree.extract_all_shared_fragments_for_all_strings_parallel(
-                progress=progress.update
-            )
-        )
-
-    with tqdm(total=len(tree)) as progress:
-        click.echo(
-            tree.extract_all_shared_fragments_for_all_strings_sequential(
-                progress=progress.update
-            )
-        )
+    analyse_dumped_information_content(dump)

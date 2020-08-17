@@ -64,10 +64,13 @@ mod tests;
 /// text will be extracted.
 /// * Any URLs contained within the `content` will be removed before tokenisation.
 /// * Any strings contained in `exclusions` will be removed from the `content`.
+///
+/// This function can be executed on multiple threads in parallel as it
+/// releases the Python GIL `py`.
 #[pyfunction(module = "athena")]
 #[text_signature = "(content, exclusions, /)"]
-pub fn tokenise_and_join_with_spaces(content: &str, exclusions: Vec<&str>) -> String {
-    tokeniser::tokenise_and_join_with_spaces(content.as_bytes(), &exclusions)
+pub fn tokenise_and_join_with_spaces(py: Python, content: &str, exclusions: Vec<&str>) -> String {
+    py.allow_threads(|| tokeniser::tokenise_and_join_with_spaces(content.as_bytes(), &exclusions))
 }
 
 /// `athena` is a Python module implemented in Rust which decorates
