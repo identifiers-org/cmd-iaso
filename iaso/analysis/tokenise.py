@@ -20,7 +20,7 @@ def tokenise_pings(inner_progress, pings):
         )
 
     lowered_luis = set(luis)
-    lowered_luis.update(lui.lower() for luis in luis)
+    lowered_luis.update(lui.lower() for lui in luis)
 
     extended_luis = set()
 
