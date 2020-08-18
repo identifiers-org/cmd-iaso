@@ -10,7 +10,6 @@ from pathlib import Path
 from tqdm import tqdm
 
 from .dump2pings import dump2pings
-from .tokenise import tokenise_pings
 from .common_fragments import extract_common_fragments_per_lui
 from .suffix_tree import extract_shared_suffix_tree
 from .shared_fragments import extract_shared_fragments_from_tree
@@ -40,14 +39,9 @@ def analyse_single_file(outer_progress, inner_progress, filepath, rid):
     with outer_progress, inner_progress:
         outer_progress.set_postfix({"rid": rid})
 
-        luis, tokens, https = tokenise_pings(inner_progress, dump2pings(filepath))
-
         luis, common_fragments_per_lui = extract_common_fragments_per_lui(
-            inner_progress, luis, tokens, https
+            inner_progress, filepath
         )
-
-        del tokens
-        del https
 
         gc.collect()
 
@@ -81,7 +75,7 @@ def analyse_dumped_information_content(dump_path):
             "inner_progress": tqdm(position=1, desc="Loading scraped resource"),
         }
 
-        for i, filename in enumerate(files[130:]):
+        for i, filename in enumerate(files):
             progress["inner_progress"].set_description("Loading scraped resource")
             progress["inner_progress"].reset(total=1)
 
@@ -105,6 +99,8 @@ def analyse_dumped_information_content(dump_path):
             )
             process.start()
 
+            # TODO: handle ctrl-c and kill
+
             pipe_write.close()
 
             while True:
@@ -119,6 +115,8 @@ def analyse_dumped_information_content(dump_path):
             progress["inner_progress"].reset(total=1)
 
             process.join()
+
+            progress["outer_progress"].update()
 
             time.sleep(1)
 

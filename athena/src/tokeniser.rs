@@ -87,7 +87,7 @@ pub fn tokenise_and_join_with_spaces(content: &[u8], exclusions: &[&str]) -> Str
     //      unicode-word-boundaries-may-prevent-the-dfa-from-being-used)
     let pattern = std::iter::once(URL_PATTERN.to_owned())
         .chain(exclusions.iter().copied().map(escape))
-        .map(|p| format!(r"(?:(?-u:\b){}(?-u:\b))", p))
+        .map(|p| format!(r"(?:(?-u:\b)(?i:{})(?-u:\b))", p))
         .join("|");
 
     // Remove all URLs and exclusions from the text
