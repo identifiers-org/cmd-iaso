@@ -5,8 +5,8 @@ from athena import tokenise_and_join_with_spaces
 
 
 def tokenise_pings(inner_progress, pings):
-    inner_progress.reset(total=len(pings))
     inner_progress.set_description("Tokensising scraped responses")
+    inner_progress.reset(total=len(pings))
 
     luis = []
     contents = []

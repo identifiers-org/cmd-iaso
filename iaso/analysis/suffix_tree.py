@@ -4,8 +4,8 @@ from athena import SharedFragmentTree
 def extract_shared_suffix_tree(
     outer_progress, inner_progress, rid, luis, common_fragments_per_lui
 ):
-    inner_progress.reset()
     inner_progress.set_description("Extracting shared suffix tree")
+    inner_progress.reset(total=1)
 
     outer_progress.set_postfix(
         {
