@@ -17,7 +17,7 @@ from .pool import scrape_resources_pool
 
 
 async def scrape_resources(
-    jobs, total_jobs, dump, proxy_address, chrome, workers, timeout
+    jobs, total_jobs, dump, proxy_address, chrome, workers, timeout, log
 ):
     if chrome is None:
         if not check_chromium():
@@ -51,4 +51,5 @@ async def scrape_resources(
                 total_jobs,
                 workers,
                 timeout,
+                log,
             )

@@ -54,9 +54,15 @@ from ..scraping.jobs.resume import filter_completed_jobs
 @click.option(
     "--timeout", type=click.IntRange(min=5), default=30, show_envvar=True,
 )
+@click.option(
+    "--log",
+    type=click.Choice(["null", "stderr", "scrape.log"]),
+    default="scrape.log",
+    show_envvar=True,
+)
 @wrap_docker()
 @coroutine
-async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout, resume):
+async def scrape(ctx, jobs, dump, resume, proxy, chrome, workers, timeout, log):
     """
     Runs the data scraping pipeline to gather information on the jobs
     defined in the JOBS file and stores them inside the DUMP folder.
@@ -69,7 +75,8 @@ async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout, resume):
     it automatically after the scraping has finished. It uses the same proxy
     that can be launched using:
     > cmd-iaso proxy3 --port FREE_PORT --timeout TIMEOUT / 3
-    --proxy launch is the default setting.
+    --proxy launch is the default setting, which will implicitly discard
+    the proxy's log.
     
     --proxy IPv4:PORT / --localhost IPv6:PORT / --proxy localhost:PORT connects
     to a running proxy instance at the specified address. The proxy will not
@@ -90,6 +97,11 @@ async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout, resume):
     to load, especially dynamically loaded websites using JavaScript to provide
     their content. The timeout is also used to cull left-over processes.
     By default, a timeout of 30 seconds is used.
+    
+    --log specifies which logging output to use. 'null' discards all messages,
+    'stderr' redirects them to stderr and 'scrape.log' appends them to the
+    scrape.log file in the current working directory. By default, all messages
+    are appended to scrape.log.
     """
     if not resume and os.listdir(dump):
         click.confirm(
@@ -153,4 +165,5 @@ async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout, resume):
         chrome,
         workers,
         timeout,
+        log,
     )

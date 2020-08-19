@@ -85,19 +85,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         self.logger = logging.getLogger("proxy3")
 
-        if not self.logger.hasHandlers():
-            self.logger.setLevel(logging.DEBUG)
-
-            fh = logging.FileHandler("proxy3.log")
-            fh.setLevel(logging.DEBUG)
-
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            fh.setFormatter(formatter)
-
-            self.logger.addHandler(fh)
-
         super().__init__(*args, **kwargs)
 
     def handle(self):
@@ -429,6 +416,7 @@ def serve(
     protocol="HTTP/1.1",
     ignore_sigint=False,
     tempdir=None,
+    log=None,
 ):
     if ignore_sigint:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -479,6 +467,18 @@ def serve(
         server_address = ("", port)
 
         ProxyRequestHandler.protocol_version = protocol
+
+        logger = logging.getLogger("proxy3")
+        logger.setLevel(logging.DEBUG)
+
+        if log is not None:
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+            log.setFormatter(formatter)
+
+            logger.addHandler(log)
+
         httpd = ServerClass(server_address, ProxyRequestHandler)
 
         sa = httpd.socket.getsockname()

@@ -24,6 +24,7 @@ def fetch_resource_worker(
     timeout,
     tempdir,
     scraping_pings_lock,
+    log,
     rid,
     lui,
     random,
@@ -54,14 +55,23 @@ def fetch_resource_worker(
 
         return loop.run_until_complete(coro)
     except:
-        if os.path.exists(scraping_pings_lock):
-            with FileLock(scraping_pings_lock):
-                with open("scraper.log", "a") as log:
-                    log.write(
-                        f"Error at rid={rid} lui={lui} url={url} random={random}:\n"
-                    )
+        if log != "null":
+            if os.path.exists(scraping_pings_lock):
+                with FileLock(scraping_pings_lock):
+                    try:
+                        if log == "stderr":
+                            logf = sys.stderr
+                        else:
+                            logf = open("scrape.log", "a")
 
-                    traceback.print_exc(file=log)
+                        logf.write(
+                            f"Error at rid={rid} lui={lui} url={url} random={random}:\n"
+                        )
+
+                        traceback.print_exc(file=logf)
+                    finally:
+                        if log == "scrape.log":
+                            logf.close()
 
 
 async def fetch_resource(
