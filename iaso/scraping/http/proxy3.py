@@ -175,7 +175,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection.do_handshake()
         except ssl.SSLError as err:
-            self.log_error("line 185: %s", repr(err))
+            self.log_error("line 177: %s", repr(err))
             if err.args[1].find("sslv3 alert") == -1:
                 raise err
 
@@ -263,12 +263,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             try:
                 socket = res._connection.sock or res._original_response.fp.raw._sock
 
-                ip_address, port = socket.getpeername()
-                ip_address = ipaddress.ip_address(ip_address)
+                if getattr(socket, "getpeername", None) is not None:
+                    ip_address, port = socket.getpeername()
+                    ip_address = ipaddress.ip_address(ip_address)
 
-                ip_address = (
-                    f"[{ip_address}]" if ip_address.version == 6 else ip_address
-                )
+                    ip_address = (
+                        f"[{ip_address}]" if ip_address.version == 6 else ip_address
+                    )
 
                 self.send_header("X-IP-Port", f"{ip_address}:{port}")
             except Exception as err:
@@ -471,13 +472,15 @@ def serve(
         logger = logging.getLogger("proxy3")
         logger.setLevel(logging.DEBUG)
 
-        if log is not None:
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            log.setFormatter(formatter)
+        if log is None:
+            log = logging.NullHandler()
 
-            logger.addHandler(log)
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        log.setFormatter(formatter)
+
+        logger.addHandler(log)
 
         httpd = ServerClass(server_address, ProxyRequestHandler)
 
