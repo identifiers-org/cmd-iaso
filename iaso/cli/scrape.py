@@ -1,4 +1,5 @@
 import json
+import os
 import socket
 
 from pathlib import Path
@@ -17,6 +18,7 @@ from ..environment import collect_environment_description
 
 from ..scraping import scrape_resources
 from ..scraping.jobs import ScrapingJobs
+from ..scraping.jobs.resume import filter_completed_jobs
 """,
 )
 
@@ -36,6 +38,9 @@ from ..scraping.jobs import ScrapingJobs
     ),
 )
 @click.option(
+    "--resume", is_flag=True,
+)
+@click.option(
     "--proxy", type=ChromeChoice(), default="launch", show_envvar=True,
 )
 @click.option(
@@ -51,10 +56,13 @@ from ..scraping.jobs import ScrapingJobs
 )
 @wrap_docker()
 @coroutine
-async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout):
+async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout, resume):
     """
     Runs the data scraping pipeline to gather information on the jobs
     defined in the JOBS file and stores them inside the DUMP folder.
+    
+    --resume allows you to resume a previously (partially) run scraping job.
+    Otherwise, the DUMP folder will be cleared of any existing files or folders.
     
     \b
     --proxy launch launches a new proxy instance at a free port and closes
@@ -83,6 +91,28 @@ async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout):
     their content. The timeout is also used to cull left-over processes.
     By default, a timeout of 30 seconds is used.
     """
+    if not resume and os.listdir(dump):
+        click.confirm(
+            f"{dump} already contains files. Do you want to continue and clear all files in {dump}?",
+            abort=True,
+        )
+
+        for subdir, dirs, files in os.walk(dump, topdown=False):
+            subdir = Path(subdir)
+
+            for dirc in dirs:
+                os.rmdir(subdir / dirc)
+
+            for file in files:
+                os.remove(subdir / file)
+    elif resume and not (Path(dump) / "PROGRESS").exists():
+        raise click.UsageError(
+            click.style(
+                f"You cannot use --resume here as {dump} does not contain a progress report.",
+                fg="red",
+            )
+        )
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     if proxy != "launch":
@@ -107,8 +137,17 @@ async def scrape(ctx, jobs, dump, proxy, chrome, workers, timeout):
 
         json.dump(environment, file)
 
+    click.echo(f"Loading the scraping jobs from {jobs} ...")
+
+    jobs = ScrapingJobs(jobs)
+    total_jobs = len(jobs)
+
+    if resume:
+        jobs = filter_completed_jobs(jobs, Path(dump) / "PROGRESS")
+
     await scrape_resources(
-        ScrapingJobs(jobs),
+        jobs,
+        total_jobs,
         dump,
         proxy if proxy != "launch" else None,
         chrome,

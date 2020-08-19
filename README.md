@@ -136,10 +136,10 @@ To run the data scraping pipeline, you must first create a new folder to save th
 ```
 Now, you can run the data scaping command to run the jobs defined in the `JOBS` file and save the results in the `DUMP` folder:
 ```
-> cmd-iaso scrape JOBS DUMP [--proxy PROXY] [--chrome CHROME] [--workers WORKERS] [--timeout TIMEOUT]
+> cmd-iaso scrape JOBS DUMP [--resume] [--proxy PROXY] [--chrome CHROME] [--workers WORKERS] [--timeout TIMEOUT]
 ```
 This command is highly customisable. Firstly, you can automatically launch a proxy (this is default option but can also be done explicitly using `--proxy launch`) or connect to an existing one by providing its address, e.g. `--proxy localhost:8080`. The `--chrome` option should be used with care, as it provides the path to the Chrome browser executable. By not providing this option, `cmd-iaso` will use a version of Chromium that is automatically downloaded if required. `WORKERS` specifies the number of processes that should be launched in parallel to work on different scraping jobs. Lastly, `TIMEOUT` specifies in seconds a baseline timeout that will be used to cancel too long-running scraping jobs.
-Running this command will take some time, so a progress bar is provided to keep the user informed. It is also important to note that this command will report any unexpected errors to stdout. Additional edge case handling might be added to deal with them more gracefully in the future.
+Running this command will take some time, so a progress bar is provided to keep the user informed. If you want to pause the scraping, you can iterrupt it using `CTRL-C` or `CMD-C` depending on your operating system. The scraper will then shutdown and wait for all running workers to complete. A paused scraping task can be resumed later on by passing the `--resume` flag to the command.
 
 ### Converting the raw data dumps into a structured datamine
 The collected raw data dumps contain mostly raw information about the scraped resources. To collect and compress this data into a structured format that can be read by the curation process, you can run:

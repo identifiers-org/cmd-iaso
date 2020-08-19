@@ -1,5 +1,6 @@
 import asyncio
 import gzip
+import json
 import logging
 import os
 import pickle
@@ -17,7 +18,16 @@ from .http import scrape_http_resource
 
 
 def fetch_resource_worker(
-    dump, proxy_address, chrome, timeout, tempdir, rid, lui, random, url
+    dump,
+    proxy_address,
+    chrome,
+    timeout,
+    tempdir,
+    scraping_pings_lock,
+    rid,
+    lui,
+    random,
+    url,
 ):
     try:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -25,7 +35,16 @@ def fetch_resource_worker(
         loop = asyncio.new_event_loop()
 
         coro = fetch_resource(
-            dump, proxy_address, chrome, timeout, tempdir, rid, lui, random, url
+            dump,
+            proxy_address,
+            chrome,
+            timeout,
+            tempdir,
+            scraping_pings_lock,
+            rid,
+            lui,
+            random,
+            url,
         )
 
         asyncio.set_event_loop(loop)
@@ -35,23 +54,34 @@ def fetch_resource_worker(
 
         return loop.run_until_complete(coro)
     except:
-        if os.path.exists(tempdir / "pings.lock"):
-            with FileLock(tempdir / "pings.lock"):
+        if os.path.exists(scraping_pings_lock):
+            with FileLock(scraping_pings_lock):
                 with open("scraper.log", "a") as log:
-                    log.write(f"Error at rid={rid} lui={lui} url={url} random={random}")
+                    log.write(
+                        f"Error at rid={rid} lui={lui} url={url} random={random}:\n"
+                    )
 
                     traceback.print_exc(file=log)
 
 
 async def fetch_resource(
-    dump, proxy_address, chrome, timeout, tempdir, rid, lui, random, url
+    dump,
+    proxy_address,
+    chrome,
+    timeout,
+    tempdir,
+    scraping_pings_lock,
+    rid,
+    lui,
+    random,
+    url,
 ):
     try:
         parsed = urlparse(url)
 
         if parsed.scheme == "http" or parsed.scheme == "https":
             request_date, redirects, content, content_type = await asyncio.wait_for(
-                scrape_http_resource(proxy_address, chrome, timeout, url),
+                scrape_http_resource(tempdir, proxy_address, chrome, timeout, url),
                 timeout=(timeout * 2),
             )
         elif parsed.scheme == "ftp":
@@ -70,10 +100,13 @@ async def fetch_resource(
             "content-type": content_type,
         }
 
-        if os.path.exists(tempdir / "pings.lock"):
-            with FileLock(tempdir / "pings.lock"):
+        if os.path.exists(scraping_pings_lock):
+            with FileLock(scraping_pings_lock):
                 with gzip.open(dump / f"pings_{rid}.gz", "ab") as file:
                     pickle.dump(ping, file)
+
+                with open(dump / "PROGRESS", "a") as file:
+                    json.dump((rid, lui, random, url), file)
 
     except asyncio.TimeoutError:
         pass

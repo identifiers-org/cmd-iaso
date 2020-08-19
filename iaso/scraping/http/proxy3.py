@@ -428,11 +428,16 @@ def serve(
     ServerClass=ThreadingHTTPServer,
     protocol="HTTP/1.1",
     ignore_sigint=False,
+    tempdir=None,
 ):
     if ignore_sigint:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    with NamedTemporaryFile() as cakey, NamedTemporaryFile() as cacert, NamedTemporaryFile() as certkey, TemporaryDirectory() as certdir:
+    with NamedTemporaryFile(dir=tempdir) as cakey, NamedTemporaryFile(
+        dir=tempdir
+    ) as cacert, NamedTemporaryFile(dir=tempdir) as certkey, TemporaryDirectory(
+        dir=tempdir
+    ) as certdir:
         devnull = open(os.devnull, "w")
 
         Popen(

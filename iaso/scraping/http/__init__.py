@@ -1,9 +1,12 @@
+import asyncio
 import logging
 import os
+import shutil
+import tempfile
 
 from datetime import datetime, timezone
 
-os.environ["PYPPETEER_CHROMIUM_REVISION"] = "796222"
+os.environ["PYPPETEER_CHROMIUM_REVISION"] = "782078"
 
 from .pyppeteer import launch_browser, new_page
 from .navigate import navigate_http_resource
@@ -13,7 +16,7 @@ from pyppeteer import errors as pyppeteer_errors
 from requests import codes as status_code_values
 
 
-async def scrape_http_resource(proxy_address, chrome, timeout, url):
+async def scrape_http_resource(tempdir, proxy_address, chrome, timeout, url):
     logging.getLogger("pyppeteer").setLevel(logging.CRITICAL + 1)
 
     while True:
@@ -23,34 +26,48 @@ async def scrape_http_resource(proxy_address, chrome, timeout, url):
             if chrome is not None:
                 options["executablePath"] = chrome
 
-            async with launch_browser(
-                headless=True,
-                ignoreHTTPSErrors=True,
-                autoClose=True,
-                handleSIGINT=False,
-                handleSIGTERM=False,
-                handleSIGHUP=False,
-                args=[
-                    "--no-sandbox",
-                    f"--proxy-server={proxy_address}",
-                    "--disable-gpu",
-                ],
-                **options,
-            ) as browser:
-                async with new_page(browser) as page:
-                    (
-                        request_date,
-                        navigations,
-                        content,
-                        content_type,
-                    ) = await navigate_http_resource(
-                        page,
-                        url,
-                        timeout,
-                        *(await setup_page_monitoring(browser, page)),
-                    )
+            try:
+                userDataDir = tempfile.mkdtemp(dir=tempdir)
 
-                break
+                async with launch_browser(
+                    headless=True,
+                    ignoreHTTPSErrors=True,
+                    userDataDir=userDataDir,
+                    autoClose=True,
+                    handleSIGINT=False,
+                    handleSIGTERM=False,
+                    handleSIGHUP=False,
+                    args=[
+                        "--no-sandbox",
+                        f"--proxy-server={proxy_address}",
+                        "--disable-gpu",
+                    ],
+                    **options,
+                ) as browser:
+                    async with new_page(browser) as page:
+                        (
+                            request_date,
+                            navigations,
+                            content,
+                            content_type,
+                        ) = await navigate_http_resource(
+                            tempdir,
+                            page,
+                            url,
+                            timeout,
+                            *(await setup_page_monitoring(browser, page)),
+                        )
+
+                    break
+            finally:
+                for retry in range(100):
+                    if os.path.exists(userDataDir):
+                        shutil.rmtree(userDataDir, ignore_errors=True)
+
+                        if os.path.exists(userDataDir):
+                            await asyncio.sleep(0.01)
+                    else:
+                        break
         except pyppeteer_errors.TimeoutError:
             return (
                 datetime.now(timezone.utc).replace(microsecond=0, tzinfo=None),

@@ -12,7 +12,7 @@ from ..content_type import get_mime_type, get_encoding, get_content_type, decode
 
 
 async def navigate_http_resource(
-    page, url, timeout, requests, responses, failures, navigations,
+    tempdir, page, url, timeout, requests, responses, failures, navigations,
 ):
     response = None
 
@@ -21,7 +21,7 @@ async def navigate_http_resource(
 
     err_acc = None
 
-    with TemporaryDirectory() as downloadPath:
+    with TemporaryDirectory(dir=tempdir) as downloadPath:
         # Enable downloading to a temporary downloadPath
         await page._client.send(
             "Page.setDownloadBehavior",
