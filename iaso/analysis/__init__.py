@@ -1,6 +1,7 @@
 import gc
 import os
 import re
+import signal
 import time
 
 from functools import partial
@@ -75,6 +76,13 @@ def analyse_dumped_information_content(dump_path):
             "inner_progress": tqdm(position=1, desc="Loading scraped resource"),
         }
 
+        analysis_interrupted = [False]
+
+        def signal_handler(signal, frame):
+            analysis_interrupted[0] = True
+
+        signal.signal(signal.SIGINT, signal_handler)
+
         for i, filename in enumerate(files):
             progress["inner_progress"].set_description("Loading scraped resource")
             progress["inner_progress"].reset(total=1)
@@ -99,8 +107,6 @@ def analyse_dumped_information_content(dump_path):
             )
             process.start()
 
-            # TODO: handle ctrl-c and kill
-
             pipe_write.close()
 
             while True:
@@ -117,6 +123,9 @@ def analyse_dumped_information_content(dump_path):
             process.join()
 
             progress["outer_progress"].update()
+
+            if analysis_interrupted[0]:
+                break
 
             time.sleep(1)
 
