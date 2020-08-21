@@ -32,6 +32,7 @@ class RedirectFlagError(CurationValidator, ABC):
                     collector.add(
                         RedirectFlagError.format_lui_link(redirect.url, ping.lui),
                         get_compact_identifier(ping.lui, provider.id),
+                        ping.random,
                     )
 
         if len(collector) == 0:

@@ -42,6 +42,8 @@ import ssl
 import threading
 import time
 import urllib.parse
+
+from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -122,12 +124,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def connect_intercept(self):
         hostname = self.path.split(":")[0]
-        certpath = "%s/%s.crt" % (self.certdir.rstrip("/"), hostname)
+        certpath = f"{Path(self.certdir) / hostname}.crt"
 
         with self.lock:
             if not os.path.isfile(certpath):
                 epoch = "%d" % (time.time() * 1000)
 
+                # TODO: can we use a wildcard CN with pyppeteer?
                 p1 = Popen(
                     [
                         "openssl",
@@ -175,7 +178,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection.do_handshake()
         except ssl.SSLError as err:
-            self.log_error("line 177: %s", repr(err))
+            self.log_error("line 179: %s", repr(err))
             if err.args[1].find("sslv3 alert") == -1:
                 raise err
 
@@ -482,7 +485,12 @@ def serve(
 
         logger.addHandler(log)
 
-        httpd = ServerClass(server_address, ProxyRequestHandler)
+        try:
+            httpd = ServerClass(server_address, ProxyRequestHandler)
+        except OSError as err:
+            raise click.UsageError(
+                click.style(f"Could not open port {port}: {err}.", fg="red")
+            )
 
         sa = httpd.socket.getsockname()
 

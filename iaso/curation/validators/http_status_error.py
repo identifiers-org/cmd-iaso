@@ -83,6 +83,7 @@ class HTTPStatusError(CurationValidator):
                             ping.redirects[-1].url, ping.lui
                         ),
                         get_compact_identifier(ping.lui, provider.id),
+                        ping.random,
                     )
 
             if len(collector) > 0:

@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 
 class hashabledict(dict):
@@ -26,8 +26,10 @@ class ErrorExampleCollector:
 
         return obj
 
-    def add(self, info, compid):
-        self.collector[ErrorExampleCollector.make_hashable(info)].append(compid)
+    def add(self, info, compid, random):
+        self.collector[ErrorExampleCollector.make_hashable(info)].append(
+            (compid, random)
+        )
 
     def __len__(self):
         return len(self.collector)
@@ -37,8 +39,9 @@ class ErrorExampleCollector:
             {
                 self.name: info,
                 "Example Compact Identifiers": [
-                    f"[{compid}](https://identifiers.org/resolve?query={compid})"
-                    for compid in set(compids)
+                    f"{count} x [{compid}](https://identifiers.org/resolve?query={compid}) "
+                    + f"({'' if random else 'non-'}random)"
+                    for (compid, random), count in Counter(compids).most_common()
                 ],
             }
             for info, compids in self.collector.items()

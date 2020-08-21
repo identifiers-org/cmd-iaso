@@ -32,6 +32,7 @@ class RedirectChain(CurationValidator):
                     for redirect in ping.redirects
                 ],
                 get_compact_identifier(ping.lui, provider.id),
+                ping.random,
             )
 
         if len(collector) == 0:
