@@ -124,13 +124,18 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def connect_intercept(self):
         hostname = self.path.split(":")[0]
+
+        # In the (very infrequent) case that the hostname is longer than
+        # 64 characters, truncate it with a wildcard
+        if len(hostname) > 64:
+            hostname = f"*{hostname[-63:]}"
+
         certpath = f"{Path(self.certdir) / hostname}.crt"
 
         with self.lock:
             if not os.path.isfile(certpath):
                 epoch = "%d" % (time.time() * 1000)
 
-                # TODO: can we use a wildcard CN with pyppeteer?
                 p1 = Popen(
                     [
                         "openssl",
@@ -178,7 +183,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection.do_handshake()
         except ssl.SSLError as err:
-            self.log_error("line 179: %s", repr(err))
+            self.log_error("line 184: %s", repr(err))
             if err.args[1].find("sslv3 alert") == -1:
                 raise err
 
