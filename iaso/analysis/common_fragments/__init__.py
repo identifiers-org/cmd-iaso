@@ -1,4 +1,5 @@
 import gzip
+import mmap
 import multiprocessing as mp
 import os
 import pickle
@@ -18,19 +19,20 @@ def extract_common_fragments_per_lui(inner_progress, filepath):
 
     lui_entry_points = defaultdict(list)
 
-    with open(filepath, "rb") as raw:
-        entry_points = [m.start() for m in re.finditer(b"\x1f\x8b", raw.read())]
+    with open(filepath, "r+b") as raw:
+        with mmap.mmap(raw.fileno(), 0) as raw:
+            entry_points = [m.start() for m in re.finditer(b"\x1f\x8b", raw)]
 
-        for entry_point in entry_points:
-            raw.seek(entry_point)
+            for entry_point in entry_points:
+                raw.seek(entry_point)
 
-            try:
-                with gzip.GzipFile(fileobj=raw, mode="rb") as file:
-                    lui_entry_points[pickle.load(file)["lui"]].append(entry_point)
-            except OSError:
-                pass
-            except Exception as err:
-                pass
+                try:
+                    with gzip.GzipFile(fileobj=raw, mode="rb") as file:
+                        lui_entry_points[pickle.load(file)["lui"]].append(entry_point)
+                except OSError:
+                    pass
+                except Exception as err:
+                    pass
 
     extended_luis = set()
 
