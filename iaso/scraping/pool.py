@@ -115,7 +115,11 @@ async def scrape_resources_pool(
                     except:
                         pass
 
-                    processes_tempdir.pop(process).cleanup()
+                    try:
+                        processes_tempdir.pop(process).cleanup()
+                    except:
+                        pass
+
                     processes_timeout.pop(process)
 
                     progress.update(1)
