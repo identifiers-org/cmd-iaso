@@ -24,13 +24,22 @@ from ..scraping.jobs.generate import generate_scraping_jobs
     type=click.Path(exists=False, writable=True, dir_okay=False, allow_dash=True),
 )
 @click.option(
-    "--valid", type=click.IntRange(min=0), default=1, show_envvar=True,
+    "--valid",
+    type=click.IntRange(min=0),
+    default=1,
+    show_envvar=True,
 )
 @click.option(
-    "--random", type=click.IntRange(min=0), default=99, show_envvar=True,
+    "--random",
+    type=click.IntRange(min=0),
+    default=99,
+    show_envvar=True,
 )
 @click.option(
-    "--pings", type=click.IntRange(min=1), default=5, show_envvar=True,
+    "--pings",
+    type=click.IntRange(min=1),
+    default=5,
+    show_envvar=True,
 )
 @click.option(
     "--valid-namespace-ids",
@@ -45,18 +54,18 @@ def jobs(ctx, jobs, valid, random, pings, valid_namespace_ids):
     """
     Generates the jobs for the data scraping subcommand and stores them at the
     JOBS file path.
-    
+
     --valid specifies the number of valid LUIs from VALID_NAMESPACE_IDS to use
     per resource provider.
     By default, the command attempts to include 50 valid LUIs per provider.
-    
+
     --random specifies the number of LUIs that will be generated randomly per
     resource provider from its namespace's LUI regex pattern.
     By default, the command generates 50 random LUIs per provider.
-    
+
     --pings specifies the number of times each generated LUI will be pinged
     during the data scraping.
-    
+
     Iff --valid VALID is greater than 1, --valid-namespace-ids VALID_NAMESPACE_IDS
     must specify the file path to a namespace ids file.
     """

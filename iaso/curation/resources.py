@@ -80,7 +80,12 @@ def get_informant_title_description_resources(entry, registry, provider_namespac
 
 
 async def curate_resources(
-    registry, Controller, Navigator, Informant, tag_store, session,
+    registry,
+    Controller,
+    Navigator,
+    Informant,
+    tag_store,
+    session,
 ):
     await curate(
         registry,

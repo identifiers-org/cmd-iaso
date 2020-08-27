@@ -41,7 +41,12 @@ def get_informant_title_description_institutions(entry, registry, provider_names
 
 
 async def curate_institutions(
-    registry, Controller, Navigator, Informant, tag_store, session,
+    registry,
+    Controller,
+    Navigator,
+    Informant,
+    tag_store,
+    session,
 ):
     await curate(
         registry,

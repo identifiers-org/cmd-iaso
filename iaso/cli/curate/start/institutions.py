@@ -46,18 +46,21 @@ from ....institutions.academine import Academine
 @wrap_docker()
 @coroutine
 async def institutions(
-    ctx, academine, discard_session, session,
+    ctx,
+    academine,
+    discard_session,
+    session,
 ):
     """
     Starts a new session for the interactive curation process of institutions.
     Reads the deduplicated information on institutions from the ACADEMINE file path.
-    
+
     \b
     --session SESSION stores the session information at the SESSION path.
     If this option is not provided, institutions_session.gz will be used by default.
     To disable storing the new session altogther, use:
     > cmd-iaso curate [...] start institutions [...] --discard-session [...]
-    
+
     \b
     For more information on the interactive curation process, use:
     > cmd-iaso curate --help
@@ -84,5 +87,10 @@ async def institutions(
         ctx.parent.parent.params["chrome"],
         ctx.parent.parent.params["tags"],
         ctx.parent.parent.params["ignored_tags"],
-        InstitutionsCurationSession(session, Academine(academine), 0, set(),),
+        InstitutionsCurationSession(
+            session,
+            Academine(academine),
+            0,
+            set(),
+        ),
     )

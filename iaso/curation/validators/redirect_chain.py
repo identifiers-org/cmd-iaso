@@ -51,4 +51,9 @@ class RedirectChain(CurationValidator):
 
     @staticmethod
     def identify(rid):
-        return TagStore.serialise_identity({"type": "RedirectChain", "rid": rid,})
+        return TagStore.serialise_identity(
+            {
+                "type": "RedirectChain",
+                "rid": rid,
+            }
+        )

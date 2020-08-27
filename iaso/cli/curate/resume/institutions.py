@@ -30,7 +30,7 @@ async def institutions(ctx, session):
     Resumes an existing curation session for the interactive curation process
     of institutions.
     Reads the session information the SESSION file path.
-    
+
     \b
     For more information on the interactive curation process, use:
     > cmd-iaso curate --help

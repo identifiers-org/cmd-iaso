@@ -107,7 +107,9 @@ try:
                 optional=True,
             )
         ],
-        setup_requires=["setuptools-rust",],
+        setup_requires=[
+            "setuptools-rust",
+        ],
     )
 except ImportError:
     print("Please install the setuptools-rust package using:")
@@ -163,7 +165,11 @@ setup_kwargs.update(
         "xeger==0.3.5",
     ],
     setup_requires=(
-        ["setuptools >= 40.8.0", "wheel",] + setup_kwargs.get("setup_requires", [])
+        [
+            "setuptools >= 40.8.0",
+            "wheel",
+        ]
+        + setup_kwargs.get("setup_requires", [])
     ),
     python_requires=">=3.6",
     zip_safe=False,

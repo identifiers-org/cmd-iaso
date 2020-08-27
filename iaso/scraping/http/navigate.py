@@ -12,7 +12,14 @@ from ..content_type import get_mime_type, get_encoding, get_content_type, decode
 
 
 async def navigate_http_resource(
-    tempdir, page, url, timeout, requests, responses, failures, navigations,
+    tempdir,
+    page,
+    url,
+    timeout,
+    requests,
+    responses,
+    failures,
+    navigations,
 ):
     response = None
 

@@ -54,7 +54,12 @@ class RedirectFlagError(CurationValidator, ABC):
 
     @staticmethod
     def identify(type, rid):
-        return TagStore.serialise_identity({"type": type, "rid": rid,})
+        return TagStore.serialise_identity(
+            {
+                "type": type,
+                "rid": rid,
+            }
+        )
 
 
 class DNSError(RedirectFlagError):

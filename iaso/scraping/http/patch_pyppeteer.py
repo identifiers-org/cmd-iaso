@@ -46,7 +46,8 @@ def download_zip(url: str) -> BytesIO:
             total_length = 0
 
         process_bar = tqdm(
-            total=total_length, file=os.devnull if NO_PROGRESS_BAR else None,
+            total=total_length,
+            file=os.devnull if NO_PROGRESS_BAR else None,
         )
 
         # 10 * 1024

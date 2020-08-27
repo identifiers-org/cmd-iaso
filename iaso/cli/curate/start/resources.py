@@ -40,7 +40,10 @@ from ....datamine import Datamine
     show_envvar=True,
 )
 @click.option(
-    "--valid-luis-threshold", type=click.IntRange(0, 100), default=0, show_envvar=True,
+    "--valid-luis-threshold",
+    type=click.IntRange(0, 100),
+    default=0,
+    show_envvar=True,
 )
 @click.option(
     "--random-luis-threshold",
@@ -77,32 +80,32 @@ async def resources(
     """
     Starts a new session for the interactive curation process of resource providers.
     Reads the scraped information on providers from the DATAMINE file path.
-    
+
     -v, --validate VALIDATOR enables the VALIDATOR during the curation session.
     By default the dns-error, invalid-response and http-status-error validators
     will be enabled. If this options is provided at least once, only the validators
     mentioned explicitly in the option will be enabled.
-    
+
     \b
     You can list the registered (not yet validated) validator modules using:
     > cmd-iaso curate --list-validators.
-    
+
     --valid-luis-threshold specifies the percentage of pings with valid LUIs to a
     resource which must exhibit an error for it to be reported.
     By default, all errors to valid LUIs are reported.
     Each validator can choose whether to abide by this option or not.
-    
+
     --random-luis-threshold specifies the percentage of pings with random LUIS to
     a resource which must exhibit an error for it to be reported.
     By default, no errors to random LUIs are reported.
     Each validator can choose whether to abide by this option or not.
-    
+
     \b
     --session SESSION stores the session information at the SESSION path.
     If this option is not provided, resources_session.gz will be used by default.
     To disable storing the new session altogther, use:
     > cmd-iaso curate [...] start resources [...] --discard-session [...]
-    
+
     \b
     For more information on the interactive curation process, use:
     > cmd-iaso curate --help

@@ -9,5 +9,8 @@ def NamespaceIds(filepath):
 
 NamespaceIds.SCHEMA = {
     "type": "object",
-    "additionalProperties": {"type": "array", "items": {"type": ["string", "null"]},},
+    "additionalProperties": {
+        "type": "array",
+        "items": {"type": ["string", "null"]},
+    },
 }

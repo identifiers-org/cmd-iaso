@@ -38,10 +38,14 @@ from ..scraping.jobs.resume import filter_completed_jobs
     ),
 )
 @click.option(
-    "--resume", is_flag=True,
+    "--resume",
+    is_flag=True,
 )
 @click.option(
-    "--proxy", type=ChromeChoice(), default="launch", show_envvar=True,
+    "--proxy",
+    type=ChromeChoice(),
+    default="launch",
+    show_envvar=True,
 )
 @click.option(
     "--chrome",
@@ -49,10 +53,16 @@ from ..scraping.jobs.resume import filter_completed_jobs
     default=docker_chrome_path,
 )
 @click.option(
-    "--workers", type=click.IntRange(min=1), default=32, show_envvar=True,
+    "--workers",
+    type=click.IntRange(min=1),
+    default=32,
+    show_envvar=True,
 )
 @click.option(
-    "--timeout", type=click.IntRange(min=5), default=30, show_envvar=True,
+    "--timeout",
+    type=click.IntRange(min=5),
+    default=30,
+    show_envvar=True,
 )
 @click.option(
     "--log",
@@ -66,10 +76,10 @@ async def scrape(ctx, jobs, dump, resume, proxy, chrome, workers, timeout, log):
     """
     Runs the data scraping pipeline to gather information on the jobs
     defined in the JOBS file and stores them inside the DUMP folder.
-    
+
     --resume allows you to resume a previously (partially) run scraping job.
     Otherwise, the DUMP folder will be cleared of any existing files or folders.
-    
+
     \b
     --proxy launch launches a new proxy instance at a free port and closes
     it automatically after the scraping has finished. It uses the same proxy
@@ -77,27 +87,27 @@ async def scrape(ctx, jobs, dump, resume, proxy, chrome, workers, timeout, log):
     > cmd-iaso proxy3 --port FREE_PORT --timeout TIMEOUT / 3
     --proxy launch is the default setting, which will implicitly discard
     the proxy's log.
-    
+
     --proxy IPv4:PORT / --localhost IPv6:PORT / --proxy localhost:PORT connects
     to a running proxy instance at the specified address. The proxy will not
     automatically be closed after the scraping has finished.
-    
+
     --chrome specifies the path to the Chrome browser executable.
     If not specified, the Chromium browser shipped with pyppeteer will be used instead.
-    
+
     --workers specifies the number of concurrent processes to launch to work
     on scraping requests. A value of 1 is equivalent to running the scraping
     sequentially, while higher values can pipeline the scraping and increase
     the throughput drastically. It is recommended not to pick a very large value
     as the proxy might otherwise be overwhelmed and some requests might time out.
     By default, 32 workers are used.
-    
+
     --timeout specifies the timeout in seconds that will be used to cull
     unresponsive scraping requests. Setting a larger value allows slower websites
     to load, especially dynamically loaded websites using JavaScript to provide
     their content. The timeout is also used to cull left-over processes.
     By default, a timeout of 30 seconds is used.
-    
+
     --log specifies which logging output to use. 'null' discards all messages,
     'stderr' redirects them to stderr and 'scrape.log' appends them to the
     scrape.log file in the current working directory. By default, all messages

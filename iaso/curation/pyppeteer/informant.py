@@ -65,7 +65,8 @@ class PyppeteerInformant(CurationInformant):
                 )
 
                 await coordinator.addScriptTagWithId(
-                    "renderjson.js", "iaso-informant-renderjson-script",
+                    "renderjson.js",
+                    "iaso-informant-renderjson-script",
                 )
 
                 await coordinator.addStyleTagWithId(
@@ -73,7 +74,8 @@ class PyppeteerInformant(CurationInformant):
                 )
 
                 await coordinator.addScriptTagWithId(
-                    "tags.js", "iaso-informant-tags-script",
+                    "tags.js",
+                    "iaso-informant-tags-script",
                 )
 
                 issues = []

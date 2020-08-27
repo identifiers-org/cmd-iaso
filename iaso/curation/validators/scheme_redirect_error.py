@@ -52,5 +52,9 @@ class SchemeRedirectError(CurationValidator):
     @staticmethod
     def identify(rid, redirects):
         return TagStore.serialise_identity(
-            {"type": "SchemaRedirectError", "rid": rid, "redirects": sorted(redirects),}
+            {
+                "type": "SchemaRedirectError",
+                "rid": rid,
+                "redirects": sorted(redirects),
+            }
         )
