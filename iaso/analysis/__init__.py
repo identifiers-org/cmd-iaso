@@ -10,7 +10,6 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from .dump2pings import dump2pings
 from .common_fragments import extract_common_fragments_per_lui
 from .suffix_tree import extract_shared_suffix_tree
 from .shared_fragments import extract_shared_fragments_from_tree

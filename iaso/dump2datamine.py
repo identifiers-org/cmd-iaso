@@ -1,4 +1,3 @@
-import gzip
 import json
 import os
 import pickle
@@ -24,40 +23,57 @@ def generate_datamine_from_dump(dump, datamine_path):
     with open(Path(dump) / "ENVIRONMENT", "r") as file:
         environment = json.load(file)
 
-    providers = []
-    errors = defaultdict(list)
+    with open(datamine_path, "w") as file:
+        file.write('{"environment": ')
+        json.dump(environment, file)
+        file.write(', "providers": [')
 
-    for subdir, dirs, files in os.walk(dump):
-        subdir = Path(subdir)
+        errors = defaultdict(list)
 
-        for filename in tqdm(files, desc="Combining scraping dumps"):
-            result = matcher.fullmatch(filename)
+        append_provider = False
 
-            if result is None:
-                continue
+        for subdir, dirs, files in os.walk(dump):
+            subdir = Path(subdir)
 
-            rid = int(result.group(1))
+            for filename in tqdm(files, desc="Combining scraping dumps"):
+                result = matcher.fullmatch(filename)
 
-            pings = [
-                {k: v for k, v in ping.items() if k not in ["content", "content-type"]}
-                for ping in dump2pings(subdir / filename, errors=errors)
-            ]
+                if result is None:
+                    continue
 
-            provider = {
-                "id": rid,
-                "pings": pings,
-            }
+                rid = int(result.group(1))
 
-            providers.append(provider)
+                if append_provider:
+                    file.write(", ")
 
-        break
+                file.write(f'{{"id": {rid}, "pings": [')
 
-    datamine = {
-        "environment": environment,
-        "providers": providers,
-    }
+                try:
+                    append_ping = False
 
-    with gzip.open(datamine_path, "wt") as file:
-        json.dump(datamine, file)
+                    for ping in dump2pings(subdir / filename, errors=errors):
+                        if append_ping:
+                            file.write(", ")
+
+                        json.dump(
+                            {
+                                k: v
+                                for k, v in ping.items()
+                                if k not in ["content", "content-type"]
+                            },
+                            file,
+                        )
+
+                        append_ping = True
+                except StopIteration:
+                    pass
+
+                file.write("]}")
+
+                append_provider = True
+
+            break
+
+        file.write("]}")
 
     return errors
