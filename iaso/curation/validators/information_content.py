@@ -122,7 +122,11 @@ class InformationContent(CurationValidator):
                 "Number of NOISE segments": analysis_per_compid[compid].noise,
             }
             for compid_string, compid in sorted(
-                information_content["Example Compact Identifiers"].items(),
+                (
+                    kv
+                    for kv in information_content["Example Compact Identifiers"].items()
+                    if kv[1] in analysis_per_compid
+                ),
                 key=lambda kv: analysis_per_compid[kv[1]].information_content,
                 reverse=True,
             )
