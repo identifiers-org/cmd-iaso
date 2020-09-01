@@ -37,6 +37,10 @@ class HTTPStatusError(CurationValidator):
 
         code_urls = dict()
 
+        total_compids = Counter(
+            get_compact_identifier(ping.lui, provider.id) for ping in provider.pings
+        )
+
         for status_code, frequency in status_codes.most_common():
             if status_code < status_code_values.multiple_choices:
                 continue
@@ -87,7 +91,7 @@ class HTTPStatusError(CurationValidator):
                     )
 
             if len(collector) > 0:
-                code_urls[status_code] = collector.result()
+                code_urls[status_code] = collector.result(total_compids)
 
         if len(code_urls) == 0:
             return True

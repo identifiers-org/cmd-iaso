@@ -2,6 +2,8 @@ import json
 import os
 import pickle
 import re
+import signal
+import time
 
 from collections import defaultdict
 from pathlib import Path
@@ -12,13 +14,15 @@ from tqdm import tqdm
 
 from .analysis.dump2pings import dump2pings
 
-pattern = r"pings_(\d+)\.gz"
-matcher = re.compile(pattern)
+PINGS_PATTERN = re.compile(r"pings_(\d+)\.gz")
 
 
-def generate_datamine_from_dump(dump, datamine_path):
+def generate_datamine_from_dump(dump, datamine_path, analysis):
     if not os.path.exists(Path(dump) / "ENVIRONMENT"):
         raise click.UsageError(f"No ENVIRONMENT file could be found in DUMP {dump}.")
+
+    if analysis:
+        from .analysis import analyse_single_file
 
     with open(Path(dump) / "ENVIRONMENT", "r") as file:
         environment = json.load(file)
@@ -35,13 +39,41 @@ def generate_datamine_from_dump(dump, datamine_path):
         for subdir, dirs, files in os.walk(dump):
             subdir = Path(subdir)
 
-            for filename in tqdm(files, desc="Combining scraping dumps"):
-                result = matcher.fullmatch(filename)
+            outer_progress = tqdm(
+                position=0,
+                total=len(files),
+                desc=(
+                    "Combining "
+                    + ("and Analysing " if analysis else "")
+                    + "scraping dumps"
+                ),
+            )
+            inner_progress = tqdm(position=1, desc="Loading scraped resource")
+
+            analysis_interrupted = [False]
+
+            def signal_handler(signal, frame):
+                analysis_interrupted[0] = True
+
+                print()
+                print("Interrupting the dump2datamine command ...")
+                print("Waiting for the current task to finish ...")
+                print()
+
+            signal.signal(signal.SIGINT, signal_handler)
+
+            for i, filename in enumerate(files):
+                inner_progress.set_description("Loading scraped resource")
+                inner_progress.reset(total=1)
+
+                result = PINGS_PATTERN.fullmatch(filename)
 
                 if result is None:
                     continue
 
                 rid = int(result.group(1))
+
+                # Combining dump
 
                 if append_provider:
                     file.write(", ")
@@ -55,22 +87,41 @@ def generate_datamine_from_dump(dump, datamine_path):
                         if append_ping:
                             file.write(", ")
 
-                        json.dump(
-                            {
-                                k: v
-                                for k, v in ping.items()
-                                if k not in ["content", "content-type"]
-                            },
-                            file,
-                        )
+                        ping["empty_content"] = ping.get("content", None) is None
+
+                        ping.pop("content", None)
+                        ping.pop("content-type", None)
+
+                        json.dump(ping, file)
 
                         append_ping = True
                 except StopIteration:
                     pass
 
-                file.write("]}")
+                # Optional analysis
+
+                file.write('], "analysis": ')
+
+                if analysis:
+                    analyse_single_file(
+                        file, subdir, outer_progress, inner_progress, filename, rid
+                    )
+                else:
+                    file.write("null")
+
+                # Finishing datamine provider entry
+
+                file.write("}")
 
                 append_provider = True
+
+                outer_progress.update()
+
+                if analysis_interrupted[0]:
+                    break
+
+                if analysis:
+                    time.sleep(1)
 
             break
 

@@ -129,12 +129,13 @@ setup_kwargs.update(
     entry_points={
         "console_scripts": ["cmd-iaso = iaso.cli:main"],
         "iaso.plugins": [
-            "redirection-chain = iaso.curation.validators.redirect_chain:RedirectChain",
             "dns-error = iaso.curation.validators.redirect_flag_error:DNSError",
-            "ssl-error = iaso.curation.validators.redirect_flag_error:SSLError",
-            "invalid-response = iaso.curation.validators.redirect_flag_error:InvalidResponseError",
             "http-status-error = iaso.curation.validators.http_status_error:HTTPStatusError",
+            "information-content = iaso.curation.validators.information_content:InformationContent",
+            "invalid-response = iaso.curation.validators.redirect_flag_error:InvalidResponseError",
+            "redirection-chain = iaso.curation.validators.redirect_chain:RedirectChain",
             "scheme-only-redirect = iaso.curation.validators.scheme_redirect_error:SchemeRedirectError",
+            "ssl-error = iaso.curation.validators.redirect_flag_error:SSLError",
         ],
     },
     packages=(find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"])),

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import Counter
 
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
@@ -38,7 +39,15 @@ class RedirectFlagError(CurationValidator, ABC):
         if len(collector) == 0:
             return True
 
-        return Subclass(provider.id, collector.result())
+        return Subclass(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, urls):
         self.rid = rid

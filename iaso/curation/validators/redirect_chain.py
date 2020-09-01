@@ -1,3 +1,5 @@
+from collections import Counter
+
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
 from ..tag_store import TagStore
@@ -38,7 +40,15 @@ class RedirectChain(CurationValidator):
         if len(collector) == 0:
             return True
 
-        return RedirectChain(provider.id, collector.result())
+        return RedirectChain(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, redirects):
         self.rid = rid

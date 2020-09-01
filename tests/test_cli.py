@@ -42,7 +42,7 @@ class TestCLI:
         runner = CliRunner()
         result = runner.invoke(
             cli,
-            args=["analyse", "--check-athena"],
+            args=["dump2datamine", "--check-athena"],
             prog_name="cmd-iaso",
             catch_exceptions=False,
         )

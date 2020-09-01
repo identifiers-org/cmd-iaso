@@ -31,7 +31,9 @@ def validate_validators(ctx, param, value):
 
     validators = dict()
 
-    for validator_name in set(value):
+    for validator_string in set(value):
+        [validator_name, *validator_params] = validator_string.split(":", 1)
+
         Validator = registered_validators.get(validator_name, None)
 
         if Validator is None:
@@ -41,6 +43,17 @@ def validate_validators(ctx, param, value):
 
         if isinstance(Validator, EntryPoint):
             Validator = Validator.load()
+
+            if len(validator_params) > 0:
+                validator_params = {
+                    param.split("=", 1)[0].strip(): (
+                        param.split("=", 1)[1:] or (True,)
+                    )[0]
+                    for param in validator_params[0].split(",")
+                    if len(param.split("=", 1)[0].strip()) > 0
+                }
+            else:
+                validator_params = dict()
 
             if not issubclass(Validator, CurationValidator):
                 raise click.BadParameter(
@@ -54,7 +67,9 @@ def validate_validators(ctx, param, value):
 
             registered_validators[validator_name] = Validator
 
-        validators[validator_name] = Validator
+            validators[validator_string] = Validator.validate_params(
+                validator_name, **validator_params
+            )
 
     return validators
 

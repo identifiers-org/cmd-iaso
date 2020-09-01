@@ -1,7 +1,21 @@
 from abc import ABC, abstractmethod
 
+import click
+
 
 class CurationValidator(ABC):
+    @classmethod
+    def validate_params(cls, validator_name, **kwargs):
+        if len(kwargs) > 0:
+            raise click.UsageError(
+                click.style(
+                    f"The validator {validator_name} does not accept any parameters.",
+                    fg="red",
+                )
+            )
+
+        return cls
+
     @staticmethod
     @abstractmethod
     def check_and_create(

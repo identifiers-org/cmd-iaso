@@ -1,4 +1,5 @@
 import gc
+import json
 import os
 import re
 import signal
@@ -35,13 +36,18 @@ class IPCProxy:
         self.pipe.close()
 
 
-def analyse_single_file(outer_progress, inner_progress, filepath, rid):
+def analyse_single_file_worker(outer_progress, inner_progress, filepath, rid, datamine):
     with outer_progress, inner_progress:
         outer_progress.set_postfix({"rid": rid})
 
         luis, common_fragments_per_lui = extract_common_fragments_per_lui(
             inner_progress, filepath
         )
+
+        common_lengths = [len(fragments) for fragments in common_fragments_per_lui]
+        common_noise = [
+            fragments.count("NOISE") for fragments in common_fragments_per_lui
+        ]
 
         gc.collect()
 
@@ -61,71 +67,73 @@ def analyse_single_file(outer_progress, inner_progress, filepath, rid):
 
         gc.collect()
 
-        # TODO: calculate and store information metric
+        datamine.write("[")
 
+        append_analysis = False
 
-def analyse_dumped_information_content(dump_path):
-    for subdir, dirs, files in os.walk(dump_path):
-        subdir = Path(subdir)
+        for l, (lui, fragments) in enumerate(zip(luis, shared_fragments)):
+            L = common_lengths[l]
 
-        progress = {
-            "outer_progress": tqdm(
-                position=0, total=len(files), desc="Analysing scraped resources"
-            ),
-            "inner_progress": tqdm(position=1, desc="Loading scraped resource"),
-        }
-
-        analysis_interrupted = [False]
-
-        def signal_handler(signal, frame):
-            analysis_interrupted[0] = True
-
-        signal.signal(signal.SIGINT, signal_handler)
-
-        for i, filename in enumerate(files):
-            progress["inner_progress"].set_description("Loading scraped resource")
-            progress["inner_progress"].reset(total=1)
-
-            result = PINGS_PATTERN.fullmatch(filename)
-
-            if result is None:
+            if L == 0:
                 continue
 
-            rid = int(result.group(1))
+            C = sum(len(fragment) for fragment in fragments)
+            n = len(fragments)
 
-            pipe_read, pipe_write = Pipe(False)
+            info = (L - C + n - 1.0) / L
 
-            process = Process(
-                target=analyse_single_file,
-                args=(
-                    IPCProxy("outer_progress", pipe_write),
-                    IPCProxy("inner_progress", pipe_write),
-                    subdir / filename,
-                    rid,
-                ),
+            if append_analysis:
+                datamine.write(", ")
+
+            json.dump(
+                {
+                    "lui": lui,
+                    "information_content": round(info, 5),
+                    "length": L,
+                    "noise": common_noise[l],
+                },
+                datamine,
             )
-            process.start()
 
-            pipe_write.close()
+            append_analysis = True
 
-            while True:
-                try:
-                    (progress_name, method, args, kwargs) = pipe_read.recv()
+        datamine.write("]")
 
-                    getattr(progress[progress_name], method)(*args, **kwargs)
-                except EOFError:
-                    break
 
-            progress["inner_progress"].set_description("Finalising resource analysis")
-            progress["inner_progress"].reset(total=1)
+def analyse_single_file(
+    datamine, subdir, outer_progress, inner_progress, filename, rid
+):
+    pipe_read, pipe_write = Pipe(False)
 
-            process.join()
+    process = Process(
+        target=analyse_single_file_worker,
+        args=(
+            IPCProxy("outer_progress", pipe_write),
+            IPCProxy("inner_progress", pipe_write),
+            subdir / filename,
+            rid,
+            IPCProxy("datamine", pipe_write),
+        ),
+    )
+    process.start()
 
-            progress["outer_progress"].update()
+    pipe_write.close()
 
-            if analysis_interrupted[0]:
-                break
+    proxies = {
+        "outer_progress": outer_progress,
+        "inner_progress": inner_progress,
+        "datamine": datamine,
+    }
 
-            time.sleep(1)
+    while True:
+        try:
+            (proxy_name, method, args, kwargs) = pipe_read.recv()
 
-        break
+            getattr(proxies[proxy_name], method)(*args, **kwargs)
+        except EOFError:
+            break
+
+    inner_progress.set_description("Finalising resource analysis")
+    inner_progress.reset(total=1)
+
+    process.join()

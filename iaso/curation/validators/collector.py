@@ -34,15 +34,33 @@ class ErrorExampleCollector:
     def __len__(self):
         return len(self.collector)
 
-    def result(self):
+    def result_compid_list(self, total_compids):
         return [
             {
                 self.name: info,
                 "Example Compact Identifiers": [
-                    f"{count} x [{compid}](https://identifiers.org/resolve?query={compid}) "
+                    f"{count}/{total_compids[compid]} x [{compid}](https://identifiers.org/resolve?query={compid}) "
                     + f"({'' if random else 'non-'}random)"
                     for (compid, random), count in Counter(compids).most_common()
                 ],
             }
             for info, compids in self.collector.items()
         ]
+
+    def result_compid_dict(self, total_compids):
+        return [
+            {
+                self.name: info,
+                "Example Compact Identifiers": {
+                    (
+                        f"{count}/{total_compids[compid]} x [{compid}](https://identifiers.org/resolve?query={compid}) "
+                        + f"({'' if random else 'non-'}random)"
+                    ): compid
+                    for (compid, random), count in Counter(compids).most_common()
+                },
+            }
+            for info, compids in self.collector.items()
+        ]
+
+    def result(self, total_compids):
+        return self.result_compid_list(total_compids)

@@ -1,3 +1,4 @@
+from collections import Counter
 from urllib.parse import urlparse
 
 from ..validator import CurationValidator
@@ -32,7 +33,15 @@ class SchemeRedirectError(CurationValidator):
         if len(collector) == 0:
             return True
 
-        return SchemeRedirectError(provider.id, collector.result())
+        return SchemeRedirectError(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, redirects):
         self.rid = rid
