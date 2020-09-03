@@ -1,5 +1,15 @@
 import click
-import pkg_resources
+
+try:
+    from importlib.metadata import EntryPoint, entry_points
+
+    def iter_entry_points(path):
+        return entry_points().get(path, [])
+
+
+except ImportError:
+    # Running on pre-3.8 Python
+    from pkg_resources import iter_entry_points, EntryPoint
 
 from ..curation.validator import CurationValidator
 
@@ -10,7 +20,7 @@ def ensure_registered_validators(ctx):
     if registered_validators is None:
         registered_validators = ctx.obj["validators"] = {
             entry_point.name: entry_point
-            for entry_point in pkg_resources.iter_entry_points("iaso.plugins")
+            for entry_point in iter_entry_points("iaso.plugins")
         }
 
     return registered_validators
@@ -21,7 +31,9 @@ def validate_validators(ctx, param, value):
 
     validators = dict()
 
-    for validator_name in set(value):
+    for validator_string in set(value):
+        [validator_name, *validator_params] = validator_string.split(":", 1)
+
         Validator = registered_validators.get(validator_name, None)
 
         if Validator is None:
@@ -29,8 +41,19 @@ def validate_validators(ctx, param, value):
                 f"{validator_name} is not a registered validator plugin in 'iaso.plugins'."
             )
 
-        if isinstance(Validator, pkg_resources.EntryPoint):
+        if isinstance(Validator, EntryPoint):
             Validator = Validator.load()
+
+            if len(validator_params) > 0:
+                validator_params = {
+                    param.split("=", 1)[0].strip(): (
+                        param.split("=", 1)[1:] or (True,)
+                    )[0]
+                    for param in validator_params[0].split(",")
+                    if len(param.split("=", 1)[0].strip()) > 0
+                }
+            else:
+                validator_params = dict()
 
             if not issubclass(Validator, CurationValidator):
                 raise click.BadParameter(
@@ -44,7 +67,9 @@ def validate_validators(ctx, param, value):
 
             registered_validators[validator_name] = Validator
 
-        validators[validator_name] = Validator
+            validators[validator_string] = Validator.validate_params(
+                validator_name, **validator_params
+            )
 
     return validators
 

@@ -13,19 +13,24 @@ def find_free_port():
 
 
 class ProxyLauncher:
-    def __init__(self, ctx, timeout, proxy_address):
+    def __init__(self, ctx, timeout, proxy_address, tempdir):
         self.ctx = ctx
         self.timeout = timeout
 
         self.proxy_address = proxy_address
         self.proxy = None
 
+        self.tempdir = tempdir
+
     def __enter__(self):
         if self.proxy_address is None:
             proxy_port = find_free_port()
 
             self.proxy = self.ctx.Process(
-                target=proxy3.serve, args=(proxy_port, self.timeout), daemon=True
+                target=proxy3.serve,
+                args=(proxy_port, self.timeout),
+                kwargs={"ignore_sigint": True, "tempdir": self.tempdir},
+                daemon=True,
             )
             self.proxy.start()
 

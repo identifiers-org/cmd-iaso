@@ -8,7 +8,10 @@ import click
 
 class CurationSession(ABC):
     def __init__(
-        self, filepath, position, visited,
+        self,
+        filepath,
+        position,
+        visited,
     ):
         self.__filepath = filepath
         self.__position = position

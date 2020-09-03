@@ -1,8 +1,9 @@
+from collections import Counter
 from urllib.parse import urlparse
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 def strip_scheme(url):
@@ -23,14 +24,24 @@ class SchemeRedirectError(CurationValidator):
                 ping.redirects[:-1], ping.redirects[1:]
             ):
                 collector.add(
-                    f"{SchemeRedirectError.format_lui_link(redirect_from.url, ping.lui)} => {SchemeRedirectError.format_lui_link(redirect_to.url, ping.lui)}",
+                    f"{SchemeRedirectError.format_lui_link(redirect_from.url, ping.lui)} => "
+                    + f"{SchemeRedirectError.format_lui_link(redirect_to.url, ping.lui)}",
                     get_compact_identifier(ping.lui, provider.id),
+                    ping.random,
                 )
 
         if len(collector) == 0:
             return True
 
-        return SchemeRedirectError(provider.id, collector.result())
+        return SchemeRedirectError(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, redirects):
         self.rid = rid
@@ -38,7 +49,10 @@ class SchemeRedirectError(CurationValidator):
 
     def format(self, formatter):
         formatter.format_json(
-            SchemeRedirectError.identify(self.rid, self.redirects.keys()),
+            SchemeRedirectError.identify(
+                self.rid,
+                [redirect["Schema-Only Redirect"] for redirect in self.redirects],
+            ),
             "Scheme-Only Redirect",
             self.redirects,
             2,
@@ -47,5 +61,9 @@ class SchemeRedirectError(CurationValidator):
     @staticmethod
     def identify(rid, redirects):
         return TagStore.serialise_identity(
-            {"type": "SchemaRedirectError", "rid": rid, "redirects": sorted(redirects),}
+            {
+                "type": "SchemaRedirectError",
+                "rid": rid,
+                "redirects": sorted(redirects),
+            }
         )

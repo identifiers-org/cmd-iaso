@@ -36,15 +36,17 @@ import ipaddress
 import logging
 import os
 import select
+import signal
 import socket
 import ssl
 import threading
 import time
 import urllib.parse
-from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from subprocess import Popen, PIPE
+from pathlib import Path
+from subprocess import PIPE, Popen
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import click
 import urllib3
@@ -84,19 +86,6 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
         self.logger = logging.getLogger("proxy3")
 
-        if not self.logger.hasHandlers():
-            self.logger.setLevel(logging.DEBUG)
-
-            fh = logging.FileHandler("proxy3.log")
-            fh.setLevel(logging.DEBUG)
-
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            fh.setFormatter(formatter)
-
-            self.logger.addHandler(fh)
-
         super().__init__(*args, **kwargs)
 
     def handle(self):
@@ -134,7 +123,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
     def connect_intercept(self):
         hostname = self.path.split(":")[0]
-        certpath = "%s/%s.crt" % (self.certdir.rstrip("/"), hostname)
+
+        # In the (very infrequent) case that the hostname is longer than
+        # 64 characters, truncate it with a wildcard
+        if len(hostname) > 64:
+            hostname = f"*{hostname[-63:]}"
+
+        certpath = f"{Path(self.certdir) / hostname}.crt"
 
         with self.lock:
             if not os.path.isfile(certpath):
@@ -187,7 +182,7 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
         try:
             self.connection.do_handshake()
         except ssl.SSLError as err:
-            self.log_error("line 185: %s", repr(err))
+            self.log_error("line 184: %s", repr(err))
             if err.args[1].find("sslv3 alert") == -1:
                 raise err
 
@@ -275,12 +270,13 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
             try:
                 socket = res._connection.sock or res._original_response.fp.raw._sock
 
-                ip_address, port = socket.getpeername()
-                ip_address = ipaddress.ip_address(ip_address)
+                if getattr(socket, "getpeername", None) is not None:
+                    ip_address, port = socket.getpeername()
+                    ip_address = ipaddress.ip_address(ip_address)
 
-                ip_address = (
-                    f"[{ip_address}]" if ip_address.version == 6 else ip_address
-                )
+                    ip_address = (
+                        f"[{ip_address}]" if ip_address.version == 6 else ip_address
+                    )
 
                 self.send_header("X-IP-Port", f"{ip_address}:{port}")
             except Exception as err:
@@ -422,9 +418,22 @@ class ProxyRequestHandler(BaseHTTPRequestHandler):
 
 
 def serve(
-    port, timeout, ServerClass=ThreadingHTTPServer, protocol="HTTP/1.1",
+    port,
+    timeout,
+    ServerClass=ThreadingHTTPServer,
+    protocol="HTTP/1.1",
+    ignore_sigint=False,
+    tempdir=None,
+    log=None,
 ):
-    with NamedTemporaryFile() as cakey, NamedTemporaryFile() as cacert, NamedTemporaryFile() as certkey, TemporaryDirectory() as certdir:
+    if ignore_sigint:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    with NamedTemporaryFile(dir=tempdir) as cakey, NamedTemporaryFile(
+        dir=tempdir
+    ) as cacert, NamedTemporaryFile(dir=tempdir) as certkey, TemporaryDirectory(
+        dir=tempdir
+    ) as certdir:
         devnull = open(os.devnull, "w")
 
         Popen(
@@ -466,7 +475,26 @@ def serve(
         server_address = ("", port)
 
         ProxyRequestHandler.protocol_version = protocol
-        httpd = ServerClass(server_address, ProxyRequestHandler)
+
+        logger = logging.getLogger("proxy3")
+        logger.setLevel(logging.DEBUG)
+
+        if log is None:
+            log = logging.NullHandler()
+
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        log.setFormatter(formatter)
+
+        logger.addHandler(log)
+
+        try:
+            httpd = ServerClass(server_address, ProxyRequestHandler)
+        except OSError as err:
+            raise click.UsageError(
+                click.style(f"Could not open port {port}: {err}.", fg="red")
+            )
 
         sa = httpd.socket.getsockname()
 

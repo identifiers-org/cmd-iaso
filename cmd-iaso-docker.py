@@ -42,7 +42,10 @@ def main():
     else:
         # Run the returned docker run command whilst binding stdin, stdout and stderr
         run_in_subprocess(
-            cmd.stderr[2:], stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr,
+            cmd.stderr[2:],
+            stdin=sys.stdin,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
 
 

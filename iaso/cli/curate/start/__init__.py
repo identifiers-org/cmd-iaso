@@ -1,7 +1,7 @@
 import click
 
-from ....click.lazy import LazyCommandGroup
 from ....click.docker import wrap_docker
+from ....click.lazy import LazyCommandGroup
 
 
 @click.command(

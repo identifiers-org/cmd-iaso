@@ -1,0 +1,17 @@
+[project]
+name = "iaso"
+authors = [
+  {name = "Moritz Langenstein"}
+]
+description = "cmd-iaso is a command-line tool to help the curators of the identifiers.org registry."
+version = {file = "VERSION"}
+requires-python = ">=3.6"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+[project.urls]
+repository = "https://github.com/identifiers-org/cmd-iaso"
+
+[build-system]
+requires = ["setuptools >= 40.8.0", "wheel", "setuptools-rust"]
+build-backend = "setuptools.build_meta"

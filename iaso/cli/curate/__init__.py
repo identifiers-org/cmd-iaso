@@ -1,9 +1,9 @@
 import click
 
-from ...click.lazy import LazyCommandGroup, lazy_import
-from ...click.mutex import ValidateMutex, MutexOption
-from ...click.docker import wrap_docker
 from ...click.chrome import ChromeChoice
+from ...click.docker import wrap_docker
+from ...click.lazy import LazyCommandGroup, lazy_import
+from ...click.mutex import MutexOption, ValidateMutex
 
 lazy_import(
     globals(),
@@ -91,26 +91,26 @@ def curate(
 ):
     """
     Runs the interactive curation process in the terminal and/or a Chrome browser.
-    
+
     \b
     You can start a new session using:
     > cmd-iaso curate [...] start [...]
     You can resume aan existing session using:
     > cmd-iaso curate [...] resume [...]
-    
+
     The --controller, --navigator and --informant options define whether each of these
     components will be run in the terminal or inside Chrome. By default, curate uses
     --controller chrome --navigator chrome --informant terminal --chrome launch.
-    
+
     The --chrome option must be provided iff at least one component uses Chrome.
-    
+
     --chrome launch launches a new Chrome browser instance and closes it automatically
     after the curation session has finished.
-    
+
     --chrome IPv4:PORT / --chrome IPv6:PORT / --chrome localhost:PORT connects to a
     running Chrome browser at the specified address. The browser will not automatically
     be closed after the curation session has finished.
-    
+
     \b
     You can launch a new Chrome browser using:
     > chrome --remote-debugging-port=PORT
@@ -127,9 +127,9 @@ def curate(
     --statistics can be used to only print a statistical summary of all issues identified
     by the curation process. In this case, none of the --controller, --navigator,
     --informant or --chrome options must be provided.
-    
+
     You can list the registered (not yet validated) validator modules using --list-validators.
-    
+
     \b
     For more information on starting or resuming a curation session, use:
     > cmd-iaso curate start --help

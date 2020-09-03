@@ -1,11 +1,10 @@
-import pyppeteer
-
 from contextlib import suppress
 
 import click
+import pyppeteer
 
-from .navigator import PyppeteerNavigator
 from .coordinator import PyppeteerCoordinator
+from .navigator import PyppeteerNavigator
 
 
 class PyppeteerInstitutionNavigator(PyppeteerNavigator):
@@ -42,4 +41,4 @@ class PyppeteerInstitutionNavigator(PyppeteerNavigator):
                 xpath = f'//a[text()="{institution_name}"]'
                 await self.page.waitForXPath(xpath, timeout=1000)
 
-                await coordinator.evaluate("edit_institution.js", xpath)
+                await coordinator.evaluateScript("edit_institution.js", xpath)

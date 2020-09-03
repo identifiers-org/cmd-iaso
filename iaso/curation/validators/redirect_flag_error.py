@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from collections import Counter
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 class RedirectFlagError(CurationValidator, ABC):
@@ -32,12 +33,21 @@ class RedirectFlagError(CurationValidator, ABC):
                     collector.add(
                         RedirectFlagError.format_lui_link(redirect.url, ping.lui),
                         get_compact_identifier(ping.lui, provider.id),
+                        ping.random,
                     )
 
         if len(collector) == 0:
             return True
 
-        return Subclass(provider.id, collector.result())
+        return Subclass(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, urls):
         self.rid = rid
@@ -53,7 +63,12 @@ class RedirectFlagError(CurationValidator, ABC):
 
     @staticmethod
     def identify(type, rid):
-        return TagStore.serialise_identity({"type": type, "rid": rid,})
+        return TagStore.serialise_identity(
+            {
+                "type": type,
+                "rid": rid,
+            }
+        )
 
 
 class DNSError(RedirectFlagError):

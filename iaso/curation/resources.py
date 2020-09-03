@@ -18,7 +18,10 @@ def get_curation_data_and_validators_resources(session, registry, provider_names
     )
     click.echo(format_json(session.datamine.environment))
 
-    validator_names = list(session.validators.keys())
+    validator_names = list(
+        validator_string.split(":", 1)[0]
+        for validator_string in session.validators.keys()
+    )
 
     if len(validator_names) == 0:
         click.echo(click.style("No validators were loaded.", fg="red"))
@@ -80,7 +83,12 @@ def get_informant_title_description_resources(entry, registry, provider_namespac
 
 
 async def curate_resources(
-    registry, Controller, Navigator, Informant, tag_store, session,
+    registry,
+    Controller,
+    Navigator,
+    Informant,
+    tag_store,
+    session,
 ):
     await curate(
         registry,

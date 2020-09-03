@@ -1,8 +1,8 @@
 import asyncio
 import multiprocessing as mp
+import signal
 import time
 
-from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import psutil
@@ -14,24 +14,44 @@ from .worker import fetch_resource_worker
 
 
 async def scrape_resources_pool(
-    ctx, dump, proxy, proxy_address, chrome, jobs, workers, timeout
+    ctx,
+    dump,
+    tempdir,
+    proxy,
+    proxy_address,
+    chrome,
+    jobs,
+    total_jobs,
+    workers,
+    timeout,
+    log,
 ):
     coordinating_processes = set([proxy]) if proxy is not None else set()
 
-    with TemporaryDirectory() as tempdir:
-        dump = Path(dump)
-        tempdir = Path(tempdir)
+    scraping_pings_lock = tempdir / "pings.lock"
 
-        with tqdm(total=len(jobs)) as progress:
-            processes_timeout = dict()
-            cleanup_timeout = dict()
+    with tqdm(initial=(total_jobs - len(jobs)), total=total_jobs) as progress:
+        processes_timeout = dict()
+        cleanup_timeout = dict()
+        processes_tempdir = dict()
 
-            start_time = time.time()
-            final_timeout = start_time - 1
+        final_timeout = [time.time() - 1]
+
+        try:
+
+            def signal_handler(signal, frame):
+                final_timeout[0] = time.time() + timeout * 4
+                jobs.clear()
+
+                print()
+                print("Shutting down the scraping worker pool ...")
+                print("Waiting for all running workers to complete ...")
+                print()
+
+            signal.signal(signal.SIGINT, signal_handler)
 
             while len(jobs) > 0 or (
-                (len(processes_timeout) > 0 or len(cleanup_timeout) > 0)
-                and time.time() < final_timeout
+                len(processes_timeout) > 0 and time.time() < final_timeout[0]
             ):
                 active_processes = set(mp.active_children()).difference(
                     coordinating_processes
@@ -39,7 +59,7 @@ async def scrape_resources_pool(
 
                 finished_processes = []
 
-                with FileLock(tempdir / "pings.lock"):
+                with FileLock(scraping_pings_lock):
                     for process, ptimeout in processes_timeout.items():
                         if process not in active_processes:
                             pass
@@ -51,7 +71,12 @@ async def scrape_resources_pool(
                         finished_processes.append(process)
 
                 for _ in range(min(workers - len(active_processes), len(jobs))):
-                    rid, lui, random, url = jobs.pop()
+                    try:
+                        rid, lui, random, url = jobs.pop()
+                    except IndexError:
+                        break
+
+                    worker_tempdir = TemporaryDirectory(dir=tempdir)
 
                     process = ctx.Process(
                         target=fetch_resource_worker,
@@ -60,7 +85,9 @@ async def scrape_resources_pool(
                             proxy_address,
                             chrome,
                             timeout,
-                            tempdir,
+                            worker_tempdir.name,
+                            scraping_pings_lock,
+                            log,
                             rid,
                             lui,
                             random,
@@ -69,13 +96,30 @@ async def scrape_resources_pool(
                     )
 
                     processes_timeout[process] = time.time() + timeout * 3
+                    processes_tempdir[process] = worker_tempdir
 
                     process.start()
 
                     if len(jobs) == 0:
-                        final_timeout = time.time() + timeout * 4
+                        final_timeout[0] = time.time() + timeout * 4
 
                 for process in finished_processes:
+                    try:
+                        for child in psutil.Process(pid=process.pid).children(
+                            recursive=True
+                        ):
+                            try:
+                                child.kill()
+                            except:
+                                pass
+                    except:
+                        pass
+
+                    try:
+                        processes_tempdir.pop(process).cleanup()
+                    except:
+                        pass
+
                     processes_timeout.pop(process)
 
                     progress.update(1)
@@ -87,12 +131,15 @@ async def scrape_resources_pool(
                 active_pids = set(psutil.pids())
 
                 progress.set_postfix(
-                    {"child_pids": len(child_pids), "total_pids": len(active_pids)}
+                    {
+                        "workers": len(processes_timeout),
+                        "processes": len(cleanup_timeout),
+                    }
                 )
 
                 finished_processes = []
 
-                with FileLock(tempdir / "pings.lock"):
+                with FileLock(scraping_pings_lock):
                     for pid, ptimeout in cleanup_timeout.items():
                         if pid not in active_pids:
                             finished_processes.append(pid)
@@ -110,9 +157,9 @@ async def scrape_resources_pool(
                         cleanup_timeout[child] = time.time() + timeout * 4
 
                 await asyncio.sleep(0.1)
-
+        finally:
             # Final cleanup of processes
-            with FileLock(tempdir / "pings.lock"):
+            with FileLock(scraping_pings_lock):
                 active_processes = set(mp.active_children()).difference(
                     coordinating_processes
                 )

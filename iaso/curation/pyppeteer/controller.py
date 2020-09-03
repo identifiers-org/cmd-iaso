@@ -1,17 +1,25 @@
 import asyncio
 import re
 
+from collections import OrderedDict
+from contextlib import suppress
+
 import click
 import pyppeteer
 
-from contextlib import suppress
-
-from ..interact import CurationController
 from ..generator import CurationDirection
+from ..interact import CurationController
 from .coordinator import PyppeteerCoordinator
 
 
 class PyppeteerController(CurationController):
+    CHOICES = OrderedDict(
+        zip(
+            iter(CurationController.CHOICES.keys()),
+            ["Reload", "Forward", "Backward", "End Session"],
+        )
+    )
+
     def __init__(self, page, url_regex=None):
         self.page = page
         self.url_regex = re.compile(
@@ -44,12 +52,12 @@ class PyppeteerController(CurationController):
                 await coordinator.addStyleTagWithId("iaso.css", "iaso-style")
                 await coordinator.addStyleTagWithId("header.css", "iaso-header-style")
 
-                await coordinator.evaluate("header.js")
+                await coordinator.evaluateScript("header.js")
 
-                await coordinator.evaluate(
+                await coordinator.evaluateScript(
                     "controller.js",
                     self.url_regex.match(self.page.url) is not None,
-                    *CurationController.CHOICES.keys()
+                    list(PyppeteerController.CHOICES.items()),
                 )
 
     def onconsole(self, console):

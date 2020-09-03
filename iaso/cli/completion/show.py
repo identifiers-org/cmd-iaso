@@ -1,5 +1,5 @@
-import click_completion
 import click
+import click_completion
 import click_completion.core
 
 from ...click.docker import wrap_docker

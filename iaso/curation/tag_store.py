@@ -43,4 +43,8 @@ class TagStore:
 
     @staticmethod
     def serialise_identity(json_value):
-        return json.dumps(json_value, separators=(",", ":"), sort_keys=True,)
+        return json.dumps(
+            json_value,
+            separators=(",", ":"),
+            sort_keys=True,
+        )

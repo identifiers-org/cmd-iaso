@@ -20,7 +20,9 @@ class TerminalTagController:
 
     ALL_TAGS_SCHEMA = {
         "type": "object",
-        "patternProperties": {r"^\[[1-9][0-9]*\]$": TAGS_SCHEMA,},
+        "patternProperties": {
+            r"^\[[1-9][0-9]*\]$": TAGS_SCHEMA,
+        },
         "additionalProperties": False,
     }
 
@@ -39,7 +41,8 @@ class TerminalTagController:
 
     async def prompt_tags_impl(self):
         decision = await aprompt(
-            "Modify tags", type=click.Choice((self.TAGS, self.IGNORE)),
+            "Modify tags",
+            type=click.Choice((self.TAGS, self.IGNORE)),
         )
 
         if decision == self.IGNORE:

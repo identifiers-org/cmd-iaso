@@ -3,9 +3,9 @@ from collections import Counter
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 class HTTPStatusError(CurationValidator):
@@ -36,6 +36,10 @@ class HTTPStatusError(CurationValidator):
         )
 
         code_urls = dict()
+
+        total_compids = Counter(
+            get_compact_identifier(ping.lui, provider.id) for ping in provider.pings
+        )
 
         for status_code, frequency in status_codes.most_common():
             if status_code < status_code_values.multiple_choices:
@@ -83,10 +87,11 @@ class HTTPStatusError(CurationValidator):
                             ping.redirects[-1].url, ping.lui
                         ),
                         get_compact_identifier(ping.lui, provider.id),
+                        ping.random,
                     )
 
             if len(collector) > 0:
-                code_urls[status_code] = collector.result()
+                code_urls[status_code] = collector.result(total_compids)
 
         if len(code_urls) == 0:
             return True

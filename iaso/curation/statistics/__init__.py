@@ -5,7 +5,7 @@ from collections import Counter
 import click
 
 from ..generator import CurationDirection
-from ..interact import CurationController, CurationNavigator, CurationInformant
+from ..interact import CurationController, CurationInformant, CurationNavigator
 from .report import report_statistics
 
 

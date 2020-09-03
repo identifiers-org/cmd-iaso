@@ -68,9 +68,10 @@ async def launch_curation(
             else StatisticsController
         )
         Navigator = (
-            {"terminal": TerminalNavigator, "chrome": launcher.warp(ChromeNavigator),}[
-                navigator
-            ]
+            {
+                "terminal": TerminalNavigator,
+                "chrome": launcher.warp(ChromeNavigator),
+            }[navigator]
             if not statistics
             else StatisticsNavigator
         )
@@ -98,5 +99,10 @@ async def launch_curation(
             session.discard()
 
         await curation_func(
-            ensure_registry(ctx), Controller, Navigator, Informant, tag_store, session,
+            ensure_registry(ctx),
+            Controller,
+            Navigator,
+            Informant,
+            tag_store,
+            session,
         )

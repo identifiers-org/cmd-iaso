@@ -26,10 +26,10 @@ async def dedup4institutions(ctx, academine):
     """
     Collects all existing institutions from the registry and attempts to link them to their real entities to
     deduplicate the entries and disentangle concatenations of institution names.
-    
+
     The command also tries to fill in information about the institutions like their name, official URL,
     ROR ID, country and a description.
-    
+
     The results of this command are stored in the ACADEMINE file.
     """
 

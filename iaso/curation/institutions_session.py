@@ -27,11 +27,18 @@ class InstitutionsCurationSession(CurationSession):
         )
 
         return InstitutionsCurationSession(
-            filepath, session.academine, session.position, set(session.visited),
+            filepath,
+            session.academine,
+            session.position,
+            set(session.visited),
         )
 
     def __init__(
-        self, filepath, academine, position, visited,
+        self,
+        filepath,
+        academine,
+        position,
+        visited,
     ):
         super().__init__(filepath, position, visited)
 

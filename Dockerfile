@@ -3,18 +3,26 @@ FROM python:3.7-slim-buster
 # Copy the relevant resources
 COPY ./LICENSE /app/LICENSE
 COPY ./VERSION /app/VERSION
-COPY ./fastentrypoints.py /app/fastentrypoints.py
 COPY ./setup.py /app/setup.py
 COPY ./iaso /app/iaso
+COPY ./athena /app/athena
+COPY ./metis /app/metis
 
 WORKDIR /app
+
+SHELL ["/bin/bash", "-c"]
 
 # Install cmd-iaso
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get install -y --no-install-recommends gcc && \
     apt-get install -y --no-install-recommends python3-dev && \
-    python3 setup.py install && \
+    apt-get install -y --no-install-recommends curl && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal && \
+    source $HOME/.cargo/env && \
+    pip install . && \
+    rustup self uninstall -y && \
+    apt-get remove -y curl && \
     apt-get remove -y python3-dev && \
     apt-get remove -y gcc && \
     apt-get -y autoremove

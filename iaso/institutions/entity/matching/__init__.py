@@ -1,9 +1,9 @@
 from ..recognition import extract_named_entities
-from .substrings import fetch_wikidata_entities_matching_substrings
-from .labels import fetch_wikidata_entity_labels
-from .types import fetch_wikidata_entity_types
-from .filter import filter_candidate_institutions
 from .extraction import greedily_extract_institution_entities
+from .filter import filter_candidate_institutions
+from .labels import fetch_wikidata_entity_labels
+from .substrings import fetch_wikidata_entities_matching_substrings
+from .types import fetch_wikidata_entity_types
 
 
 async def greedily_match_institution_entities(client, institution_string):

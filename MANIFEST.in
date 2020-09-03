@@ -1,2 +1,7 @@
 include VERSION
-include fastentrypoints.py
+
+include athena/Cargo.toml
+recursive-include athena *.rs
+
+include metis/Cargo.toml
+recursive-include metis *.rs

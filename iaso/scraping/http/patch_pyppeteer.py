@@ -4,8 +4,8 @@
 # https://github.com/kiwi0fruit/pyppdf/blob/master/pyppdf/patch_pyppeteer/patch_pyppeteer.py
 
 import certifi
-from pyppeteer.chromium_downloader import *
 
+from pyppeteer.chromium_downloader import *
 
 NO_PROGRESS_BAR = os.environ.get("PYPPETEER_NO_PROGRESS_BAR", "")
 if NO_PROGRESS_BAR.lower() in ("1", "true"):
@@ -46,7 +46,8 @@ def download_zip(url: str) -> BytesIO:
             total_length = 0
 
         process_bar = tqdm(
-            total=total_length, file=os.devnull if NO_PROGRESS_BAR else None,
+            total=total_length,
+            file=os.devnull if NO_PROGRESS_BAR else None,
         )
 
         # 10 * 1024
@@ -57,19 +58,26 @@ def download_zip(url: str) -> BytesIO:
         process_bar.close()
 
     logger.warning("\nchromium download done.")
+
     return _data
 
 
 def patch_pyppeteer():
     import pyppeteer.chromium_downloader
     import pyppeteer.connection
+    import pyppeteer.launcher
 
     pyppeteer.chromium_downloader.download_zip = download_zip
-    _connect = pyppeteer.connection.websockets.client.connect
 
-    def connect(*args, ping_interval=None, ping_timeout=None, **kwargs):
-        return _connect(
-            *args, ping_interval=ping_interval, ping_timeout=ping_timeout, **kwargs
-        )
+    original_connect = pyppeteer.connection.websockets.client.connect
 
-    pyppeteer.connection.websockets.client.connect = connect
+    def new_connect(*args, **kwargs):
+        kwargs["ping_interval"] = None
+        kwargs["ping_timeout"] = None
+
+        return original_connect(*args, **kwargs)
+
+    pyppeteer.connection.websockets.client.connect = new_connect
+
+    if "--disable-features=site-per-process" in pyppeteer.launcher.DEFAULT_ARGS:
+        pyppeteer.launcher.DEFAULT_ARGS.remove("--disable-features=site-per-process")

@@ -1,11 +1,10 @@
-import click
-
-import pyppeteer
-
 from contextlib import suppress
 
-from .navigator import PyppeteerNavigator
+import click
+import pyppeteer
+
 from .coordinator import PyppeteerCoordinator
+from .navigator import PyppeteerNavigator
 
 
 class PyppeteerResourceNavigator(PyppeteerNavigator):
@@ -100,4 +99,4 @@ class PyppeteerResourceNavigator(PyppeteerNavigator):
 
                 await self.page.waitForXPath(xpath, timeout=1000)
 
-                await coordinator.evaluate("edit_resource.js", xpath)
+                await coordinator.evaluateScript("edit_resource.js", xpath)

@@ -1,4 +1,4 @@
-function (display_controller, RELOAD, FORWARD, BACKWARD, FINISH) {
+function (display_controller, buttons) {
     let header = document.getElementById("iaso-header");
     
     if (header === null) {
@@ -7,7 +7,7 @@ function (display_controller, RELOAD, FORWARD, BACKWARD, FINISH) {
     
     header = header.firstElementChild;
     
-    for (const [func, title] of [[RELOAD, "Reload"], [FORWARD, "Forward"], [BACKWARD, "Backward"], [FINISH, "End Session"]]) {
+    for (const [func, title] of buttons) {
         let button = document.getElementById(`iaso-controller-${func}`);
         
         if (display_controller) {

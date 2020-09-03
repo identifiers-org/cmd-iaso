@@ -3,7 +3,6 @@ import io
 import click
 
 from ...format_json import format_json
-
 from ..interact import CurationInformant
 from .tag_controller import TerminalTagController
 

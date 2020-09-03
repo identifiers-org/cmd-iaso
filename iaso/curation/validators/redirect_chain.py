@@ -1,9 +1,11 @@
-from ..validator import CurationValidator
-from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
+from collections import Counter
 
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
+
+from ..tag_store import TagStore
+from ..validator import CurationValidator
+from .collector import ErrorExampleCollector
 
 
 class RedirectChain(CurationValidator):
@@ -32,12 +34,21 @@ class RedirectChain(CurationValidator):
                     for redirect in ping.redirects
                 ],
                 get_compact_identifier(ping.lui, provider.id),
+                ping.random,
             )
 
         if len(collector) == 0:
             return True
 
-        return RedirectChain(provider.id, collector.result())
+        return RedirectChain(
+            provider.id,
+            collector.result(
+                Counter(
+                    get_compact_identifier(ping.lui, provider.id)
+                    for ping in provider.pings
+                )
+            ),
+        )
 
     def __init__(self, rid, redirects):
         self.rid = rid
@@ -50,4 +61,9 @@ class RedirectChain(CurationValidator):
 
     @staticmethod
     def identify(rid):
-        return TagStore.serialise_identity({"type": "RedirectChain", "rid": rid,})
+        return TagStore.serialise_identity(
+            {
+                "type": "RedirectChain",
+                "rid": rid,
+            }
+        )

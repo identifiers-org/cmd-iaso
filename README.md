@@ -8,16 +8,17 @@ IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is 
 ## Project structure
 This repository consists of four main parts:
 - `iaso` Python package
-- `cmd-iaso` command-line tool entry point (located in `iaso/cli.py`)
+- `cmd-iaso` command-line tool entry point (located in `iaso/cli`)
 - `cmd-iaso-docker.py` wrapper to help running `cmd-iaso` inside a Docker container
 - `iaso.plugins` package path to register validator plugins for the tool
+- `athena` analysis Python+Rust package based on the `metis` Rust crate
 
 The codebase is formatted using the [black code style](https://github.com/psf/black) and tested using the [tox automation project](https://tox.readthedocs.io/en/latest/) and [pytest](https://docs.pytest.org/en/latest/).
 
 This overview will delve into the details of `cmd-iaso`, `cmd-iaso-docker.py` and `iaso.plugins` However, we leave it up to the reader to look into the `iaso` codebase themselves should they wish to see some of the implementation details.
 
 ## Installation
-There are three ways to install the functionality of this tool, all of which bring differences in isolation and control. All of these methods start by cloning the git repository using either HTTPS:
+There are four ways to install the functionality of this tool, all of which bring differences in isolation and control. All of these methods start by cloning the git repository using either HTTPS:
 ```
 > git clone https://github.com/identifiers-org/cmd-iaso.git
 ```
@@ -25,6 +26,16 @@ or SSL:
 ```
 > git clone git@github.com:identifiers-org/cmd-iaso.git
 ```
+All methods apart from the Docker container require an installation of [Python](https://www.python.org/downloads/) 3.6+ and [pip](https://pip.pypa.io/en/stable/installing/). If you want to use `athena` analysis, you also require a stable [Rust](https://www.rust-lang.org/tools/install) installation in your `PATH`.
+
+### pip installation
+To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can use pip
+```
+> pip install .
+```
+Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
+
+This installation is the most user-friendly as it takes care of any installation dependencies the package has automatically, including `athena` analysis. Therefore, this method requires Rust to be installed in your `PATH`. For more control over this, use the installation based on Python setuptools described below.
 
 ### Python setuptools
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can make direct use of the `setup.py` script:
@@ -32,6 +43,11 @@ To install the `iaso` package and `cmd-iaso` tool directly into your Python impl
 > python3 setup.py install
 ```
 Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
+
+This installation might skip some optional components if their installation dependencies are not already satisfied. If you want to install `athena` analysis with this command, Rust needs to be installed in your `PATH`. Furthermore, you need to install [setuptools-rust](https://pypi.org/project/setuptools-rust/) in your Python environment using:
+```
+> pip install setuptools-rust
+```
 
 ### Makefile
 If you want to automatically install `cmd-iaso` inside a fresh and isolated virtual environment, you can simply run:
@@ -42,13 +58,15 @@ In contrast to the direct setuptools method, `cmd-iaso` will not be registered i
 ```
 > source command-line-extensions.sh
 ```
+This installation will skip `athena` analysis on its first installation. You will need to manually follow the pip or Python setuptools installation steps described above to reinstall `cmd-iaso` with `athena` analysis in the newly created virtual Python environment.
+
 
 ### Docker container
 If you have already installed [Docker](https://docs.docker.com/get-docker/), you can simply run
 ```
 > python3 cmd-iaso-docker.py
 ```
-This command will build the Docker container during the first run. The `cmd-iaso-docker.py` wrapper mirrors the functionality of `cmd-iaso`, so every command that you can run as
+This command will build the Docker container during the first run. The Docker container will always be installed `athena` analysis support. The `cmd-iaso-docker.py` wrapper mirrors the functionality of `cmd-iaso`, so every command that you can run as
 ```
 > cmd-iaso COMMAND ARGS OPTIONS
 ```
@@ -114,9 +132,9 @@ Note that the resulting jobs list of this command is random. Both the random LUI
 ### [Optional]: Launching your own scraping proxy
 `cmd-iaso` uses an HTTPS intercepting proxy to detect and flag some common error cases without exposing the rest of the scraping pipeline to them. While `cmd-iaso scrape` can launch its own proxy (see below), you can also launch your own:
 ```
-> cmd-iaso proxy3 [--port PORT] [--timeout TIMEOUT]
+> cmd-iaso proxy3 [--port PORT] [--timeout TIMEOUT] [--log null|stderr|proxy3.log]
 ```
-`PORT` specifies the free port the proxy should run on. `TIMEOUT` specifies in seconds how long the proxy should wait internally for resources on the Internet to respond. It is recommended to choose a lower timeout for the proxy than for the scraping command.
+`PORT` specifies the free port the proxy should run on. `TIMEOUT` specifies in seconds how long the proxy should wait internally for resources on the Internet to respond. It is recommended to choose a lower timeout for the proxy than for the scraping command. The `--log` option specifies which logging output will be used. 'null' discards all messages, 'stderr' redirects them to stderr and 'proxy3.log' appends them to the proxy3.log file in the current working directory. By default, all messages are discarded.
 
 ### Running the data scraping pipeline
 To run the data scraping pipeline, you must first create a new folder to save the collected data dumps in, for instance:
@@ -125,10 +143,10 @@ To run the data scraping pipeline, you must first create a new folder to save th
 ```
 Now, you can run the data scaping command to run the jobs defined in the `JOBS` file and save the results in the `DUMP` folder:
 ```
-> cmd-iaso scrape JOBS DUMP [--proxy PROXY] [--chrome CHROME] [--workers WORKERS] [--timeout TIMEOUT]
+> cmd-iaso scrape JOBS DUMP [--resume] [--proxy PROXY] [--chrome CHROME] [--workers WORKERS] [--timeout TIMEOUT] [--log null|stderr|scrape.log]
 ```
-This command is highly customisable. Firstly, you can automatically launch a proxy (this is default option but can also be done explicitly using `--proxy launch`) or connect to an existing one by providing its address, e.g. `--proxy localhost:8080`. The `--chrome` option should be used with care, as it provides the path to the Chrome browser executable. By not providing this option, `cmd-iaso` will use a version of Chromium that is automatically downloaded if required. `WORKERS` specifies the number of processes that should be launched in parallel to work on different scraping jobs. Lastly, `TIMEOUT` specifies in seconds a baseline timeout that will be used to cancel too long-running scraping jobs.
-Running this command will take some time, so a progress bar is provided to keep the user informed. It is also important to note that this command will report any unexpected errors to stdout. Additional edge case handling might be added to deal with them more gracefully in the future.
+This command is highly customisable. Firstly, you can automatically launch a proxy (this is default option but can also be done explicitly using `--proxy launch`) or connect to an existing one by providing its address, e.g. `--proxy localhost:8080`. If a new proxy is launched, its log will be implicitly discared. The `--chrome` option should be used with care, as it provides the path to the Chrome browser executable. By not providing this option, `cmd-iaso` will use a version of Chromium that is automatically downloaded if required. `WORKERS` specifies the number of processes that should be launched in parallel to work on different scraping jobs. Lastly, `TIMEOUT` specifies in seconds a baseline timeout that will be used to cancel too long-running scraping jobs.
+Running this command will take some time, so a progress bar is provided to keep the user informed. If you want to pause the scraping, you can iterrupt it using `CTRL-C` or `CMD-C` depending on your operating system. The scraper will then shutdown and wait for all running workers to complete. A paused scraping task can be resumed later on by passing the `--resume` flag to the command. Finally, the `--log` option specifies which logging output will be used. 'null' discards all messages, 'stderr' redirects them to stderr and 'scrape.log' appends them to the scrape.log file in the current working directory. By default, all messages are appended to scrape.log.
 
 ### Converting the raw data dumps into a structured datamine
 The collected raw data dumps contain mostly raw information about the scraped resources. To collect and compress this data into a structured format that can be read by the curation process, you can run:
@@ -136,6 +154,18 @@ The collected raw data dumps contain mostly raw information about the scraped re
 > cmd-iaso dump2datamine DUMP DATAMINE
 ```
 which will read the data dumps from the `DUMP` folder and save the datamine to the `DATAMINE` file path.
+
+The `dump2datamine` command also allows you to perform analysis on the scraped responses to determine if the resource providers are working as expected. This working state is assessed by the information content of a resource:
+- The information content of a resource is the maximum information content per LUI pinged during scraping, i.e. one working LUI is sufficient to be classified as working.
+- Only the content which is deterministic per LUI is considered as informative, i.e. random or time-dependent elements are excluded.
+- The information content of a LUI is the amount of information that is not shared with other LUIs. Longer segments of information are given a heigher weight than shorter segments in measuring the amount of shared information.
+This definition means that any resource that always responds with the same or completely random responses will be classified as defunct. In contrast, if a resource provides deterministic distinct responses for at least one LUI, its information content will be significantly higher.
+
+As the `athena` analysis is very computationally expensive, it is implemented in the Rust library crate `metis`. To enable this optional analysis, `cmd-iaso` must be installed with `athena` analysis support, which is described in the installation guidelines outlined above. You can check whether athena analysis is available by running:
+```
+> cmd-iaso dump2datamine --check-athena
+```
+If the `--analyse` flag is passed to the `dump2datamine` command, the analysis will be performed and integrated with the normal dump compaction in the `DATAMINE`. The calculated information contents can then be checked during curation by enabling the `information-content` validator.
 
 ## Institution Deduplication
 The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out, and some names are concatenations of multiple institutions. The institution deduplication command
@@ -148,14 +178,39 @@ collects all existing institutions from the registry. It then attempts to link t
 The primary purpose of `cmd-iaso` is to aide the curator in their curation process. The interactive curation is run either on the datamine file created from the data scraping pipeline using the `cmd-iaso dump2datamine` command or the academine file created from the institution deduplication using the `cmd-iaso dedup4institutions` command.
 
 ### Curation validators
-`cmd-iaso` uses validator plugins to provide customisable modularised validation of the resource providers. Each validator is a subclass of the `iaso.curartion.error.CurationError` class:
+`cmd-iaso` uses validator plugins to provide customisable modularised validation of the resource providers. Each validator is a subclass of the `iaso.curation.validator.CurationValidator` class:
 ```python
 from abc import ABC, abstractmethod
+from typing import Union
 
-class CurationError(ABC):
+class CurationValidator(ABC):
+    @classmethod
+    def validate_params(cls, validator_name: str, **kwargs) -> CurationValidator:
+        """
+        Overwrite this classmethod if your validator can take parameters.
+        This method should either raise an exception or return a subclass of cls.
+        """
+        if len(kwargs) > 0:
+            raise click.UsageError(
+                click.style(
+                    f"The validator {validator_name} does not accept any parameters.",
+                    fg="red",
+                )
+            )
+
+        return cls
+
     @staticmethod
     @abstractmethod
-    def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> CurationError:
+    def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> Union[CurationValidator, bool]:
+        """
+        Returns False iff this data_entry cannot be included during
+         curation at all.
+        Returns True iff this validator has found nothing to report on
+         this data_entry.
+        Returns an instance of the particular CurationValidator iff it
+         found something to report about this data_entry.
+        """
         pass
 
     @abstractmethod
@@ -181,6 +236,14 @@ setup(
     ...
 )
 ```
+As a more general alternative, you can also use a `pyproject.toml` file to register your curation validator:
+```toml
+[project]
+name = "My Curation Plugin"
+
+[project.entry-points."iaso.plugins"]
+my-validator = "my_module:my_validator:MyValidator"
+```
 `cmd-iaso` comes with the following validators by default:
 - `redirection-chain` displays the entire redirection chain of a resource and, therefore, marks every resource as erroneous
 - `dns-error` detects DNS errors caught by the scraping proxy
@@ -188,6 +251,7 @@ setup(
 - `invalid-response` detects invalid HTTP responses
 - `http-status-error` detects requests that resulted in HTTP error codes
 - `scheme-only-redirect` detects redirects where only the scheme of the URL changed, e.g. `http://url` -> `https://url`
+- `information-content` displays and puts into context the output of the `athena` analysis
 
 To list all validators that are registered with `cmd-iaso`, you can use
 ```
@@ -204,6 +268,7 @@ The **Navigator** leads the curator to the provider's corresponding namespace pa
 The **Informant** formats and presents information about the discovered issues with each resource provider to the curator. The informant component can be set by the `--informant` option.
 
 Iff any of the components are set to `chrome`, the curator must also provide the `--chrome` option to select how the curation pipeline should connect to Chrome. It can either `launch` a new instance or connect to an existing one if its address, e.g. `localhost:9222` is provided. Note that in order to connect to a running Chrome browser, it must have been started with the `--remote-debugging-port=PORT` option, where `PORT` would be `9222` in this case.
+If you want to connect to a running Chrome browser instance on a different machine, for instance if you are calling `cmd-iaso` through SSH, we recommend taking a look at [inlets](https://github.com/inlets/inlets) which allows you to "[e]xpose your local endpoints to the Internet or to another network, traversing firewalls and NAT".
 
 All of these options have to be provided via the command line or environment variables. Otherwise, the curator will be asked for their value via a prompt:
 ```
@@ -224,7 +289,11 @@ To start a new session for curating resource providers, you can use:
 ```
 > cmd-iaso curate [...] start resources DATAMINE {-v VALIDATOR} [--valid-luis-threshold VALID_LUIS_THRESHOLD] [--random-luis-threshold RANDOM_LUIS_THRESHOLD] [--session SESSION]
 ```
-This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `resources_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than ![50%](https://render.githubusercontent.com/render/math?math=50%5C%25) of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
+This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `resources_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead.
+
+The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. Some validators support parameterisation using a named parameter list suffix of the form `-v VALIDATOR:param=value,flag,param=value`. For instance, the `information-content` validator supports a `threshold` parameter in the range `[0.0, 1.0]` to only report resource providers with an information content smaller or equal to the threshold.
+
+It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than ![50%](https://render.githubusercontent.com/render/math?math=50%5C%25) of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
 
 The `[...]` between `curate` and `resources` refer to the general curation options discussed above.
 
