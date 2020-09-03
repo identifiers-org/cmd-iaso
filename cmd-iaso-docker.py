@@ -18,7 +18,7 @@ def main():
     # Check if the cmd-iaso Docker image has been built already
     if (
         run_in_subprocess(
-            "docker images -q cmd-iaso", stdout=devnull, stderr=devnull
+            "docker image inspect cmd-iaso", stdout=devnull, stderr=devnull
         ).returncode
         != 0
     ):
