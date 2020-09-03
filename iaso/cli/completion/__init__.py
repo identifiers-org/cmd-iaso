@@ -1,12 +1,11 @@
 import os
 
-import click_completion
 import click
+import click_completion
 import click_completion.core
 
-from ...click.lazy import LazyCommandGroup
 from ...click.docker import wrap_docker
-
+from ...click.lazy import LazyCommandGroup
 
 completion_help = """
 Shell completion commands for cmd-iaso.

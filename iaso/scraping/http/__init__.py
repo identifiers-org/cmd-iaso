@@ -8,12 +8,12 @@ from datetime import datetime, timezone
 
 os.environ["PYPPETEER_CHROMIUM_REVISION"] = "782078"
 
-from .pyppeteer import launch_browser, new_page
-from .navigate import navigate_http_resource
-from .request_monitor import setup_page_monitoring
-
 from pyppeteer import errors as pyppeteer_errors
 from requests import codes as status_code_values
+
+from .navigate import navigate_http_resource
+from .pyppeteer import launch_browser, new_page
+from .request_monitor import setup_page_monitoring
 
 
 async def scrape_http_resource(tempdir, proxy_address, chrome, timeout, url):

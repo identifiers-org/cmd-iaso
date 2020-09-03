@@ -1,9 +1,9 @@
 from collections import Counter
 from urllib.parse import urlparse
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 def strip_scheme(url):

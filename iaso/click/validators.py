@@ -1,7 +1,7 @@
 import click
 
 try:
-    from importlib.metadata import entry_points, EntryPoint
+    from importlib.metadata import EntryPoint, entry_points
 
     def iter_entry_points(path):
         return entry_points().get(path, [])

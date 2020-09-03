@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from collections import Counter
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 class RedirectFlagError(CurationValidator, ABC):

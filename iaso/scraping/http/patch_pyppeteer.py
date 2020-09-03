@@ -4,8 +4,8 @@
 # https://github.com/kiwi0fruit/pyppdf/blob/master/pyppdf/patch_pyppeteer/patch_pyppeteer.py
 
 import certifi
-from pyppeteer.chromium_downloader import *
 
+from pyppeteer.chromium_downloader import *
 
 NO_PROGRESS_BAR = os.environ.get("PYPPETEER_NO_PROGRESS_BAR", "")
 if NO_PROGRESS_BAR.lower() in ("1", "true"):

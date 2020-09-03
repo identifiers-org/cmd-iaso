@@ -2,9 +2,9 @@ from functools import partial
 
 import click
 
-from ....click.lazy import lazy_import
-from ....click.docker import wrap_docker, DockerPathExists
 from ....click.coroutine import coroutine
+from ....click.docker import DockerPathExists, wrap_docker
+from ....click.lazy import lazy_import
 
 lazy_import(
     globals(),

@@ -43,11 +43,10 @@ import threading
 import time
 import urllib.parse
 
-from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
-
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from subprocess import Popen, PIPE
+from pathlib import Path
+from subprocess import PIPE, Popen
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import click
 import urllib3

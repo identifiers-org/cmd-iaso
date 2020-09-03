@@ -7,8 +7,8 @@ from contextlib import suppress
 import click
 import pyppeteer
 
-from ..interact import CurationController
 from ..generator import CurationDirection
+from ..interact import CurationController
 from .coordinator import PyppeteerCoordinator
 
 

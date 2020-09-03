@@ -1,11 +1,11 @@
 from collections import Counter
 
-from ..validator import CurationValidator
-from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
-
 from requests import codes as status_code_values
 from requests.status_codes import _codes as status_code_names
+
+from ..tag_store import TagStore
+from ..validator import CurationValidator
+from .collector import ErrorExampleCollector
 
 
 class RedirectChain(CurationValidator):

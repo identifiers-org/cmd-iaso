@@ -1,9 +1,9 @@
 import json
 import re
 
-import pyppeteer
-
 from contextlib import suppress
+
+import pyppeteer
 
 from ..interact import CurationInformant
 from .coordinator import PyppeteerCoordinator

@@ -1,9 +1,8 @@
 import click
 
+from ...click.aprompt import aprompt
 from ..generator import CurationDirection
 from ..interact import CurationController
-from ...click.aprompt import aprompt
-
 from .tag_controller import TerminalTagController
 
 

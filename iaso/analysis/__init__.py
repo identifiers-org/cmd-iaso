@@ -6,14 +6,14 @@ import signal
 import time
 
 from functools import partial
-from multiprocessing import Process, Pipe
+from multiprocessing import Pipe, Process
 from pathlib import Path
 
 from tqdm import tqdm
 
 from .common_fragments import extract_common_fragments_per_lui
-from .suffix_tree import extract_shared_suffix_tree
 from .shared_fragments import extract_shared_fragments_from_tree
+from .suffix_tree import extract_shared_suffix_tree
 
 PINGS_PATTERN = re.compile(r"pings_(\d+)\.gz")
 

@@ -1,7 +1,7 @@
 from collections import Counter
 
-from .types import Entity
 from ..recognition import WORD_PATTERN
+from .types import Entity
 
 
 def filter_candidate_institutions(

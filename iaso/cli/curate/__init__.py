@@ -1,9 +1,9 @@
 import click
 
-from ...click.lazy import LazyCommandGroup, lazy_import
-from ...click.mutex import ValidateMutex, MutexOption
-from ...click.docker import wrap_docker
 from ...click.chrome import ChromeChoice
+from ...click.docker import wrap_docker
+from ...click.lazy import LazyCommandGroup, lazy_import
+from ...click.mutex import MutexOption, ValidateMutex
 
 lazy_import(
     globals(),

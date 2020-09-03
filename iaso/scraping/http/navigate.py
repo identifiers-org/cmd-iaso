@@ -6,9 +6,9 @@ from tempfile import TemporaryDirectory
 
 import pyppeteer
 
+from ..content_type import decode_content, get_content_type, get_encoding, get_mime_type
 from .html import fetch_html_content
 from .url import normaliseURL
-from ..content_type import get_mime_type, get_encoding, get_content_type, decode_content
 
 
 async def navigate_http_resource(

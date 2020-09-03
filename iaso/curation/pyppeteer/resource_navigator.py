@@ -1,11 +1,10 @@
-import click
-
-import pyppeteer
-
 from contextlib import suppress
 
-from .navigator import PyppeteerNavigator
+import click
+import pyppeteer
+
 from .coordinator import PyppeteerCoordinator
+from .navigator import PyppeteerNavigator
 
 
 class PyppeteerResourceNavigator(PyppeteerNavigator):

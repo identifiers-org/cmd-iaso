@@ -4,9 +4,9 @@ import click
 
 from requests import codes as status_code_values
 
+from ..tag_store import TagStore
 from ..validator import CurationValidator
 from .collector import ErrorExampleCollector
-from ..tag_store import TagStore
 
 
 class InformationContent(CurationValidator):
