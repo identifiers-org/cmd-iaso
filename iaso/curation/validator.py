@@ -6,6 +6,10 @@ import click
 class CurationValidator(ABC):
     @classmethod
     def validate_params(cls, validator_name, **kwargs):
+        """
+        Overwrite this classmethod if your validator can take parameters.
+        This method should either raise an exception or return a subclass of cls.
+        """
         if len(kwargs) > 0:
             raise click.UsageError(
                 click.style(

@@ -8,9 +8,10 @@ IASO was the Greek goddess of cures, remedies and modes of healing. cmd-iaso is 
 ## Project structure
 This repository consists of four main parts:
 - `iaso` Python package
-- `cmd-iaso` command-line tool entry point (located in `iaso/cli.py`)
+- `cmd-iaso` command-line tool entry point (located in `iaso/cli`)
 - `cmd-iaso-docker.py` wrapper to help running `cmd-iaso` inside a Docker container
 - `iaso.plugins` package path to register validator plugins for the tool
+- `athena` analysis Python+Rust package based on the `metis` Rust crate
 
 The codebase is formatted using the [black code style](https://github.com/psf/black) and tested using the [tox automation project](https://tox.readthedocs.io/en/latest/) and [pytest](https://docs.pytest.org/en/latest/).
 
@@ -25,6 +26,7 @@ or SSL:
 ```
 > git clone git@github.com:identifiers-org/cmd-iaso.git
 ```
+All methods apart from the Docker container require an installation of [Python](https://www.python.org/downloads/) 3.6+ and [pip](https://pip.pypa.io/en/stable/installing/). If you want to use `athena` analysis, you also require a stable [Rust](https://www.rust-lang.org/tools/install) installation in your `PATH`.
 
 ### pip installation
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can use pip
@@ -33,7 +35,7 @@ To install the `iaso` package and `cmd-iaso` tool directly into your Python impl
 ```
 Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
 
-This installation is the most user-friendly as it takes care of any installation dependencies the package has automatically. For more control over this, use the installation based on Python setuptools described below.
+This installation is the most user-friendly as it takes care of any installation dependencies the package has automatically, including `athena` analysis. Therefore, this method requires Rust to be installed in your `PATH`. For more control over this, use the installation based on Python setuptools described below.
 
 ### Python setuptools
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can make direct use of the `setup.py` script:
@@ -42,7 +44,10 @@ To install the `iaso` package and `cmd-iaso` tool directly into your Python impl
 ```
 Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
 
-This installation might skip some optional components if their installation dependencies are not already satisfied.
+This installation might skip some optional components if their installation dependencies are not already satisfied. If you want to install `athena` analysis with this command, Rust needs to be installed in your `PATH`. Furthermore, you need to install [setuptools-rust](https://pypi.org/project/setuptools-rust/) in your Python environment using:
+```
+> pip install setuptools-rust
+```
 
 ### Makefile
 If you want to automatically install `cmd-iaso` inside a fresh and isolated virtual environment, you can simply run:
@@ -53,13 +58,15 @@ In contrast to the direct setuptools method, `cmd-iaso` will not be registered i
 ```
 > source command-line-extensions.sh
 ```
+This installation will skip `athena` analysis on its first installation. You will need to manually follow the pip or Python setuptools installation steps described above to reinstall `cmd-iaso` with `athena` analysis in the newly created virtual Python environment.
+
 
 ### Docker container
 If you have already installed [Docker](https://docs.docker.com/get-docker/), you can simply run
 ```
 > python3 cmd-iaso-docker.py
 ```
-This command will build the Docker container during the first run. The `cmd-iaso-docker.py` wrapper mirrors the functionality of `cmd-iaso`, so every command that you can run as
+This command will build the Docker container during the first run. The Docker container will always be installed `athena` analysis support. The `cmd-iaso-docker.py` wrapper mirrors the functionality of `cmd-iaso`, so every command that you can run as
 ```
 > cmd-iaso COMMAND ARGS OPTIONS
 ```
@@ -148,6 +155,18 @@ The collected raw data dumps contain mostly raw information about the scraped re
 ```
 which will read the data dumps from the `DUMP` folder and save the datamine to the `DATAMINE` file path.
 
+The `dump2datamine` command also allows you to perform analysis on the scraped responses to determine if the resource providers are working as expected. This working state is assessed by the information content of a resource:
+- The information content of a resource is the maximum information content per LUI pinged during scraping, i.e. one working LUI is sufficient to be classified as working.
+- Only the content which is deterministic per LUI is considered as informative, i.e. random or time-dependent elements are excluded.
+- The information content of a LUI is the amount of information that is not shared with other LUIs. Longer segments of information are given a heigher weight than shorter segments in measuring the amount of shared information.
+This definition means that any resource that always responds with the same or completely random responses will be classified as defunct. In contrast, if a resource provides deterministic distinct responses for at least one LUI, its information content will be significantly higher.
+
+As the `athena` analysis is very computationally expensive, it is implemented in the Rust library crate `metis`. To enable this optional analysis, `cmd-iaso` must be installed with `athena` analysis support, which is described in the installation guidelines outlined above. You can check whether athena analysis is available by running:
+```
+> cmd-iaso dump2datamine --check-athena
+```
+If the `--analyse` flag is passed to the `dump2datamine` command, the analysis will be performed and integrated with the normal dump compaction in the `DATAMINE`. The calculated information contents can then be checked during curation by enabling the `information-content` validator.
+
 ## Institution Deduplication
 The [identifiers.org](https://identifiers.org/) registry might contain duplicate institution entries which refer to the same entity. In the old platform, a resource's institution was simply stored as a string. As a result of the migration from the old platform, many institution entries still have only their name field filled out, and some names are concatenations of multiple institutions. The institution deduplication command
 ```
@@ -165,6 +184,22 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 class CurationValidator(ABC):
+    @classmethod
+    def validate_params(cls, validator_name: str, **kwargs) -> CurationValidator:
+        """
+        Overwrite this classmethod if your validator can take parameters.
+        This method should either raise an exception or return a subclass of cls.
+        """
+        if len(kwargs) > 0:
+            raise click.UsageError(
+                click.style(
+                    f"The validator {validator_name} does not accept any parameters.",
+                    fg="red",
+                )
+            )
+
+        return cls
+
     @staticmethod
     @abstractmethod
     def check_and_create(get_compact_identifier, valid_luis_threshold, random_luis_threshold, provider) -> Union[CurationValidator, bool]:
@@ -216,6 +251,7 @@ my-validator = "my_module:my_validator:MyValidator"
 - `invalid-response` detects invalid HTTP responses
 - `http-status-error` detects requests that resulted in HTTP error codes
 - `scheme-only-redirect` detects redirects where only the scheme of the URL changed, e.g. `http://url` -> `https://url`
+- `information-content` displays and puts into context the output of the `athena` analysis
 
 To list all validators that are registered with `cmd-iaso`, you can use
 ```
@@ -253,7 +289,11 @@ To start a new session for curating resource providers, you can use:
 ```
 > cmd-iaso curate [...] start resources DATAMINE {-v VALIDATOR} [--valid-luis-threshold VALID_LUIS_THRESHOLD] [--random-luis-threshold RANDOM_LUIS_THRESHOLD] [--session SESSION]
 ```
-This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `resources_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead. The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than ![50%](https://render.githubusercontent.com/render/math?math=50%5C%25) of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
+This command starts a new session using the `DATAMINE` file created by the `dump2datamine` command and will save it either to the `SESSION` file path -- if provided -- or the default `resources_session.gz` location. If the curator does not want to save the session, they can provide the `--discard-session` instead.
+
+The `-v VALIDATOR` / `--validate VALIDATOR` option can be provided multiple times to explicitly name all validator modules which should be enabled in this session. By default, `dns-error`, `invalid-response` and `http-status-error` are enabled. Some validators support parameterisation using a named parameter list suffix of the form `-v VALIDATOR:param=value,flag,param=value`. For instance, the `information-content` validator supports a `threshold` parameter in the range `[0.0, 1.0]` to only report resource providers with an information content smaller or equal to the threshold.
+
+It is also possible to only report errors which occur with a high enough percentage. For instance, to only report errors using valid LUIs if they occur on more than ![50%](https://render.githubusercontent.com/render/math?math=50%5C%25) of the valid LUIs, you can specify `--valid-luis-threshold 50`. Similarly, you can specify `--random-luis-threshold 50` to configure it the same for randomly generated LUIs. By default, all errors on valid LUIs and no errors on random LUIs will be reported. Note that each validator can decide whether to abide by this setting.
 
 The `[...]` between `curate` and `resources` refer to the general curation options discussed above.
 
