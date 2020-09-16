@@ -1,4 +1,6 @@
+import gzip
 import json
+import mmap
 import os
 import pickle
 import re
@@ -12,9 +14,24 @@ import click
 
 from tqdm import tqdm
 
-from .analysis.dump2pings import dump2pings
-
 PINGS_PATTERN = re.compile(r"pings_(\d+)\.gz")
+
+
+def dump2pings(filepath, errors):
+    with open(filepath, "r+b") as raw:
+        with mmap.mmap(raw.fileno(), 0) as raw:
+            entry_points = [m.start() for m in re.finditer(b"\x1f\x8b", raw)]
+
+            for entry_point in entry_points:
+                raw.seek(entry_point)
+
+                try:
+                    with gzip.GzipFile(fileobj=raw, mode="rb") as file:
+                        yield pickle.load(file)
+                except OSError:
+                    pass
+                except Exception as err:
+                    errors[filepath].append(err)
 
 
 def generate_datamine_from_dump(dump, datamine_path, analysis):
