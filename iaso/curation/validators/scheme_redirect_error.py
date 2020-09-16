@@ -23,12 +23,15 @@ class SchemeRedirectError(CurationValidator):
             for (redirect_from, redirect_to) in zip(
                 ping.redirects[:-1], ping.redirects[1:]
             ):
-                collector.add(
-                    f"{SchemeRedirectError.format_lui_link(redirect_from.url, ping.lui)} => "
-                    + f"{SchemeRedirectError.format_lui_link(redirect_to.url, ping.lui)}",
-                    get_compact_identifier(ping.lui, provider.id),
-                    ping.random,
-                )
+                if (redirect_from.url != redirect_to.url) and (
+                    strip_scheme(redirect_from.url) == strip_scheme(redirect_to.url)
+                ):
+                    collector.add(
+                        f"{SchemeRedirectError.format_lui_link(redirect_from.url, ping.lui)} => "
+                        + f"{SchemeRedirectError.format_lui_link(redirect_to.url, ping.lui)}",
+                        get_compact_identifier(ping.lui, provider.id),
+                        ping.random,
+                    )
 
         if len(collector) == 0:
             return True

@@ -78,6 +78,17 @@ def list_validators(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
+    if ctx.obj["docker"]:
+        click.echo(
+            f"> docker run -it --net=host --rm --init cmd-iaso curate --list-validators",
+            err=True,
+            nl=False,
+        )
+
+        ctx.exit()
+
+        return
+
     registered_validators = ensure_registered_validators(ctx)
 
     if len(registered_validators) == 0:

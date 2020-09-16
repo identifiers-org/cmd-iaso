@@ -8,7 +8,7 @@ import click
 
 from ..click.chrome import ChromeChoice
 from ..click.coroutine import coroutine
-from ..click.docker import DockerPathExists, docker_chrome_path, wrap_docker
+from ..click.docker import DockerPathExists, wrap_docker
 from ..click.lazy import lazy_import
 
 lazy_import(
@@ -50,7 +50,6 @@ from ..scraping.jobs.resume import filter_completed_jobs
 @click.option(
     "--chrome",
     type=click.Path(exists=DockerPathExists(), readable=True, dir_okay=False),
-    default=docker_chrome_path,
 )
 @click.option(
     "--workers",

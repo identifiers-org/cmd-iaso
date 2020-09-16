@@ -22,22 +22,11 @@ class DockerPathExists:
         return not click.get_current_context().obj["docker"]
 
 
-DOCKER_CHROME_EXECUTABLE_PATH = "/usr/bin/google-chrome"
-
-
-def docker_chrome_path():
-    return (
-        DOCKER_CHROME_EXECUTABLE_PATH
-        if click.get_current_context().obj["docker"]
-        else None
-    )
-
-
 def docker_transform_path(ctx, p, param, value):
     if not isinstance(param.type, click.Path):
         return value
 
-    if value in ["-", DOCKER_CHROME_EXECUTABLE_PATH]:
+    if value in ["-"]:
         return value
 
     host = Path(value)

@@ -31,7 +31,7 @@ All methods apart from the Docker container require an installation of [Python](
 ### pip installation
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can use pip
 ```
-> pip install .
+> pip install -e .
 ```
 Note that this will also install all of the dependencies into your current Python environment. To create some isolation, you can use a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html) and install `cmd-iaso` in there.
 

@@ -26,6 +26,17 @@ def check_athena_callback(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
+    if ctx.obj["docker"]:
+        click.echo(
+            f"> docker run -it --net=host --rm --init cmd-iaso dump2datamine --check-athena",
+            err=True,
+            nl=False,
+        )
+
+        ctx.exit()
+
+        return
+
     if check_athena():
         click.echo(
             click.style(
