@@ -26,7 +26,7 @@ or SSL:
 ```
 > git clone git@github.com:identifiers-org/cmd-iaso.git
 ```
-All methods apart from the Docker container require an installation of [Python](https://www.python.org/downloads/) 3.6+ and [pip](https://pip.pypa.io/en/stable/installing/). If you want to use `athena` analysis, you also require a stable [Rust](https://www.rust-lang.org/tools/install) installation in your `PATH`.
+All methods apart from the Docker container require an installation of [Python](https://www.python.org/downloads/) 3.7+ and [pip](https://pip.pypa.io/en/stable/installing/). If you want to use `athena` analysis, you also require a stable [Rust](https://www.rust-lang.org/tools/install) installation in your `PATH`.
 
 ### pip installation
 To install the `iaso` package and `cmd-iaso` tool directly into your Python implementation, you can use pip

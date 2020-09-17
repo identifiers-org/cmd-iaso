@@ -172,7 +172,7 @@ setup_kwargs.update(
         ]
         + setup_kwargs.get("setup_requires", [])
     ),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     zip_safe=False,
 )
 
