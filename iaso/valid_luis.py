@@ -22,7 +22,7 @@ class JSONSetEncoder(JSONEncoder):
 def validate_resolution_endpoint(resolution_endpoint):
     try:
         with requests.get(
-            urljoin(resolution_endpoint, "/healthApi/liveness_check")
+            urljoin(resolution_endpoint, "/actuator/health")
         ) as r:
             if r.status_code == requests.codes.ok:
                 return
@@ -48,8 +48,8 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
     for filepath in tqdm(filepaths, desc="Reading logs"):
         try:
             with open(filepath, "r") as file:
-                for line in file.readlines():
-                    request = json.loads(line)
+                logs = json.load(file)
+                for request in logs:
                     url = request["httpRequest"]["requestUrl"].strip()
 
                     if url.startswith("http://identifiers.org/"):
@@ -63,7 +63,8 @@ def collect_namespace_ids_from_logs(logs, resolver, output):
                         url = urlparse(f"http://identifiers.org/{url}").path
 
                     compact_ids.add(url.strip("/"))
-        except:
+        except BaseException as exp:
+            print("Failed to read", filepath, exp)
             pass
 
     for c, compact_id in tqdm(

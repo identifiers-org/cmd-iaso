@@ -2,9 +2,9 @@ import pyppeteer
 
 from async_generator import asynccontextmanager
 
-from . import patch_pyppeteer
+# from . import patch_pyppeteer
 
-patch_pyppeteer.patch_pyppeteer()
+# patch_pyppeteer.patch_pyppeteer()
 
 
 @asynccontextmanager

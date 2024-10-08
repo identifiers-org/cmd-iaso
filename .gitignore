@@ -14,3 +14,10 @@ dist/
 
 # Environment configuration file
 .env
+
+logs/*
+
+.idea/
+out/*
+iaso.egg-info/
+athena.cpython-*.so

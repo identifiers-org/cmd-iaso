@@ -4,7 +4,7 @@ authors = [
   {name = "Moritz Langenstein"}
 ]
 description = "cmd-iaso is a command-line tool to help the curators of the identifiers.org registry."
-version = {file = "VERSION"}
+dynamic = ["version"]
 requires-python = ">=3.7"
 readme = "README.md"
 license = {file = "LICENSE"}

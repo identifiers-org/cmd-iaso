@@ -34,7 +34,7 @@ def patch_pyppeteer():
     pyppeteer.browser.Browser.create = new_create
 
 
-patch_pyppeteer()
+# patch_pyppeteer()
 
 
 class PyppeteerLauncher:

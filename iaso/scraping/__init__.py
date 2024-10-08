@@ -19,10 +19,10 @@ async def scrape_resources(
     if chrome is None:
         from pyppeteer.chromium_downloader import check_chromium, download_chromium
 
-        from .http.patch_pyppeteer import patch_pyppeteer
+        # from .http.patch_pyppeteer import patch_pyppeteer
 
         if not check_chromium():
-            patch_pyppeteer()
+            # patch_pyppeteer()
             download_chromium()
 
     ctx = mp.get_context("spawn")

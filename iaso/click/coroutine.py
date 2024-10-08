@@ -6,7 +6,7 @@ import click
 
 
 def coroutine(f):
-    f = asyncio.coroutine(f)
+    # f = asyncio.run(f)
 
     def wrapper(*args, **kwargs):
         ctx = click.get_current_context()

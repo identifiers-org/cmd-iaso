@@ -3,6 +3,7 @@
 
 # Environment
 # Development support
+include .env
 container_name = identifiersorg/cmd-iaso
 docker_compose_development_file = docker-compose-development.yml
 tag_version = $(shell cat VERSION)
@@ -85,5 +86,8 @@ tmp:
 clean_tmp:
 	@echo "<===|DEVOPS|===> [HOUSEKEEPING] Removing temporary folder"
 	@rm -rf tmp
+
+download_latest_logs:
+	@gcloud logging read 'resource.type="http_load_balancer" AND resource.labels.forwarding_rule_name="$(GCLOUD_FORWARDING_RULE)" AND resource.labels.url_map_name="$(GCLOUD_URL_MAP)"' --limit 100 --format json > "logs/`date -I`.log"
 
 .PHONY: all install default_dev_configuration dev_environment setup_tool clean development_run_tests app_structure container_production_build container_production_push sync_project_version deploy release clean_tmp clean_bin

@@ -121,6 +121,8 @@ If you want the data scraping to probe valid resource LUIs, you need to provide 
 ```
 Here, `LOGS` refers to the folder in which the logs are stored, `VALID_NAMESPACE_IDS` is the file path to which the list of extracted LUIs will be written. Optionally, `--resolution-endpoint RESOLUTION_ENDPOINT` can be provided to specify a custom resolution API endpoint, for instance in order not to overload the public one.
 
+See the [Makefile](./Makefile) target `download_latest_logs` for an example of how to get logs from the cloud kubernetes.
+
 ### Generating the jobs for the data scraping pipeline
 `cmd-iaso` needs to know exactly which resource providers and LUIs it will probe during the scraping. To generate the jobs specification file, you can run:
 ```

@@ -13,8 +13,8 @@ def collect_environment_description():
         "machine": platform.node(),
         "os": platform.platform(),
         "cpu": "{} {} {}".format(
-            cpu_info["vendor_id"],
-            cpu_info["brand"],
+            cpu_info["vendor_id_raw"],
+            cpu_info["brand_raw"],
             ".".join(
                 str(cpu_info[info])
                 for info in ["family", "model", "stepping"]

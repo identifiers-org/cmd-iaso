@@ -9,7 +9,7 @@ ScrapingJobs.SCHEMA = {
     "type": "array",
     "items": {
         "type": "array",
-        "items": [
+        "prefixItems": [
             {"type": "integer", "minimum": 0},
             {"type": "string"},
             {"type": "boolean"},
