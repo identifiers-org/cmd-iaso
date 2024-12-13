@@ -13,7 +13,7 @@ RANKING_LIMIT = 10
 class WikiDataClient:
     def __init__(self):
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(HTTPX_TIMEOUT, pool_timeout=None),
+            timeout=httpx.Timeout(HTTPX_TIMEOUT, read=80.0),
         )
 
         self.waiting = defaultdict(int)  # Number of waiting requests
